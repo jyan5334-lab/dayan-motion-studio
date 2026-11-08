@@ -1,0 +1,95 @@
+{
+ "id": "fx-play-sprite",
+ "name": "播放键小精灵",
+ "use": "片头 solo / 演示操作 / 品牌吉祥物：原创播放键小角色按关键帧路径跑、跳、翻跟斗、滚、点按钮、放技能，和画面里的元素互动",
+ "created": "2026-11-08",
+ "version": "1.0.0",
+ "props": "path:[{t,x,y,act,h,dir,target}]（t 相对本层；x/y 是脚底位置 0–1；act: pop idle wave run jump flip roll click stomp cast charge bow exit；h 跳/翻的弧高；target 点击/踩/施法的目标点）；size 角色大小（cqmin，默认 15）；color [亮色, 暗色]；trail:false 关拖影；shadow:false 关影子。放在 globals 里可跨场景常驻",
+ "ref": "原创播放键角色；动作参考 MG 角色动画的挤压拉伸、预备动作、落地缓冲",
+ "example": {
+  "dur": 4.2,
+  "props": {
+   "size": 18,
+   "path": [
+    {
+     "t": 0.0,
+     "x": 0.15,
+     "y": 0.75,
+     "act": "pop"
+    },
+    {
+     "t": 0.35,
+     "x": 0.15,
+     "y": 0.75,
+     "act": "pop"
+    },
+    {
+     "t": 0.9,
+     "x": 0.38,
+     "y": 0.75,
+     "act": "run"
+    },
+    {
+     "t": 1.4,
+     "x": 0.55,
+     "y": 0.6,
+     "act": "jump",
+     "h": 0.2
+    },
+    {
+     "t": 1.8,
+     "x": 0.55,
+     "y": 0.6,
+     "act": "click",
+     "target": [
+      0.66,
+      0.52
+     ]
+    },
+    {
+     "t": 2.4,
+     "x": 0.72,
+     "y": 0.75,
+     "act": "flip",
+     "h": 0.25
+    },
+    {
+     "t": 3.1,
+     "x": 0.72,
+     "y": 0.75,
+     "act": "cast",
+     "target": [
+      0.3,
+      0.35
+     ]
+    },
+    {
+     "t": 3.8,
+     "x": 0.72,
+     "y": 0.75,
+     "act": "wave"
+    }
+   ]
+  },
+  "box": {
+   "landscape": [
+    0,
+    0,
+    1,
+    1
+   ],
+   "portrait": [
+    0,
+    0,
+    1,
+    1
+   ]
+  }
+ },
+ "checked": "2026-11-08 22:10",
+ "layouts": [
+  "16:9",
+  "4:3",
+  "9:16"
+ ]
+}

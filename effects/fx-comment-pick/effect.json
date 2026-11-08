@@ -1,0 +1,37 @@
+{
+ "id": "fx-comment-pick",
+ "name": "评论区挑选",
+ "use": "说到评论区告诉我、我挑几条评论来做时：评论区面板，提问置顶，评论逐条滑入，按口播逐条被选中",
+ "created": "2026-11-08",
+ "version": "1.0.0",
+ "props": "title 默认\"评论区\"；question 置顶提问；comments:[{who,t,at|cue}]；picks 选中第几条（下标数组，省略=全部）；pickAt / pickCue + pickStagger；sample:false 去掉\"示例\"角标；placeholder 输入框提示",
+ "ref": "C 同一面板内逐条推进",
+ "example": {
+  "dur": 4.5,
+  "props": {
+   "question": "你最想让 AI 先帮你剪什么？",
+   "comments": [
+    {
+     "t": "帮我剪一条旅行 vlog"
+    },
+    {
+     "t": "剪带货口播"
+    },
+    {
+     "t": "课程切片"
+    }
+   ],
+   "pickAt": 2.4
+  },
+  "box": {
+   "landscape": "center",
+   "portrait": "center"
+  }
+ },
+ "checked": "2026-11-08 18:09",
+ "layouts": [
+  "16:9",
+  "4:3",
+  "9:16"
+ ]
+}

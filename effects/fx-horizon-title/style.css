@@ -1,0 +1,17 @@
+.fx-horizon-title { position: absolute; inset: 0; container-type: size; overflow: hidden; background: #030304; }
+.fx-horizon-title .sky { position: absolute; inset: 0; background: radial-gradient(90% 60% at 50% 70%, color-mix(in srgb, var(--hz3) 70%, #000) 0%, #050507 55%, #020203 100%); }
+.fx-horizon-title .orb { position: absolute; overflow: visible; left: 50%; width: 260cqw; aspect-ratio: 1; border-radius: 50%; transform-origin: 50% 0;
+  background: radial-gradient(50% 50% at 50% 50%, #040405 0%, #07070a 90%, color-mix(in srgb, var(--hz3) 80%, #000) 97.2%, var(--hz2) 99.0%, var(--hz1) 99.65%, #fff 100%); }
+.fx-horizon-title .orb .surf { position: absolute; inset: 0; border-radius: 50%; opacity: .14; mix-blend-mode: screen;
+  background: repeating-radial-gradient(circle at 50% 50%, rgba(255,255,255,.0) 0 0.35%, rgba(255,255,255,.18) 0.42% 0.48%, rgba(0,0,0,.0) 0.55% 0.9%); }
+.fx-horizon-title .orb .rim { position: absolute; inset: -0.2%; border-radius: 50%; box-shadow: inset 0 0.35cqmin 0.8cqmin color-mix(in srgb, var(--hz1) 95%, #fff), inset 0 2.4cqmin 7cqmin color-mix(in srgb, var(--hz2) 45%, transparent), 0 0 3cqmin 0.6cqmin color-mix(in srgb, var(--hz1) 60%, transparent); }
+.fx-horizon-title .glow { position: absolute; left: 50%; width: 150cqw; height: 34cqh; transform: translateX(-50%); border-radius: 50%; filter: blur(4cqmin);
+  background: radial-gradient(50% 50% at 50% 70%, color-mix(in srgb, var(--hz1) 55%, transparent) 0%, color-mix(in srgb, var(--hz2) 22%, transparent) 45%, transparent 72%); }
+.fx-horizon-title .dust { position: absolute; border-radius: 50%; background: color-mix(in srgb, var(--hz1) 60%, #fff); box-shadow: 0 0 0.6cqmin color-mix(in srgb, var(--hz1) 80%, transparent); }
+.fx-horizon-title .tt { position: absolute; left: 50%; top: 42%; display: flex; flex-direction: column; align-items: center; gap: 2.2cqh; white-space: nowrap; text-align: center; }
+.fx-horizon-title .tt b { font: 500 min(8.6cqw, 13cqh)/1.05 var(--f-serif); color: #F7F3EA; text-shadow: 0 0 3cqmin rgba(255,240,220,.25); }
+.fx-horizon-title .tt small { font: 600 min(1.6cqw, 2.6cqh)/1 var(--f-sans); color: #EDE6DA; opacity: 0; }
+.fx-horizon-title .bar { position: absolute; left: 0; right: 0; height: 12%; background: #000; z-index: 3; }
+.fx-horizon-title .bar.top { top: 0; } .fx-horizon-title .bar.bot { bottom: 0; }
+.fx-horizon-title .grain { position: absolute; inset: 0; z-index: 2; opacity: .10; mix-blend-mode: screen; pointer-events: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .9 0'/></filter><rect width='200' height='200' filter='url(%23n)'/></svg>"); }

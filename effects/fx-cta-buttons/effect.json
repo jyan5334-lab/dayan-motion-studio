@@ -1,0 +1,42 @@
+{
+ "id": "fx-cta-buttons",
+ "name": "三连按钮",
+ "use": "说到点赞、收藏、关注时：三颗圆形按钮按口播逐个按下，图标填色点亮，带冲击环和 +1",
+ "created": "2026-11-08",
+ "version": "1.0.0",
+ "props": "items:[{kind:like/save/follow,t 文字,color,plus,at|cue}]（省略=点赞/收藏/关注）；caption 按完后出现的一句话；dir:row/col",
+ "ref": "C 按口播逐个点亮 + B 冲击环",
+ "example": {
+  "dur": 4.0,
+  "props": {
+   "items": [
+    {
+     "kind": "like",
+     "t": "点赞",
+     "at": 0.8
+    },
+    {
+     "kind": "save",
+     "t": "收藏",
+     "at": 1.5
+    },
+    {
+     "kind": "follow",
+     "t": "关注",
+     "at": 2.2
+    }
+   ],
+   "caption": "觉得有用就三连"
+  },
+  "box": {
+   "landscape": "center",
+   "portrait": "center"
+  }
+ },
+ "checked": "2026-11-08 18:09",
+ "layouts": [
+  "16:9",
+  "4:3",
+  "9:16"
+ ]
+}

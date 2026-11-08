@@ -1,0 +1,153 @@
+{
+ "scenes": [
+  {
+   "id": "ask",
+   "t0": 0,
+   "t1": 2.4,
+   "energy": 2,
+   "transition": {
+    "type": "iris",
+    "dur": 0.7
+   },
+   "bg": [
+    {
+     "c": "bg-burst",
+     "props": {
+      "c1": "#6A2CF0",
+      "c2": "#7E45FF",
+      "cloud": true
+     }
+    }
+   ],
+   "layers": [
+    {
+     "c": "chips",
+     "at": 0.2,
+     "box": [
+      0.2,
+      0.08,
+      0.6,
+      0.14
+     ],
+     "props": {
+      "align": "center",
+      "style": "sticker",
+      "size": 40,
+      "items": [
+       {
+        "t": "+ 关注"
+       },
+       {
+        "t": "♥ 点赞",
+        "tone": "warn"
+       },
+       {
+        "t": "★ 收藏",
+        "tone": "hl"
+       }
+      ],
+      "stagger": 0.3
+     }
+    },
+    {
+     "c": "bubble",
+     "at": 1.0,
+     "box": [
+      0.22,
+      0.34,
+      0.56,
+      0.26
+     ],
+     "props": {
+      "text": "{{ask}}",
+      "style": "cloud"
+     }
+    }
+   ]
+  },
+  {
+   "id": "bye",
+   "t0": 2.4,
+   "t1": 5.0,
+   "energy": 1,
+   "transition": {
+    "type": "zoom-in",
+    "dur": 0.6
+   },
+   "bg": [
+    {
+     "c": "bg-burst",
+     "props": {
+      "c1": "#F5A300",
+      "c2": "#FFC21A",
+      "cloud": true
+     }
+    }
+   ],
+   "layers": [
+    {
+     "c": "title",
+     "at": 2.6,
+     "box": [
+      0.15,
+      0.56,
+      0.7,
+      0.14
+     ],
+     "props": {
+      "text": "{{bye}}",
+      "align": "center",
+      "size": 70,
+      "color": "#111",
+      "reveal": "chars"
+     }
+    },
+    {
+     "c": "confetti",
+     "at": 2.55,
+     "box": "full",
+     "props": {
+      "x": 0.5,
+      "y": 0.3,
+      "count": 70
+     }
+    },
+    {
+     "c": "chips",
+     "at": 3.4,
+     "box": [
+      0.2,
+      0.72,
+      0.6,
+      0.1
+     ],
+     "props": {
+      "align": "center",
+      "style": "solid",
+      "size": 34,
+      "items": [
+       {
+        "t": "{{next}}",
+        "icon": "play",
+        "tone": "dark"
+       }
+      ]
+     }
+    }
+   ]
+  }
+ ],
+ "presenter": [
+  {
+   "t": 0,
+   "state": "circle",
+   "pos": "bl",
+   "dur": 0.6
+  },
+  {
+   "t": 2.3,
+   "state": "circle-big",
+   "dur": 0.7
+  }
+ ]
+}

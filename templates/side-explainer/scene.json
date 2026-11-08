@@ -1,0 +1,55 @@
+{
+ "scenes": [
+  {
+   "id": "side",
+   "t0": 0,
+   "t1": 10.0,
+   "energy": 1,
+   "transition": {
+    "type": "fade",
+    "dur": 0.4
+   },
+   "bg": [
+    {
+     "c": "bg-wall",
+     "props": {
+      "skin": "{{wallSkin}}"
+     }
+    }
+   ],
+   "layers": [
+    {
+     "c": "demo-zone",
+     "at": 0.4,
+     "box": "demo",
+     "props": {
+      "beats": "{{beats}}",
+      "cards": "{{cards}}",
+      "style": "{{style}}",
+      "stagger": 2.4
+     }
+    },
+    {
+     "c": "glow-quote",
+     "at": 6.5,
+     "box": "quote",
+     "props": {
+      "text": "{{quote}}",
+      "font": "{{quoteFont}}",
+      "size": 50
+     },
+     "cue": "{{quoteCue}}",
+     "lead": -0.1
+    }
+   ]
+  }
+ ],
+ "presenter": [
+  {
+   "t": 0,
+   "state": "side",
+   "pos": "r",
+   "dur": 0.75
+  }
+ ]
+}

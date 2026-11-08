@@ -1,0 +1,74 @@
+{
+ "_demoPresenter": true,
+ "quote": "和整个产品体系的联系越来越紧密",
+ "style": "ornate",
+ "beats": [
+  {
+   "c": "panel-stack",
+   "at": 0,
+   "props": {
+    "cards": [
+     {
+      "title": "联手更紧密",
+      "sub": "它跟整个产品体系的联系越来越紧",
+      "logo": "AI"
+     },
+     {
+      "title": "办公协同",
+      "sub": "不仅能处理代码任务，还能和其他办公能力配合使用",
+      "icon": "spark",
+      "items": [
+       {
+        "icon": "code",
+        "t": "代码任务",
+        "d": "编写、调试、优化代码"
+       },
+       {
+        "icon": "file",
+        "t": "文件处理",
+        "d": "阅读、整理、生成文档"
+       },
+       {
+        "icon": "table",
+        "t": "数据分析",
+        "d": "分析数据、生成图表"
+       }
+      ]
+     }
+    ],
+    "stagger": 2.0
+   }
+  },
+  {
+   "c": "chat",
+   "at": 4.6,
+   "props": {
+    "title": "聊天框",
+    "dark": true,
+    "msgs": [
+     {
+      "who": "me",
+      "t": "帮我回一下这封邮件",
+      "at": 0.2
+     },
+     {
+      "who": "ai",
+      "t": "好的，回复如下：……",
+      "at": 1.0,
+      "think": 0.6
+     }
+    ]
+   }
+  },
+  {
+   "c": "number",
+   "at": 7.4,
+   "props": {
+    "value": 3,
+    "unit": "倍",
+    "label": "处理速度",
+    "style": "glass"
+   }
+  }
+ ]
+}

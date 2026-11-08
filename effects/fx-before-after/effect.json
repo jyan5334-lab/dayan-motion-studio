@@ -1,0 +1,35 @@
+{
+ "id": "fx-before-after",
+ "name": "前后对比滑块",
+ "use": "说到以前/现在、之前/之后、手动/自动这类前后反差时：一张卡上分割线扫过，旧状态被新状态替换",
+ "created": "2026-11-07",
+ "version": "1.0.0",
+ "props": "before:{label,t,sub,icon} 旧状态；after:{label,t,sub,icon} 新状态；revealAt 或 revealCue（分割线扫过的时刻，落在说出\"现在/后来\"那个字）；revealDur 扫过时长（默认 0.85s）",
+ "example": {
+  "dur": 4.0,
+  "props": {
+   "before": {
+    "label": "以前",
+    "t": "手动剪 3 小时",
+    "sub": "找素材、对字幕、调转场"
+   },
+   "after": {
+    "label": "现在",
+    "t": "一句话 8 分钟",
+    "sub": "口播进去，成片出来"
+   },
+   "revealAt": 1.4
+  },
+  "box": {
+   "landscape": "center",
+   "portrait": "center"
+  }
+ },
+ "checked": "2026-11-08 18:09",
+ "layouts": [
+  "16:9",
+  "4:3",
+  "9:16"
+ ],
+ "ref": "A 反转=划掉换新 + C 同一张卡内状态推进"
+}

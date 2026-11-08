@@ -1,0 +1,27 @@
+{
+ "term": "Agent",
+ "sub": "智能体",
+ "watermark": "Agent",
+ "items": [
+  {
+   "t": "大模型",
+   "icon": "cpu"
+  },
+  {
+   "t": "工具",
+   "icon": "key"
+  },
+  {
+   "t": "记忆",
+   "icon": "layers"
+  },
+  {
+   "t": "规划",
+   "icon": "target"
+  },
+  {
+   "t": "执行",
+   "icon": "bolt"
+  }
+ ]
+}

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{TITLE}}</title>
+<link rel="stylesheet" href="engine/themes.css">
+{{EXTRA_CSS}}
+<style>
+  body:not(.render) { background: #0b0c10; }
+  #bar { display: flex; align-items: center; gap: 12px; height: 56px; padding: 0 16px; color: #ccd; font: 13px/1 system-ui, sans-serif; }
+  #bar button { background: #22242c; color: #fff; border: 0; border-radius: 8px; padding: 8px 14px; font-weight: 700; cursor: pointer; }
+  #bar input[type=range] { flex: 1; }
+  #bar .tc { font-family: ui-monospace, monospace; min-width: 120px; }
+  body.render #bar { display: none; }
+</style>
+</head>
+<body>
+<div id="viewport"><div id="stage"></div></div>
+<div id="bar"><button id="pp">▶ 播放</button><span class="tc" id="tc">0.00</span><input id="sc" type="range" min="0" step="0.01" value="0"><span>拖动预览 · 空格播放</span></div>
+<script src="engine/core.js"></script>
+<script src="engine/presenter.js"></script>
+<script src="engine/components-text.js"></script>
+<script src="engine/components-data.js"></script>
+<script src="engine/components-ui.js"></script>
+<script src="engine/components-bg.js"></script>
+<script src="engine/components-explain.js"></script>
+<script src="engine/dayan-walls.js"></script>
+{{EXTRA_JS}}
+<script src="timeline.js"></script>
+<script>
+  DMS.load(window.TIMELINE);
+  window.__dmsReady = true;
+  (function () {
+    if (document.body.classList.contains('render')) return;
+    const dur = window.TIMELINE.duration || 10, sc = document.getElementById('sc'), tc = document.getElementById('tc'), pp = document.getElementById('pp');
+    sc.max = dur;
+    const au = window.TIMELINE.previewAudio ? new Audio(window.TIMELINE.previewAudio) : null;
+    let playing = false, t0 = 0, s0 = 0;
+    const show = t => { DMS.renderAt(t); sc.value = t; tc.textContent = t.toFixed(2) + ' / ' + dur.toFixed(2); };
+    const loop = () => { if (!playing) return; const t = au ? au.currentTime : s0 + (performance.now() - t0) / 1000; if (t >= dur) { playing = false; pp.textContent = '▶ 播放'; return; } show(t); requestAnimationFrame(loop); };
+    const toggle = () => { playing = !playing; pp.textContent = playing ? '❚❚ 暂停' : '▶ 播放'; if (playing) { s0 = +sc.value; t0 = performance.now(); if (au) { au.currentTime = s0; au.play(); } loop(); } else if (au) au.pause(); };
+    pp.onclick = toggle; sc.oninput = () => { if (au) au.currentTime = +sc.value; s0 = +sc.value; t0 = performance.now(); show(+sc.value); };
+    addEventListener('keydown', e => { if (e.code === 'Space') { e.preventDefault(); toggle(); } });
+    const q = new URLSearchParams(location.search); show(+(q.get('t') || 0));
+  })();
+</script>
+</body>
+</html>

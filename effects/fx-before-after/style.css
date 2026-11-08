@@ -1,0 +1,16 @@
+.fx-before-after { position: absolute; inset: 0; container-type: size; }
+.fx-before-after .card { position: absolute; inset: 0; border-radius: 3cqmin; overflow: hidden; box-shadow: 0 2cqmin 6cqmin rgba(0,0,0,.45); border: 1px solid rgba(255,255,255,.14); }
+.fx-before-after .pane { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2.4cqmin; padding: 6cqmin; text-align: center; }
+.fx-before-after .bf { background: linear-gradient(160deg, #2A2D36, #17181D); color: rgba(236,238,244,.86); }
+.fx-before-after .af { background: radial-gradient(120% 120% at 70% 20%, color-mix(in srgb, var(--accent) 38%, #10131c), #0C0F17 70%); color: #fff;
+  box-shadow: inset 0 0 calc(8cqmin * var(--pop, 0)) color-mix(in srgb, var(--accent) 80%, transparent); }
+.fx-before-after .lab { display: inline-flex; align-items: center; gap: 1.2cqmin; padding: 1cqmin 2.4cqmin; border-radius: 99px; font: 700 min(3.4cqw, 6.4cqh)/1 var(--f-sans);
+  background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18); }
+.fx-before-after .af .lab { background: var(--accent); color: #111; border-color: transparent; }
+.fx-before-after .lab .dms-ico { width: 1.1em; height: 1.1em; }
+.fx-before-after b { font: 900 min(8.4cqw, 17cqh)/1.12 var(--title-font); letter-spacing: .01em; }
+.fx-before-after .af b { text-shadow: 0 0 calc(4cqmin * var(--pop, 0)) color-mix(in srgb, var(--accent) 90%, transparent); }
+.fx-before-after small { font: 500 min(3.4cqw, 6.6cqh)/1.35 var(--f-sans); opacity: .72; }
+.fx-before-after .bar { position: absolute; top: 0; bottom: 0; width: 0; border-left: 3px solid #fff; box-shadow: 0 0 2.4cqmin 0.6cqmin rgba(255,255,255,.75); }
+.fx-before-after .knob { position: absolute; top: 50%; left: 0; transform: translate(-50%, -50%); width: 8cqmin; height: 8cqmin; border-radius: 50%; display: grid; place-items: center;
+  background: #fff; color: #111; font: 900 4cqmin/1 var(--f-sans); box-shadow: 0 0.8cqmin 2.4cqmin rgba(0,0,0,.4); }

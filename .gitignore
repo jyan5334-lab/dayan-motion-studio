@@ -1,0 +1,16 @@
+node_modules/
+__pycache__/
+*.pyc
+_check/
+.DS_Store
+Thumbs.db
+# 剪辑工作目录与成片
+work/
+proj/
+*.mp4
+*.mov
+*.webm
+!assets/**/*.mp4
+
+# 大琰DAYAN 动效库原文件不公开发布
+assets/dayan-library.html

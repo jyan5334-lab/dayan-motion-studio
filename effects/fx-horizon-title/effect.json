@@ -1,0 +1,39 @@
+{
+ "id": "fx-horizon-title",
+ "name": "电影感地平线片头",
+ "use": "片头 solo / 品牌时刻 / 发布感开场：黑底宽银幕，一道发光的弧形地平线从下方缓缓升起推近，微尘漂浮，衬线大字从虚到实浮现",
+ "created": "2026-11-08",
+ "version": "1.0.0",
+ "props": "title 衬线大字（用使用者自己的品牌/片名）；sub 小字英文/口号；tint: gold/blue/ember；dur 这一镜时长（地平线升起推近用时）；from/to 地平线顶边起止高度（画面高度比例，默认 0.86→0.64）；titleAt 标题浮现时刻；letterbox:false 关掉宽银幕黑边；barH 黑边高度 %；barsOut 黑边收起时刻；dust 微尘数量；seed",
+ "ref": "电影感产品发布片的镜头语言：宽银幕黑边、微距弧面地平线慢推、克制的衬线字（只学手法，不用任何品牌素材）",
+ "example": {
+  "dur": 2.4,
+  "props": {
+   "title": "你的品牌",
+   "sub": "AI MOTION STUDIO",
+   "tint": "gold",
+   "dur": 2.4,
+   "titleAt": 0.4
+  },
+  "box": {
+   "landscape": [
+    0,
+    0,
+    1,
+    1
+   ],
+   "portrait": [
+    0,
+    0,
+    1,
+    1
+   ]
+  }
+ },
+ "checked": "2026-11-08 19:08",
+ "layouts": [
+  "16:9",
+  "4:3",
+  "9:16"
+ ]
+}

@@ -1,0 +1,149 @@
+{
+ "schema": "dayan-motion/1",
+ "templateId": "chapter-card",
+ "version": "1.0.0",
+ "status": "candidate",
+ "engine": "dayan-html",
+ "title": "章节页：#N 巨号 + 标题",
+ "use": "换章节 / 第二个兴奋点 / 第 N 步（对应 A1「#2 第二个兴奋点」、风格 C 章节铭牌）",
+ "theme": "hud-blue",
+ "author": "大琰DAYAN",
+ "composition": {
+  "id": "chapter-card",
+  "width": 1920,
+  "height": 1080,
+  "fps": 60,
+  "durationInFrames": 144,
+  "layout": "landscape"
+ },
+ "inputSlots": [
+  {
+   "id": "no",
+   "type": "text",
+   "required": true,
+   "maxLen": 6,
+   "desc": "#2 / 02 / STEP 3"
+  },
+  {
+   "id": "title",
+   "type": "text",
+   "required": true,
+   "maxLen": 12
+  },
+  {
+   "id": "sub",
+   "type": "text",
+   "required": false,
+   "default": "",
+   "maxLen": 28
+  },
+  {
+   "id": "c1",
+   "type": "color",
+   "required": false,
+   "default": "#0A1C66"
+  },
+  {
+   "id": "c2",
+   "type": "color",
+   "required": false,
+   "default": "#0D2380"
+  }
+ ],
+ "layers": [
+  {
+   "id": "world",
+   "role": "background",
+   "z": 0
+  },
+  {
+   "id": "presenter",
+   "role": "presenter",
+   "z": 1
+  },
+  {
+   "id": "content",
+   "role": "content",
+   "z": 2
+  },
+  {
+   "id": "type",
+   "role": "typography",
+   "z": 3
+  },
+  {
+   "id": "subs",
+   "role": "captions",
+   "z": 8
+  }
+ ],
+ "scenes": [
+  {
+   "id": "chapter",
+   "role": "chapter-title",
+   "startFrame": 0,
+   "endFrame": 144,
+   "entryState": "any",
+   "exitState": "chapter-settled",
+   "maxHoldFrames": 240
+  }
+ ],
+ "motionWindows": [
+  {
+   "id": "no-slam",
+   "sceneId": "chapter",
+   "startFrame": 6,
+   "endFrame": 30,
+   "kind": "impact",
+   "protected": true
+  },
+  {
+   "id": "title-in",
+   "sceneId": "chapter",
+   "startFrame": 15,
+   "endFrame": 60,
+   "kind": "text-reveal",
+   "protected": true
+  }
+ ],
+ "holds": [
+  {
+   "atFrame": 78,
+   "maxFrames": 240,
+   "minusFrames": 24
+  }
+ ],
+ "cameraStates": [
+  {
+   "id": "chapter-hold",
+   "startFrame": 0,
+   "endFrame": 144,
+   "target": "no",
+   "scale": 1.0
+  }
+ ],
+ "presenterStates": [
+  {
+   "atFrame": 0,
+   "state": "circle",
+   "pos": "tr"
+  }
+ ],
+ "handoffs": [],
+ "anchors": [
+  {
+   "id": "no",
+   "atFrame": 6,
+   "desc": "章节号砸下"
+  }
+ ],
+ "assets": [],
+ "acceptance": [
+  "safe-area",
+  "cjk-font-render",
+  "continuous-motion-windows",
+  "handoff-continuity",
+  "full-mp4-decode",
+  "audio-and-caption-review"
+ ]
+}

@@ -1,0 +1,752 @@
+{
+ "whoosh": [
+  {
+   "file": "whoosh/01.wav",
+   "source": "Ben Burnes · Micro Pack - Organic Wooshes",
+   "original": "Classic Swish 2.wav"
+  },
+  {
+   "file": "whoosh/02.wav",
+   "source": "Ben Burnes · Micro Pack - Organic Wooshes",
+   "original": "Swish 2.wav"
+  },
+  {
+   "file": "whoosh/03.wav",
+   "source": "Ben Burnes · Micro Pack - Organic Wooshes",
+   "original": "Classic Swish 3.wav"
+  },
+  {
+   "file": "whoosh/04.wav",
+   "source": "Ben Burnes · Micro Pack - Organic Wooshes",
+   "original": "Swish 3.wav"
+  }
+ ],
+ "whoosh-soft": [
+  {
+   "file": "whoosh-soft/01.wav",
+   "source": "Ben Burnes · Micro Pack - Organic Wooshes",
+   "original": "Gentle Swish.wav"
+  },
+  {
+   "file": "whoosh-soft/02.wav",
+   "source": "Ben Burnes · Micro Pack - Organic Wooshes",
+   "original": "Twirl Smol 1.wav"
+  },
+  {
+   "file": "whoosh-soft/03.wav",
+   "source": "Ben Burnes · Micro Pack - Organic Wooshes",
+   "original": "Twirl Smol 2.wav"
+  },
+  {
+   "file": "whoosh-soft/04.wav",
+   "source": "Ben Burnes · Micro Pack - Organic Wooshes",
+   "original": "Twirl Smol 3.wav"
+  }
+ ],
+ "swoosh-soft": [
+  {
+   "file": "swoosh-soft/01.wav",
+   "source": "Ben Burnes · Micro Pack - Organic Wooshes",
+   "original": "Twirl Smol 1.wav"
+  },
+  {
+   "file": "swoosh-soft/02.wav",
+   "source": "Ben Burnes · Micro Pack - Organic Wooshes",
+   "original": "Twirl Smol 2.wav"
+  },
+  {
+   "file": "swoosh-soft/03.wav",
+   "source": "Ben Burnes · Micro Pack - Organic Wooshes",
+   "original": "Twirl Smol 3.wav"
+  },
+  {
+   "file": "swoosh-soft/04.wav",
+   "source": "Ben Burnes · Micro Pack - Organic Wooshes",
+   "original": "Twirl Smol 4.wav"
+  }
+ ],
+ "air": [
+  {
+   "file": "air/01.wav",
+   "source": "Ben Burnes · Micro Pack - Organic Wooshes",
+   "original": "Twirl Smol 1.wav"
+  },
+  {
+   "file": "air/02.wav",
+   "source": "Ben Burnes · Micro Pack - Organic Wooshes",
+   "original": "Twirl Smol 2.wav"
+  },
+  {
+   "file": "air/03.wav",
+   "source": "Ben Burnes · Micro Pack - Organic Wooshes",
+   "original": "Twirl Smol 3.wav"
+  },
+  {
+   "file": "air/04.wav",
+   "source": "Ben Burnes · Micro Pack - Organic Wooshes",
+   "original": "Twirl Smol 4.wav"
+  }
+ ],
+ "swoosh-in": [
+  {
+   "file": "swoosh-in/01.wav",
+   "source": "Ben Burnes · Micro Pack - Organic Wooshes",
+   "original": "Classic Swish 3.wav"
+  },
+  {
+   "file": "swoosh-in/02.wav",
+   "source": "Ben Burnes · Micro Pack - Organic Wooshes",
+   "original": "Classic Swish 2.wav"
+  },
+  {
+   "file": "swoosh-in/03.wav",
+   "source": "Ben Burnes · Micro Pack - Organic Wooshes",
+   "original": "Swish 2.wav"
+  },
+  {
+   "file": "swoosh-in/04.wav",
+   "source": "Ben Burnes · Micro Pack - Organic Wooshes",
+   "original": "Classic Swish 1.wav"
+  }
+ ],
+ "swoosh-out": [
+  {
+   "file": "swoosh-out/01.wav",
+   "source": "Ben Burnes · Micro Pack - Organic Wooshes",
+   "original": "Swish 6.wav"
+  },
+  {
+   "file": "swoosh-out/02.wav",
+   "source": "Ben Burnes · Micro Pack - Organic Wooshes",
+   "original": "Classic Swish 3.wav"
+  },
+  {
+   "file": "swoosh-out/03.wav",
+   "source": "Ben Burnes · Micro Pack - Organic Wooshes",
+   "original": "Swish 3.wav"
+  },
+  {
+   "file": "swoosh-out/04.wav",
+   "source": "Ben Burnes · Micro Pack - Organic Wooshes",
+   "original": "Swish 5.wav"
+  }
+ ],
+ "whip": [
+  {
+   "file": "whip/01.wav",
+   "source": "Ben Burnes · Micro Pack - Organic Wooshes",
+   "original": "Slash.wav"
+  },
+  {
+   "file": "whip/02.wav",
+   "source": "Ben Burnes · Micro Pack - Organic Wooshes",
+   "original": "Combo 1.wav"
+  },
+  {
+   "file": "whip/03.wav",
+   "source": "Ben Burnes · Micro Pack - Organic Wooshes",
+   "original": "Combo 4.wav"
+  }
+ ],
+ "impact": [
+  {
+   "file": "impact/01.wav",
+   "source": "Kenney · Impact Sounds",
+   "original": "impactPunch_heavy_000.ogg"
+  },
+  {
+   "file": "impact/02.wav",
+   "source": "Kenney · Impact Sounds",
+   "original": "impactPunch_heavy_001.ogg"
+  },
+  {
+   "file": "impact/03.wav",
+   "source": "Kenney · Impact Sounds",
+   "original": "impactPunch_heavy_002.ogg"
+  },
+  {
+   "file": "impact/04.wav",
+   "source": "Kenney · Impact Sounds",
+   "original": "impactPunch_heavy_003.ogg"
+  }
+ ],
+ "hit": [
+  {
+   "file": "hit/01.wav",
+   "source": "Kenney · Impact Sounds",
+   "original": "impactPunch_medium_000.ogg"
+  },
+  {
+   "file": "hit/02.wav",
+   "source": "Kenney · Impact Sounds",
+   "original": "impactPunch_medium_001.ogg"
+  },
+  {
+   "file": "hit/03.wav",
+   "source": "Kenney · Impact Sounds",
+   "original": "impactPunch_medium_002.ogg"
+  },
+  {
+   "file": "hit/04.wav",
+   "source": "Kenney · Impact Sounds",
+   "original": "impactPunch_medium_003.ogg"
+  }
+ ],
+ "thud": [
+  {
+   "file": "thud/01.wav",
+   "source": "Kenney · Impact Sounds",
+   "original": "impactSoft_heavy_000.ogg"
+  },
+  {
+   "file": "thud/02.wav",
+   "source": "Kenney · Impact Sounds",
+   "original": "impactSoft_heavy_001.ogg"
+  },
+  {
+   "file": "thud/03.wav",
+   "source": "Kenney · Impact Sounds",
+   "original": "impactSoft_heavy_002.ogg"
+  },
+  {
+   "file": "thud/04.wav",
+   "source": "Kenney · Impact Sounds",
+   "original": "impactSoft_heavy_003.ogg"
+  }
+ ],
+ "stamp": [
+  {
+   "file": "stamp/01.wav",
+   "source": "Ben Burnes · Books, Paper, Writing",
+   "original": "Hardcover Tap 1.wav"
+  },
+  {
+   "file": "stamp/02.wav",
+   "source": "Ben Burnes · Books, Paper, Writing",
+   "original": "Hardcover Tap 2.wav"
+  },
+  {
+   "file": "stamp/03.wav",
+   "source": "Ben Burnes · Books, Paper, Writing",
+   "original": "Hardcover Taps 1.wav"
+  },
+  {
+   "file": "stamp/04.wav",
+   "source": "Ben Burnes · Books, Paper, Writing",
+   "original": "Hardcover Taps 2.wav"
+  }
+ ],
+ "pop": [
+  {
+   "file": "pop/01.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "drop_001.ogg"
+  },
+  {
+   "file": "pop/02.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "drop_002.ogg"
+  },
+  {
+   "file": "pop/03.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "drop_003.ogg"
+  },
+  {
+   "file": "pop/04.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "drop_004.ogg"
+  }
+ ],
+ "pop-soft": [
+  {
+   "file": "pop-soft/01.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "drop_001.ogg"
+  },
+  {
+   "file": "pop-soft/02.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "drop_002.ogg"
+  },
+  {
+   "file": "pop-soft/03.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "drop_003.ogg"
+  },
+  {
+   "file": "pop-soft/04.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "drop_004.ogg"
+  }
+ ],
+ "pop-big": [
+  {
+   "file": "pop-big/01.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "maximize_001.ogg"
+  },
+  {
+   "file": "pop-big/02.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "maximize_002.ogg"
+  },
+  {
+   "file": "pop-big/03.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "maximize_003.ogg"
+  },
+  {
+   "file": "pop-big/04.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "maximize_004.ogg"
+  }
+ ],
+ "bubble": [
+  {
+   "file": "bubble/01.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "pluck_001.ogg"
+  },
+  {
+   "file": "bubble/02.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "pluck_002.ogg"
+  },
+  {
+   "file": "bubble/03.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "drop_001.ogg"
+  },
+  {
+   "file": "bubble/04.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "drop_002.ogg"
+  }
+ ],
+ "click": [
+  {
+   "file": "click/01.wav",
+   "source": "Kenney · UI Audio",
+   "original": "click1.ogg"
+  },
+  {
+   "file": "click/02.wav",
+   "source": "Kenney · UI Audio",
+   "original": "click2.ogg"
+  },
+  {
+   "file": "click/03.wav",
+   "source": "Kenney · UI Audio",
+   "original": "click3.ogg"
+  },
+  {
+   "file": "click/04.wav",
+   "source": "Kenney · UI Audio",
+   "original": "click4.ogg"
+  }
+ ],
+ "tick": [
+  {
+   "file": "tick/01.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "tick_001.ogg"
+  },
+  {
+   "file": "tick/02.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "tick_002.ogg"
+  },
+  {
+   "file": "tick/03.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "tick_004.ogg"
+  }
+ ],
+ "tick-ok": [
+  {
+   "file": "tick-ok/01.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "select_001.ogg"
+  },
+  {
+   "file": "tick-ok/02.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "select_002.ogg"
+  },
+  {
+   "file": "tick-ok/03.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "select_003.ogg"
+  },
+  {
+   "file": "tick-ok/04.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "select_004.ogg"
+  }
+ ],
+ "typing": [
+  {
+   "file": "typing/01.wav",
+   "source": "Ben Burnes · Keyboard Sounds",
+   "original": "Keyboard - Key 1.wav"
+  },
+  {
+   "file": "typing/02.wav",
+   "source": "Ben Burnes · Keyboard Sounds",
+   "original": "Keyboard - Key 2.wav"
+  },
+  {
+   "file": "typing/03.wav",
+   "source": "Ben Burnes · Keyboard Sounds",
+   "original": "Keyboard - Key 3.wav"
+  },
+  {
+   "file": "typing/04.wav",
+   "source": "Ben Burnes · Keyboard Sounds",
+   "original": "Keyboard - Key 4.wav"
+  }
+ ],
+ "ding": [
+  {
+   "file": "ding/01.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "confirmation_001.ogg"
+  },
+  {
+   "file": "ding/02.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "confirmation_002.ogg"
+  },
+  {
+   "file": "ding/03.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "confirmation_003.ogg"
+  },
+  {
+   "file": "ding/04.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "confirmation_004.ogg"
+  }
+ ],
+ "success": [
+  {
+   "file": "success/01.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "confirmation_001.ogg"
+  },
+  {
+   "file": "success/02.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "confirmation_002.ogg"
+  },
+  {
+   "file": "success/03.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "confirmation_003.ogg"
+  },
+  {
+   "file": "success/04.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "confirmation_004.ogg"
+  }
+ ],
+ "notify": [
+  {
+   "file": "notify/01.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "question_001.ogg"
+  },
+  {
+   "file": "notify/02.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "question_002.ogg"
+  },
+  {
+   "file": "notify/03.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "question_003.ogg"
+  },
+  {
+   "file": "notify/04.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "question_004.ogg"
+  }
+ ],
+ "notify-soft": [
+  {
+   "file": "notify-soft/01.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "select_001.ogg"
+  },
+  {
+   "file": "notify-soft/02.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "select_002.ogg"
+  },
+  {
+   "file": "notify-soft/03.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "select_003.ogg"
+  },
+  {
+   "file": "notify-soft/04.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "select_004.ogg"
+  }
+ ],
+ "receive": [
+  {
+   "file": "receive/01.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "open_001.ogg"
+  },
+  {
+   "file": "receive/02.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "open_002.ogg"
+  },
+  {
+   "file": "receive/03.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "open_003.ogg"
+  },
+  {
+   "file": "receive/04.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "open_004.ogg"
+  }
+ ],
+ "send": [
+  {
+   "file": "send/01.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "maximize_001.ogg"
+  },
+  {
+   "file": "send/02.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "maximize_002.ogg"
+  },
+  {
+   "file": "send/03.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "maximize_003.ogg"
+  },
+  {
+   "file": "send/04.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "maximize_004.ogg"
+  }
+ ],
+ "alert": [
+  {
+   "file": "alert/01.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "error_001.ogg"
+  },
+  {
+   "file": "alert/02.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "error_002.ogg"
+  },
+  {
+   "file": "alert/03.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "error_003.ogg"
+  },
+  {
+   "file": "alert/04.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "error_004.ogg"
+  }
+ ],
+ "error": [
+  {
+   "file": "error/01.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "error_001.ogg"
+  },
+  {
+   "file": "error/02.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "error_002.ogg"
+  },
+  {
+   "file": "error/03.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "error_003.ogg"
+  },
+  {
+   "file": "error/04.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "error_004.ogg"
+  }
+ ],
+ "scratch": [
+  {
+   "file": "scratch/01.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "scratch_001.ogg"
+  },
+  {
+   "file": "scratch/02.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "scratch_002.ogg"
+  },
+  {
+   "file": "scratch/03.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "scratch_003.ogg"
+  },
+  {
+   "file": "scratch/04.wav",
+   "source": "Kenney · Interface Sounds",
+   "original": "scratch_004.ogg"
+  }
+ ],
+ "marker": [
+  {
+   "file": "marker/01.wav",
+   "source": "Ben Burnes · Books, Paper, Writing",
+   "original": "Fine Felt Tip Lines.wav"
+  },
+  {
+   "file": "marker/02.wav",
+   "source": "Ben Burnes · Books, Paper, Writing",
+   "original": "Thicc Tip Lines 1.wav"
+  },
+  {
+   "file": "marker/03.wav",
+   "source": "Ben Burnes · Books, Paper, Writing",
+   "original": "Thicc Tip Lines 2.wav"
+  }
+ ],
+ "draw": [
+  {
+   "file": "draw/01.wav",
+   "source": "Ben Burnes · Books, Paper, Writing",
+   "original": "Pen Writing 1.wav"
+  },
+  {
+   "file": "draw/02.wav",
+   "source": "Ben Burnes · Books, Paper, Writing",
+   "original": "Pen Writing 2.wav"
+  },
+  {
+   "file": "draw/03.wav",
+   "source": "Ben Burnes · Books, Paper, Writing",
+   "original": "Pen Writing 3.wav"
+  },
+  {
+   "file": "draw/04.wav",
+   "source": "Ben Burnes · Books, Paper, Writing",
+   "original": "Pen Writing 4.wav"
+  }
+ ],
+ "paper": [
+  {
+   "file": "paper/01.wav",
+   "source": "Ben Burnes · Books, Paper, Writing",
+   "original": "Page Turn 1.wav"
+  },
+  {
+   "file": "paper/02.wav",
+   "source": "Ben Burnes · Books, Paper, Writing",
+   "original": "Page Turn 2.wav"
+  },
+  {
+   "file": "paper/03.wav",
+   "source": "Ben Burnes · Books, Paper, Writing",
+   "original": "Page Turn 3.wav"
+  },
+  {
+   "file": "paper/04.wav",
+   "source": "Ben Burnes · Books, Paper, Writing",
+   "original": "Page Turn Fast.wav"
+  }
+ ],
+ "card": [
+  {
+   "file": "card/01.wav",
+   "source": "Kenney · Casino Audio",
+   "original": "cardPlace1.ogg"
+  },
+  {
+   "file": "card/02.wav",
+   "source": "Kenney · Casino Audio",
+   "original": "cardPlace2.ogg"
+  },
+  {
+   "file": "card/03.wav",
+   "source": "Kenney · Casino Audio",
+   "original": "cardPlace3.ogg"
+  },
+  {
+   "file": "card/04.wav",
+   "source": "Kenney · Casino Audio",
+   "original": "cardPlace4.ogg"
+  }
+ ],
+ "stack": [
+  {
+   "file": "stack/01.wav",
+   "source": "Kenney · Casino Audio",
+   "original": "chipsStack1.ogg"
+  },
+  {
+   "file": "stack/02.wav",
+   "source": "Kenney · Casino Audio",
+   "original": "chipsStack2.ogg"
+  },
+  {
+   "file": "stack/03.wav",
+   "source": "Kenney · Casino Audio",
+   "original": "chipsStack3.ogg"
+  },
+  {
+   "file": "stack/04.wav",
+   "source": "Kenney · Casino Audio",
+   "original": "chipsStack4.ogg"
+  }
+ ],
+ "zap": [
+  {
+   "file": "zap/01.wav",
+   "source": "Kenney · Digital Audio",
+   "original": "zap1.ogg"
+  },
+  {
+   "file": "zap/02.wav",
+   "source": "Kenney · Digital Audio",
+   "original": "zap2.ogg"
+  },
+  {
+   "file": "zap/03.wav",
+   "source": "Kenney · Digital Audio",
+   "original": "zapThreeToneDown.ogg"
+  },
+  {
+   "file": "zap/04.wav",
+   "source": "Kenney · Digital Audio",
+   "original": "zapThreeToneUp.ogg"
+  }
+ ],
+ "confetti": [
+  {
+   "file": "confetti/01.wav",
+   "source": "Ben Burnes · Books, Paper, Writing",
+   "original": "Riffle Pages 1.wav"
+  },
+  {
+   "file": "confetti/02.wav",
+   "source": "Ben Burnes · Books, Paper, Writing",
+   "original": "Riffle Pages 2.wav"
+  },
+  {
+   "file": "confetti/03.wav",
+   "source": "Ben Burnes · Books, Paper, Writing",
+   "original": "Riffle Pages 3.wav"
+  }
+ ]
+}

@@ -1,0 +1,1525 @@
+#!/usr/bin/env python3
+"""大琰DAYAN Motion Studio — 口播自动剪辑 + 内置动效 命令行入口
+
+  python dms.py doctor                                   检查环境
+  python dms.py asr      原片.mp4 工作目录                 逐字转写（字级时间码）→ words.json / raw.srt
+  python dms.py cut      原片.mp4 cut.json 工作目录        按保留区间剪掉口误/停顿 → master.mp4，并同步时间码
+  python dms.py face     master.mp4 工作目录               人脸位置轨迹 → face.json（小窗自动居中）
+  python dms.py scaffold 工作目录 edit.json [--canvas 1920x1080 --fps 60 --theme dark-tech]   生成分镜草稿与语义提示
+  python dms.py words    工作目录 关键词 [关键词…]          查关键词的精确时间（"说到哪个词出画面"）
+  python dms.py subs     工作目录 字幕.txt                  润色后的字幕行（每行一条）→ 自动对齐时间 → subs.json
+  python dms.py lint     edit.json                         版式与节奏检查（遮脸、压字幕、过密、超时）
+  python dms.py build    edit.json 工程目录                 生成可编辑工程（HTML 动画 + 人物帧 + 字幕 + 时间轴）
+  python dms.py stills   工程目录 0.5,3,8                    抽静帧并拼成接触表
+  python dms.py audio    工程目录                           音效事件 → sfx.wav；原创配乐 → bgm.wav；混音 → mix.wav
+  python dms.py render   工程目录 成片.mp4 [--workers 2]     逐帧渲染 + 字幕 + 混音 → MP4
+  python dms.py check    成片.mp4                           帧数、时长、完整解码、响度
+  python dms.py export   工程目录                           打包工程：分轨、SRT、Premiere/达芬奇 XML、HTML 工程
+  python dms.py template list|validate|show [id]          内置动效：列出 / 校验合同 / 查看槽位
+  python dms.py template render 内置动效ID payload.json 输出目录  单独渲染一个 内置动效片段
+"""
+from __future__ import annotations
+import argparse, hashlib, json, math, os, re, shutil, subprocess, sys, tempfile, time
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
+sys.path.insert(0, str(HERE))
+VERSION = '1.7.0'
+CACHE = Path(os.environ.get('DMS_CACHE', Path.home() / '.cache' / 'dayan-motion-studio'))
+CONFIG = Path(os.environ.get('DMS_CONFIG', Path.home() / '.dayan-motion-studio' / 'config.json'))   # 用户自己的品牌（文字墙等），不随技能分发
+
+# 品牌：技能公开分发，文字墙/角标/名牌一律用使用者自己的品牌；没设置时用中性占位，绝不出现技能作者的品牌
+NEUTRAL_BRAND = {'name': '', 'wall': ['MOTION · STUDIO', 'CREATE · WITH · AI'], 'mark': '', '_placeholder': True}
+EXAMPLE_BRAND = {'name': '品牌名', 'wall': ['品牌名-AI', 'BRAND · AI STUDIO'], 'mark': '品'}   # 动效样张里用的示例
+# =================================================================== 动效库（剪辑时现做、自动沉淀的新动效）
+def effect_dirs():
+    """技能自带 effects/ + 环境变量 DMS_EFFECT_PATHS 里的目录；每个动效一个文件夹（effect.json + component.js [+ style.css]）"""
+    roots = [ROOT / 'effects'] + [Path(p) for p in os.environ.get('DMS_EFFECT_PATHS', '').split(os.pathsep) if p]
+    out = []
+    for r in roots:
+        if r.exists(): out += [d for d in sorted(r.iterdir()) if (d / 'component.js').exists() and (d / 'effect.json').exists()]
+    return out
+BUILTIN_COMPONENTS = None
+def builtin_components():
+    global BUILTIN_COMPONENTS
+    if BUILTIN_COMPONENTS is None:
+        txt = ''.join((ROOT / 'engine' / f).read_text(encoding='utf-8') for f in os.listdir(ROOT / 'engine') if f.endswith('.js'))
+        BUILTIN_COMPONENTS = set(re.findall(r"C\.([a-zA-Z][\w]*) = \{", txt)) | set(re.findall(r"C\['([\w-]+)'\] = \{", txt)) | set(re.findall(r"DMS\.components\['([\w-]+)'\]", txt))
+    return BUILTIN_COMPONENTS
+
+BRAND_FILE = 'dms-brand.json'   # 放在工作库（或任一上层文件夹）里：在这个文件夹下做的作品都自动用这个品牌
+def load_brand(start=None):
+    """查找顺序：从作品所在文件夹往上找 dms-brand.json → 本机配置 ~/.dayan-motion-studio/config.json"""
+    d = Path(start or os.getcwd()).resolve()
+    for q in [d] + list(d.parents):
+        f = q / BRAND_FILE
+        if f.exists():
+            try:
+                b = json.loads(f.read_text(encoding='utf-8')); b = b.get('brand', b)
+                if b.get('wall'): return b
+            except Exception: pass
+    try:
+        b = json.loads(CONFIG.read_text(encoding='utf-8')).get('brand')
+        return b if b and b.get('wall') else None
+    except Exception: return None
+def save_brand(b):
+    CONFIG.parent.mkdir(parents=True, exist_ok=True)
+    try: cfg = json.loads(CONFIG.read_text(encoding='utf-8'))
+    except Exception: cfg = {}
+    cfg['brand'] = b; CONFIG.write_text(json.dumps(cfg, ensure_ascii=False, indent=1), encoding='utf-8')
+def brand_of(E, start=None): return E.get('brand') or load_brand(start) or NEUTRAL_BRAND
+def cmd_brand(ns):
+    """dms.py brand show / brand set --main 主行 --sub 副行 [--name 品牌名] [--mark 单字]：保存在本机用户配置里，以后新作品默认沿用"""
+    if ns.action == 'set':
+        if not ns.main: raise SystemExit('✗ 至少要给文字墙主行：--main "品牌名-AI"')
+        b = {'name': ns.name or re.split(r'[-·\s]', ns.main)[0], 'wall': [ns.main, ns.sub or ns.main], 'mark': ns.mark or (ns.name or ns.main)[:1]}
+        save_brand(b); print('✓ 已保存品牌 →', CONFIG); print(json.dumps(b, ensure_ascii=False))
+    else:
+        b = load_brand(); print(json.dumps(b, ensure_ascii=False) if b else '（还没有设置品牌：新作品开工时会问；也可以 dms.py brand set --main … --sub …）')
+FF = os.environ.get('FFMPEG', 'ffmpeg'); FP = os.environ.get('FFPROBE', 'ffprobe')
+NODE = os.environ.get('NODE', 'node')
+
+def log(*a): print('·', *a, flush=True)
+def die(msg, code=1): print('✗', msg, file=sys.stderr); sys.exit(code)
+def run(cmd, **kw):
+    r = subprocess.run(cmd, **kw)
+    if r.returncode != 0: die('命令失败：' + ' '.join(map(str, cmd))[:400])
+    return r
+def jload(p): return json.loads(Path(p).read_text(encoding='utf-8'))
+def jsave(p, d): Path(p).write_text(json.dumps(d, ensure_ascii=False, indent=1), encoding='utf-8')
+def sha(p, n=1 << 20):
+    h = hashlib.sha256()
+    with open(p, 'rb') as f: h.update(f.read(n))
+    return h.hexdigest()[:16]
+
+def probe(path):
+    r = subprocess.run([FP, '-v', 'error', '-show_entries', 'format=duration:stream=codec_type,width,height,r_frame_rate,nb_frames', '-of', 'json', str(path)], capture_output=True, text=True)
+    if r.returncode: die(f'无法读取媒体：{path}')
+    d = json.loads(r.stdout); v = next((s for s in d['streams'] if s['codec_type'] == 'video'), None); a = any(s['codec_type'] == 'audio' for s in d['streams'])
+    fps = 30.0
+    if v and v.get('r_frame_rate', '0/0') != '0/0':
+        n, m = v['r_frame_rate'].split('/'); fps = float(n) / float(m or 1)
+    return {'duration': float(d['format'].get('duration', 0)), 'w': v and v['width'], 'h': v and v['height'], 'fps': fps, 'audio': a}
+
+# =================================================================== doctor
+def cmd_doctor(ns):
+    ok = True
+    def chk(name, f):
+        nonlocal ok
+        try: v = f(); print(f'  ✓ {name:18s} {v}')
+        except Exception as e: ok = False; print(f'  ✗ {name:18s} {e}')
+    print(f'大琰DAYAN Motion Studio {VERSION}  ({sys.platform})')
+    chk('python', lambda: sys.version.split()[0])
+    chk('ffmpeg', lambda: subprocess.run([FF, '-version'], capture_output=True, text=True).stdout.split('\n')[0][:60])
+    chk('ffprobe', lambda: subprocess.run([FP, '-version'], capture_output=True, text=True).stdout.split('\n')[0][:40])
+    chk('node', lambda: subprocess.run([NODE, '-v'], capture_output=True, text=True).stdout.strip())
+    chk('numpy / scipy', lambda: __import__('numpy').__version__ + ' / ' + __import__('scipy').__version__)
+    chk('playwright', lambda: subprocess.run([NODE, '-e', "try{require('playwright');console.log('playwright')}catch(e){require('playwright-core');console.log('playwright-core')}"], capture_output=True, text=True, cwd=ROOT).stdout.strip() or (_ for _ in ()).throw(Exception('未安装：在技能目录运行 npm install')))
+    chk('浏览器', lambda: subprocess.run([NODE, '-e', "const fs=require('fs');const c=[process.env.DMS_CHROME,'C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe','/Applications/Google Chrome.app/Contents/MacOS/Google Chrome','/usr/bin/google-chrome','/usr/bin/chromium'].filter(Boolean).find(p=>fs.existsSync(p));console.log(c||'用 Playwright 自带 Chromium')"], capture_output=True, text=True).stdout.strip())
+    chk('语音识别', lambda: ('sherpa-onnx ' + __import__('sherpa_onnx').__version__) if _has('sherpa_onnx') else ('faster-whisper' if _has('faster_whisper') else (_ for _ in ()).throw(Exception('pip install sherpa-onnx soundfile'))))
+    chk('人脸定位(可选)', lambda: 'opencv ' + __import__('cv2').__version__ + (' · YuNet' if hasattr(__import__('cv2'), 'FaceDetectorYN') else ' · 仅 Haar（升级 opencv-python ≥ 4.8 可用 YuNet）'))
+    chk('字幕分词(可选)', lambda: 'jieba ' + __import__('jieba').__version__)
+    chk('抠像(可选)', lambda: 'onnxruntime ' + __import__('onnxruntime').__version__)
+    print('环境就绪' if ok else '有缺项：按上面提示安装后重试（缺"可选"项不影响出片）')
+
+def _has(m):
+    try: __import__(m); return True
+    except Exception: return False
+
+# =================================================================== ASR
+SHERPA_URL = 'https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-paraformer-zh-2023-09-14.tar.bz2'
+VAD_URL = 'https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/silero_vad.onnx'
+
+def _download(url, dst):
+    import urllib.request
+    dst = Path(dst); dst.parent.mkdir(parents=True, exist_ok=True)
+    if dst.exists() and dst.stat().st_size > 1000: return dst
+    log('下载', url)
+    tmp = dst.with_suffix('.part')
+    with urllib.request.urlopen(url, timeout=600) as r, open(tmp, 'wb') as f: shutil.copyfileobj(r, f)
+    tmp.rename(dst); return dst
+
+def ensure_sherpa():
+    mdir = CACHE / 'models' / 'sherpa-onnx-paraformer-zh-2023-09-14'
+    if not (mdir / 'model.int8.onnx').exists():
+        tb = _download(SHERPA_URL, CACHE / 'models' / 'paraformer.tar.bz2')
+        import tarfile
+        with tarfile.open(tb) as t: t.extractall(CACHE / 'models')
+    vad = _download(VAD_URL, CACHE / 'models' / 'silero_vad.onnx')
+    return mdir, vad
+
+def asr_sherpa(wav16):
+    import numpy as np, soundfile as sf, sherpa_onnx
+    mdir, vadp = ensure_sherpa()
+    rec = sherpa_onnx.OfflineRecognizer.from_paraformer(paraformer=str(mdir / 'model.int8.onnx'), tokens=str(mdir / 'tokens.txt'), num_threads=max(1, (os.cpu_count() or 2) // 2 or 1), decoding_method='greedy_search')
+    cfg = sherpa_onnx.VadModelConfig(); cfg.silero_vad.model = str(vadp); cfg.silero_vad.min_silence_duration = 0.25; cfg.silero_vad.max_speech_duration = 12; cfg.sample_rate = 16000
+    vad = sherpa_onnx.VoiceActivityDetector(cfg, buffer_size_in_seconds=120)
+    wav, sr = sf.read(str(wav16), dtype='float32'); words = []; segs = []
+    def flush():
+        while not vad.empty():
+            seg = vad.front; s = rec.create_stream(); s.accept_waveform(16000, seg.samples); rec.decode_stream(s)
+            r = s.result; st = seg.start / 16000; en = st + len(seg.samples) / 16000
+            segs.append({'s': round(st, 3), 'e': round(en, 3), 't': r.text})
+            ts = list(r.timestamps); tk = list(r.tokens)
+            for i, (tok, x) in enumerate(zip(tk, ts)):
+                nx = ts[i + 1] if i + 1 < len(ts) else min(en, x + 0.3)
+                words.append({'w': tok.replace('@@', ''), 's': round(st + x, 3), 'e': round(st + min(nx, x + 0.45), 3), 'cont': tok.endswith('@@')})
+            vad.pop()
+    w = cfg.silero_vad.window_size
+    for i in range(0, len(wav), w): vad.accept_waveform(wav[i:i + w]); flush()
+    vad.flush(); flush()
+    return words, segs
+
+def asr_whisper(wav16):
+    from faster_whisper import WhisperModel
+    m = WhisperModel(os.environ.get('DMS_WHISPER', 'small'), compute_type='int8')
+    segs, _ = m.transcribe(str(wav16), language='zh', word_timestamps=True, vad_filter=True)
+    words, out = [], []
+    for s in segs:
+        out.append({'s': s.start, 'e': s.end, 't': s.text})
+        for w in s.words or []: words.append({'w': w.word.strip(), 's': round(w.start, 3), 'e': round(w.end, 3)})
+    return words, out
+
+def words_to_cues(words, max_chars=16, gap=0.38, min_dur=0.6):
+    """把字级时间码组成字幕：停顿 >gap 或满 max_chars 换条；英文词之间保留空格"""
+    cues, cur = [], []
+    def text_of(ws):
+        out = ''
+        for i, w in enumerate(ws):
+            t = w['w']
+            if i and re.match(r'[A-Za-z0-9]', t[:1]) and re.match(r'[A-Za-z0-9]', out[-1:]) and not ws[i - 1].get('cont'): out += ' '
+            out += t
+        return out
+    for w in words:
+        if cur and w['s'] - cur[-1]['e'] > gap: cues.append(cur); cur = []
+        elif cur and len(text_of(cur + [w])) > max_chars:
+            # 超长：在后半段找最大的停顿处断开，避免把一个词劈成两半
+            best, bk = -1, len(cur)
+            for k in range(max(1, len(cur) // 2), len(cur)):
+                g = cur[k]['s'] - cur[k - 1]['e'] + (0.02 if k > len(cur) * 0.7 else 0)
+                if cur[k - 1].get('cont'): continue
+                if g > best: best, bk = g, k
+            cues.append(cur[:bk]); cur = cur[bk:]
+        cur.append(w)
+    if cur: cues.append(cur)
+    res = []
+    for c in cues:
+        s, e = c[0]['s'], max(c[-1]['e'], c[0]['s'] + min_dur)
+        res.append({'s': round(s, 3), 'e': round(e, 3), 't': text_of(c)})
+    for i in range(len(res) - 1):  # 不重叠，短间隙补齐避免闪烁
+        if res[i + 1]['s'] - res[i]['e'] < 0.25: res[i]['e'] = res[i + 1]['s']
+        res[i]['e'] = min(res[i]['e'], res[i + 1]['s'])
+    return res
+
+def srt_time(x):
+    ms = int(round(x * 1000)); h, ms = divmod(ms, 3600000); m, ms = divmod(ms, 60000); s, ms = divmod(ms, 1000)
+    return f'{h:02}:{m:02}:{s:02},{ms:03}'
+
+def write_srt(cues, path):
+    Path(path).write_text('\n'.join(f"{i}\n{srt_time(c['s'])} --> {srt_time(c['e'])}\n{c['t']}\n" for i, c in enumerate(cues, 1)), encoding='utf-8')
+
+def cmd_asr(ns):
+    wd = Path(ns.workdir); wd.mkdir(parents=True, exist_ok=True)
+    wav = wd / 'asr16k.wav'
+    run([FF, '-v', 'error', '-y', '-i', ns.video, '-vn', '-ac', '1', '-ar', '16000', str(wav)])
+    eng = ns.engine or ('sherpa' if _has('sherpa_onnx') else 'whisper' if _has('faster_whisper') else None)
+    if not eng: die('没有语音识别引擎：pip install sherpa-onnx soundfile（推荐）或 faster-whisper')
+    log('识别引擎', eng)
+    words, segs = asr_sherpa(wav) if eng == 'sherpa' else asr_whisper(wav)
+    fixes = _load_fixes(ns.fix)
+    words = apply_fixes(words, fixes)
+    cues = words_to_cues(words)
+    jsave(wd / 'words.json', {'source': str(ns.video), 'engine': eng, 'clock': 'source', 'words': words, 'segments': segs})
+    write_srt(cues, wd / 'raw.srt')
+    jsave(wd / 'cues.json', cues)
+    log(f'{len(words)} 字 · {len(cues)} 条字幕 → {wd / "words.json"}  {wd / "raw.srt"}')
+    for c in cues[:8]: print(f"   {c['s']:7.2f} {c['t']}")
+
+def _load_fixes(p):
+    """识别纠错表：{"cloud":"Claude","憨爆":"夯爆"}；也读 references/asr-fixes.json"""
+    d = {}
+    base = ROOT / 'references' / 'asr-fixes.json'
+    if base.exists(): d.update(jload(base))
+    if p and Path(p).exists(): d.update(jload(p))
+    return d
+
+def apply_fixes(words, fixes):
+    """在字序列上做纠错替换（忽略空格大小写），替换后的词保留首字时间、末字结束时间"""
+    if not fixes: return words
+    keys = sorted(((k.lower().replace(' ', ''), v) for k, v in fixes.items()), key=lambda kv: -len(kv[0]))
+    out = []; i = 0; n = len(words)
+    while i < n:
+        hit = None
+        for k, v in keys:
+            acc = ''; j = i
+            while j < n and len(acc) < len(k): acc += words[j]['w'].lower().replace(' ', ''); j += 1
+            if acc == k:
+                # 英文纠错要求词边界：后一个字不能还是字母（避免 cloud 吃掉 cloudy）
+                if re.match(r'[a-z]', k[-1:]) and j < n and re.match(r'[A-Za-z]', words[j]['w'][:1]) and words[j - 1].get('cont'): continue
+                hit = (v, j); break
+        if hit:
+            v, j = hit; out.append({'w': v, 's': words[i]['s'], 'e': words[j - 1]['e']}); i = j
+        else: out.append(words[i]); i += 1
+    return out
+
+# =================================================================== cut（剪口误 / 停顿）
+def cmd_cut(ns):
+    wd = Path(ns.workdir); wd.mkdir(parents=True, exist_ok=True)
+    spec = jload(ns.spec)
+    info = probe(ns.video); D = info['duration']
+    keep = spec.get('keep')
+    if not keep:
+        rem = sorted(spec.get('remove', []))
+        keep, t = [], 0.0
+        for a, b in rem:
+            if a > t: keep.append([t, a])
+            t = max(t, b)
+        if t < D: keep.append([t, D])
+    if spec.get('autoSilence'):
+        keep = _split_silence(ns.video, keep, float(spec['autoSilence']), float(spec.get('pad', 0.12)))
+    keep = [[max(0, a), min(D, b)] for a, b in keep if b - a > 0.05]
+    fps = info['fps']
+    # 用 trim/atrim + concat；每段音频 12ms 交叉淡化避免爆音
+    fc, labels = [], ''
+    for i, (a, b) in enumerate(keep):
+        fc.append(f'[0:v]trim={a:.4f}:{b:.4f},setpts=PTS-STARTPTS[v{i}]')
+        fc.append(f'[0:a]atrim={a:.4f}:{b:.4f},asetpts=PTS-STARTPTS,afade=t=in:d=0.012,afade=t=out:st={max(0, b - a - 0.012):.4f}:d=0.012[a{i}]')
+        labels += f'[v{i}][a{i}]'
+    pre = max(0.0, float(spec.get('pre', 0)))   # 口播前补几秒（首帧定格 + 静音），给开头 solo / 片头动效用
+    if pre > 0:
+        fc.append(f'{labels}concat=n={len(keep)}:v=1:a=1[vc][ac]')
+        fc.append(f'[vc]tpad=start_duration={pre:.3f}:start_mode=clone[v]')
+        fc.append(f'[ac]adelay={int(pre * 1000)}:all=1[a]')
+    else:
+        fc.append(f'{labels}concat=n={len(keep)}:v=1:a=1[v][a]')
+    out = wd / 'master.mp4'
+    run([FF, '-v', 'error', '-y', '-i', ns.video, '-filter_complex', ';'.join(fc), '-map', '[v]', '-map', '[a]', '-c:v', 'libx264', '-crf', '15', '-preset', 'medium', '-r', f'{fps:.3f}', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '256k', '-ar', '48000', str(out)])
+    jsave(wd / 'cutmap.json', {'source': str(ns.video), 'keep': keep, 'pre': pre})
+    wj = wd / 'words.json'
+    if wj.exists():
+        W = jload(wj)
+        if W.get('clock') == 'source':
+            W['words'] = [dict(w, s=round(w['s'] + pre, 3), e=round(w['e'] + pre, 3)) for w in remap_words(W['words'], keep)]
+            W['clock'] = 'master'; W['keep'] = keep; W['pre'] = pre
+            jsave(wj, W); cues = words_to_cues(W['words']); write_srt(cues, wd / 'master.srt'); jsave(wd / 'cues.json', cues)
+    tot = sum(b - a for a, b in keep)
+    log(f'保留 {len(keep)} 段，{D:.2f}s → {tot:.2f}s（剪掉 {D - tot:.2f}s）' + (f'，口播前补 {pre:.1f}s' if pre else '') + f' → {out}')
+
+def remap_words(words, keep):
+    out = []
+    for w in words:
+        off = 0.0
+        for a, b in keep:
+            if a - 0.02 <= w['s'] < b:
+                nw = dict(w); nw['s'] = round(off + (w['s'] - a), 3); nw['e'] = round(off + (min(w['e'], b) - a), 3); out.append(nw); break
+            off += b - a
+    return out
+
+def _split_silence(video, keep, min_sil, pad):
+    r = subprocess.run([FF, '-hide_banner', '-i', video, '-af', f'silencedetect=n=-35dB:d={min_sil}', '-f', 'null', '-'], capture_output=True, text=True)
+    sil, st = [], None
+    for line in r.stderr.splitlines():
+        m = re.search(r'silence_start: ([\d.]+)', line)
+        if m: st = float(m.group(1))
+        m = re.search(r'silence_end: ([\d.]+)', line)
+        if m and st is not None: sil.append((st + pad, float(m.group(1)) - pad)); st = None
+    out = []
+    for a, b in keep:
+        cur = a
+        for s, e in sil:
+            if e <= cur or s >= b: continue
+            if s > cur: out.append([cur, s])
+            cur = max(cur, e)
+        if cur < b: out.append([cur, b])
+    return out
+
+# =================================================================== face
+def cmd_face(ns):
+    wd = Path(ns.workdir); wd.mkdir(parents=True, exist_ok=True)
+    out = face_track(ns.video, wd / 'face.json', step=float(ns.step))
+    log(f'人脸样本 {len(out["track"])} 个，中位位置 cx={out["median"]["cx"]:.3f} cy={out["median"]["cy"]:.3f} h={out["median"]["h"]:.3f} → {wd / "face.json"}')
+
+YUNET_URL = 'https://media.githubusercontent.com/media/opencv/opencv_zoo/main/models/face_detection_yunet/face_detection_yunet_2023mar.onnx'
+class OneEuro:
+    """one-euro 滤波：慢动时强平滑（去抖），快动时跟得上（不拖影）"""
+    def __init__(s, mincut=0.35, beta=6.0, dcut=1.0): s.mc, s.b, s.dc, s.x, s.dx, s.t = mincut, beta, dcut, None, 0.0, None
+    @staticmethod
+    def _a(cut, dt): import math; r = 2 * math.pi * cut * dt; return r / (r + 1)
+    def __call__(s, t, x):
+        if s.x is None: s.x, s.t = x, t; return x
+        dt = max(1e-3, t - s.t); s.t = t
+        dx = (x - s.x) / dt; s.dx = s.dx + s._a(s.dc, dt) * (dx - s.dx)
+        s.x = s.x + s._a(s.mc + s.b * abs(s.dx), dt) * (x - s.x); return s.x
+
+def _face_detector():
+    import cv2
+    m = Path(__file__).resolve().parents[1] / 'assets' / 'models' / 'face_detection_yunet_2023mar.onnx'
+    if not m.exists():
+        try: m = _download(YUNET_URL, CACHE / 'models' / m.name)
+        except Exception as e: log('YuNet 模型不可用：', e); m = None
+    if m is not None and hasattr(cv2, 'FaceDetectorYN'):
+        try:
+            det = cv2.FaceDetectorYN.create(str(m), '', (320, 320), 0.6, 0.3, 20)
+            def yunet(sm):
+                det.setInputSize((sm.shape[1], sm.shape[0])); _, f = det.detect(sm)
+                if f is None or not len(f): return None
+                f = max(f, key=lambda r: r[2] * r[3] * r[14])          # 最大、最可信的那张脸
+                x, y, w, h = f[:4]; eyes_y = (f[5] + f[7]) / 2; mouth_y = (f[11] + f[13]) / 2
+                cx = (f[4] + f[6] + f[8]) / 3                              # 两眼 + 鼻尖 的水平中心，比框中心稳
+                cy = eyes_y * 0.45 + mouth_y * 0.55                         # 眼睛和嘴之间略偏下 = 视觉脸心
+                return float(cx / sm.shape[1]), float(cy / sm.shape[0]), float(h * 1.25 / sm.shape[0]), float(f[14])
+            return yunet, 'yunet'
+        except Exception as e: log('YuNet 加载失败，退回 Haar：', e)
+    xml = Path(getattr(cv2, 'data', None).haarcascades if hasattr(cv2, 'data') else '') / 'haarcascade_frontalface_default.xml'
+    if not xml.exists(): xml = _download('https://raw.githubusercontent.com/opencv/opencv/4.x/data/haarcascades/haarcascade_frontalface_default.xml', CACHE / 'models' / 'haarcascade_frontalface_default.xml')
+    hz = cv2.CascadeClassifier(str(xml))
+    def haar(sm):
+        g = cv2.cvtColor(sm, cv2.COLOR_BGR2GRAY); fs = hz.detectMultiScale(g, 1.1, 5, minSize=(int(sm.shape[0] * 0.12),) * 2)
+        if not len(fs): return None
+        x, y, w, h = map(float, max(fs, key=lambda f: f[2] * f[3])); return (x + w / 2) / sm.shape[1], (y + h * 0.55) / sm.shape[0], h * 1.25 / sm.shape[0], 0.5
+    return haar, 'opencv-haar'
+
+def face_track(video, out_path, step=0.25):
+    """人脸轨迹：YuNet（五官关键点定脸心）→ 剔除离群 → one-euro 平滑；没有 YuNet 时用 Haar。
+    顺序读帧（grab 跳帧）比逐次 seek 快很多。没有脸的片段（录屏）不出样本，渲染端在样本间插值。"""
+    fixed = {'median': {'cx': 0.5, 'cy': 0.36, 'h': 0.26}, 'track': [], 'method': 'fixed'}
+    try: import cv2
+    except Exception: log('未安装 opencv-python：使用默认构图（脸在上三分之一）'); jsave(out_path, fixed); return fixed
+    try: detect, method = _face_detector()
+    except Exception as e: log('人脸检测不可用，使用默认构图：', e); jsave(out_path, fixed); return fixed
+    cap = cv2.VideoCapture(str(video)); fps = cap.get(cv2.CAP_PROP_FPS) or 30
+    every = max(1, int(round(step * fps))); raw = []; i = 0
+    while True:
+        if i % every: 
+            if not cap.grab(): break
+            i += 1; continue
+        ok, fr = cap.read()
+        if not ok: break
+        H, W = fr.shape[:2]; sc = 640 / max(H, W); sm = cv2.resize(fr, (int(W * sc), int(H * sc)))
+        r = detect(sm)
+        if r: raw.append({'t': round(i / fps, 3), 'cx': r[0], 'cy': r[1], 'h': r[2], 'c': r[3]})
+        i += 1
+    cap.release()
+    if not raw: jsave(out_path, fixed); return fixed
+    import statistics as st
+    # 离群：和前后邻居的中位数差太多（误检到画面里的别的脸/海报）就丢掉
+    keep = []
+    for j, p in enumerate(raw):
+        win = raw[max(0, j - 4):j + 5]
+        mx, my, mh = (st.median(q[k] for q in win) for k in ('cx', 'cy', 'h'))
+        if abs(p['cx'] - mx) < 0.12 and abs(p['cy'] - my) < 0.12 and abs(p['h'] - mh) < mh * 0.35: keep.append(p)
+    keep = keep or raw
+    # 按断点分段（中间是录屏/转身），每段前向 + 后向各滤一遍：零延迟、去抖
+    segs, cur = [], []
+    for p in keep:
+        if cur and p['t'] - cur[-1]['t'] > 1.5: segs.append(cur); cur = []
+        cur.append(p)
+    if cur: segs.append(cur)
+    def ff(ts, xs, mc, b):
+        f = OneEuro(mc, b); y = [f(t, x) for t, x in zip(ts, xs)]
+        g = OneEuro(mc, b); tmax = ts[-1]; z = [g(tmax - t, x) for t, x in zip(ts[::-1], y[::-1])]
+        return z[::-1]
+    out = []
+    for sg in segs:
+        ts = [p['t'] for p in sg]
+        cx, cy, hh = (ff(ts, [p[k] for p in sg], *pr) for k, pr in (('cx', (0.15, 1.5)), ('cy', (0.15, 1.5)), ('h', (0.08, 0.6))))
+        out += [{'t': t, 'cx': round(a, 4), 'cy': round(b2, 4), 'h': round(c, 4)} for t, a, b2, c in zip(ts, cx, cy, hh)]
+    med = {k: round(st.median(p[k] for p in out), 4) for k in ('cx', 'cy', 'h')}
+    d = {'median': med, 'track': out, 'method': method, 'hit': round(len(raw) / max(1, i // every), 3)}
+    jsave(out_path, d); return d
+
+# =================================================================== scaffold（分镜草稿 + 语义提示）
+SEM = [
+    ('number', r'(\d+(\.\d+)?\s*(%|万|亿|千|百|个|条|分钟|秒|小时|天|倍|块|元|美金|token|K|k)|百分之[一二三四五六七八九十\d]+|[一二三四五六七八九十百千万两]+(个|条|种|步|分钟|倍|万|亿))', '大数字 number / 仪表 gauge / 条形对比 bars（数字落在说出数字的那个字，提前 0.1–0.2s）'),
+    ('emotion', r'(夯爆|太.{0,2}了|震惊|绝了|离谱|天哪|我的天|oh my god|OMG|哇|卧槽|牛|炸裂|疯了|吓|爽|兴奋|喜欢)', '印章 stamp / 巨字 title(slam) / 贴纸 sticker / 彩纸 confetti；人物可推近 punch-in'),
+    ('enum', r'(第一|第二|第三|首先|其次|然后|接着|最后|一是|二是|三是|另外)', '章节号 chapter / 清单 checklist / 流程 flow；常驻导航 nav 更新当前项'),
+    ('contrast', r'(不是.{0,10}而是|但是|可是|其实|反而|没想到|以前.{0,8}现在|对比|区别|vs|VS|甩.{0,6}几条街)', '对比卡 compare（胜者高亮）/ 划掉改写 strike / 条形收缩 bars'),
+    ('process', r'(步骤|流程|先.{0,8}再|一步|工作流|调用|生成|上传|发布|整理|导出|渲染)', '流程 flow / 进度 progress / 节点网络 nodes'),
+    ('product', r'([A-Za-z][A-Za-z0-9\.\- ]{1,20}|小红书|抖音|飞书|剪映|豆包|即梦|微信|视频号|B站)', 'Logo 卡 logo / 软件窗口 window（有录屏优先用真录屏）'),
+    ('quote', r'(他说|她说|它说|我说|网友|评论|有人问|私信)', '对话 chat / 引用 quote / 气泡 bubble'),
+    ('question', r'(吗|呢|为什么|怎么|如何|是不是|对不对|什么)$', '问题卡 bubble / 巨字提问 title；人物回到全屏或大圆窗'),
+    ('cta', r'(关注|点赞|收藏|评论区|转发|下期|再见|拜拜|敬请期待|三连)', '结尾 CTA 内置动效 cta-outro；人物大圆窗居中'),
+    ('time', r'(以前|现在|未来|昨天|今天|明天|每天|每晚|周|月|年|\d+点)', '时间线 timeline / 时钟卡；前后对比'),
+]
+
+def semantic_hints(text):
+    hits = []
+    for kind, pat, sug in SEM:
+        for m in re.finditer(pat, text, flags=re.I):
+            w = m.group(0).strip()
+            if kind == 'product' and (len(w) < 2 or w.lower() in ('ok', 'a', 'i')): continue
+            hits.append({'kind': kind, 'word': w, 'suggest': sug})
+    seen = set(); out = []
+    for h in hits:
+        k = (h['kind'], h['word'])
+        if k not in seen: seen.add(k); out.append(h)
+    return out
+
+PRIO = ['number', 'emotion', 'contrast', 'enum', 'quote', 'question', 'process', 'product', 'cta']
+def draft_layers(scenes, words, landscape=True):
+    """按语义提示给每段放草稿元素（draft:true），都用 cue 对齐到说出关键词的那个字。
+    这是起点不是成品：导演按 playbook 改文案、删多余、补承接。"""
+    box = 'left' if landscape else 'upper'
+    for i, S in enumerate(scenes):
+        t0, t1 = S['t0'], S['t1']; dur = t1 - t0
+        S['bg'] = [{'c': 'bg-wall', 'props': {'skin': 'gold'}}]
+        if i: S['transition'] = {'type': 'push-left', 'dur': 0.6}
+        quota = max(1, min(4, int(dur / 2.6))); used = []; lay = []
+        for kind in PRIO:
+            for h in S['hints']:
+                if h['kind'] != kind or len(lay) >= quota: continue
+                w = h['word']
+                if kind == 'number' and (re.fullmatch(r'[一两]?(个|条|种|步|分钟|倍)', w) or re.search(r'[几上数好近]' + re.escape(w), S['say'])): continue   # "一个""几十条"不是要上屏的数字
+                if kind == 'enum' and w in ('然后', '接着', '另外', '最后'): continue     # 口头连接词，不是列举
+                if sum(1 for x in lay if x.get('_k') == kind) >= (2 if kind == 'number' else 1): continue
+                ts = find_word_times(words, w, after=t0 + 0.05, before=t1 - 0.3)
+                if not ts or any(abs(ts[0] - u) < 1.4 for u in used): continue
+                L = {'cue': w, 'lead': -0.15, 'box': box, 'draft': True}
+                if kind == 'number':
+                    m = re.match(r'(\d+(?:\.\d+)?)\s*(.*)', w)
+                    L.update(c='number', props={'value': float(m.group(1)), 'unit': m.group(2)} if m else {'text': w, 'label': ''})
+                elif kind == 'emotion': L.update(c='stamp', box='center', props={'text': w[:6]})
+                elif kind == 'contrast': L.update(c='compare', props={'items': [{'title': '（之前）'}, {'title': '（之后）'}], 'op': 'vs', 'winner': 1})
+                elif kind == 'enum': L.update(c='chips', props={'items': [w]})
+                elif kind == 'quote': L.update(c='bubble', props={'text': '（引用原话 ≤16 字）'})
+                elif kind == 'question': L.update(c='title', props={'text': '（问题 ≤12 字）'})
+                elif kind == 'process': L.update(c='flow', props={'steps': [{'t': '（第一步）'}, {'t': '（第二步）'}, {'t': '（第三步）'}]})
+                elif kind == 'product': L.update(c='logo', props={'text': w, 'style': 'glass'})
+                elif kind == 'cta': L.update(c='title', props={'text': w})
+                L['_k'] = kind; lay.append(L); used.append(ts[0])
+        for L in lay: L.pop('_k', None)
+        S['layers'] = lay
+
+# 外观 + 人物版式轮换（参考风格 A–D：换章节换底色、人物在全屏 / 方卡 / 圆窗 / 大圆之间切，圆窗每章换角）
+LOOK_CYCLE = ['a-blue', 'b-paper', 'd-neon', 'c-wall', 'a-violet', 'b-film', 'a-lime', 'd-hud']
+PRESENTER_MENU = {
+    'wide':     [('full', 'c'), ('side', 'r'), ('circle', 'br'), ('full', 'c'), ('card', 'r'), ('circle', 'tl'), ('side', 'r'), ('circle', 'bl')],
+    'narrow':   [('story', 'c'), ('side', 'r'), ('circle', 'br'), ('story', 'l'), ('side', 'r'), ('circle', 'tl'), ('story', 'r'), ('circle', 'bl')],
+    'portrait': [('full', 'c'), ('side', 'r'), ('full', 'c'), ('pip', 'tr'), ('card', 't'), ('full', 'c'), ('pip', 'tl'), ('side', 'r')],
+}
+def layout_plan(scenes, cw, ch, sw, sh):
+    """给分镜草稿排外观和人物版式：约两段一章，章与章换 look；开头暗底钩子、结尾红色放射喊话；人物按画幅菜单轮换，全屏段 > 9s 加一次推近"""
+    if not scenes: return [{'t': 0, 'state': 'full'}]
+    portrait = ch > cw; narrow = not portrait and (cw / ch < 1.5 or sw / sh < 0.8)
+    menu = PRESENTER_MENU['portrait' if portrait else 'narrow' if narrow else 'wide']
+    keys = []; n = len(scenes); ci = 0
+    for i, S in enumerate(scenes):
+        chap = 0 if i == 0 else (n - 1 if i == n - 1 and n > 2 else (i + 1) // 2)
+        if i == 0: S['look'] = 'b-film' if not portrait else 'c-wall'
+        elif i == n - 1 and n > 2: S['look'] = 'a-red'
+        else: S['look'] = LOOK_CYCLE[(chap - 1) % len(LOOK_CYCLE)]
+        if i == n - 1 and n > 2: st, pos = ('circle-big', 'c')
+        else: st, pos = menu[ci % len(menu)]; ci += 1
+        k = {'t': round(S['t0'], 3), 'state': st, 'pos': pos}
+        if i: k['dur'] = 0.6
+        keys.append(k)
+        if st in ('full', 'story') and S['t1'] - S['t0'] > 9:   # 风格 C：全屏段每 8–15s 推近一次（跳切）
+            keys.append({'t': round((S['t0'] + S['t1']) / 2, 3), 'state': st, 'pos': pos, 'zoom': 1.14, 'dur': 0})
+    return keys
+
+def cmd_scaffold(ns):
+    wd = Path(ns.workdir); W = jload(wd / 'words.json'); words = W['words']
+    cues = words_to_cues(words)
+    master = wd / 'master.mp4'
+    if not master.exists():
+        src = W.get('source'); log('未找到 master.mp4：直接使用原片作为母版'); master = Path(src)
+    info = probe(master); D = round(info['duration'], 3)
+    cw, ch = map(int, ns.canvas.lower().split('x'))
+    # 场景切分：长停顿或 8–14 秒
+    scenes, cur, t0 = [], [], 0.0
+    for i, c in enumerate(cues):
+        cur.append(c)
+        dur = c['e'] - t0; nxt = cues[i + 1] if i + 1 < len(cues) else None
+        gap = (nxt['s'] - c['e']) if nxt else 9
+        if (dur > 7.5 and gap > 0.3) or dur > 14 or gap > 0.9 or not nxt:
+            t1 = round((c['e'] + nxt['s']) / 2, 3) if nxt else D
+            text = ''.join(x['t'] for x in cur)
+            scenes.append({'id': f's{len(scenes) + 1:02d}', 't0': round(t0, 3), 't1': t1, 'energy': 2, 'say': text, 'hints': semantic_hints(text), 'layers': []})
+            t0 = t1; cur = []
+    if scenes: scenes[0]['energy'] = 1; scenes[-1]['energy'] = 1
+    draft_layers(scenes, words, cw >= ch)
+    keys = layout_plan(scenes, cw, ch, info.get('w') or 1080, info.get('h') or 1920)
+    BR = ({'name': ns.brand_name or re.split(r'[-·\s]', ns.wall_main)[0], 'wall': [ns.wall_main, ns.wall_sub or ns.wall_main], 'mark': (ns.brand_name or ns.wall_main)[:1]}
+          if getattr(ns, 'wall_main', None) else (load_brand(Path(ns.out).resolve().parent) or dict(NEUTRAL_BRAND)))
+    if getattr(ns, 'wall_main', None): save_brand(BR)
+    edit = {
+        'schema': 'dayan-edit/1', 'title': ns.title or Path(master).stem, 'canvas': {'w': cw, 'h': ch, 'fps': int(ns.fps)}, 'theme': ns.theme,
+        'brand': BR, 'signature': {'enabled': False, 'name': BR.get('name', ''), 'pos': 'tl'}, 'master': os.path.relpath(master, Path(ns.out).parent), 'words': os.path.relpath(wd / 'words.json', Path(ns.out).parent), 'duration': D,
+        'presenter': {'face': 'auto', 'windowTitle': (BR.get('name') + ' · 口播') if BR.get('name') else '口播', 'keys': keys},
+        'subtitles': {'style': 'clean', 'burn': 'ass', 'highlight': [], 'hide': []},
+        'music': {'mode': 'none'},   # 默认不加背景音乐（用户 2026-11-07）；要配乐时改 generate
+        'media': {}, 'camera': [], 'sfx': [], 'scenes': scenes,
+    }
+    Path(ns.out).parent.mkdir(parents=True, exist_ok=True); jsave(ns.out, edit)
+    log(f'分镜草稿 {len(scenes)} 段 → {ns.out}')
+    for s in scenes:
+        hs = '、'.join(f"{h['kind']}:{h['word']}" for h in s['hints'][:6])
+        print(f"  {s['id']} {s['t0']:6.2f}–{s['t1']:6.2f}  {s['say'][:34]}{'…' if len(s['say']) > 34 else ''}\n      提示：{hs}")
+
+# =================================================================== subs（人工润色字幕 → 自动对齐时间）
+def align_lines(words, lines):
+    """把润色后的字幕行（可改错字、加标点、合并口癖）对齐到字级时间码。
+    用全文差异匹配：每行取匹配到的第一个字为开始、最后一个字为结束。"""
+    import difflib
+    norm = lambda x: re.sub(r'[\s，。！？、,.!?：:；;“”"\'（）()《》~…—-]', '', x).lower()
+    chars, st, en = '', [], []
+    for w in words:
+        t = norm(w['w'])
+        for i, ch in enumerate(t): chars += ch; st.append(w['s']); en.append(w['e'] if i == len(t) - 1 else w['s'])
+    full = ''; owner = []
+    for li, ln in enumerate(lines):
+        t = norm(ln); full += t; owner += [li] * len(t)
+    sm = difflib.SequenceMatcher(None, full, chars, autojunk=False)
+    hit = {}
+    for a, b, n in sm.get_matching_blocks():
+        for k in range(n): hit.setdefault(owner[a + k], []).append(b + k)
+    cues = []; last_e = 0
+    for li, ln in enumerate(lines):
+        idx = hit.get(li)
+        if idx: s0, e0 = st[min(idx)], en[max(idx)] + 0.18
+        else: s0, e0 = last_e, last_e + 1.2
+        cues.append({'s': round(max(s0 - 0.05, last_e), 3), 'e': round(e0, 3), 't': ln.strip()})
+        last_e = cues[-1]['s']
+    for i in range(len(cues) - 1):
+        cues[i]['e'] = round(min(max(cues[i]['e'], cues[i]['s'] + 0.6), cues[i + 1]['s']), 3)
+        if cues[i + 1]['s'] - cues[i]['e'] < 0.3: cues[i]['e'] = cues[i + 1]['s']
+    return cues
+
+def cmd_subs(ns):
+    wd = Path(ns.workdir); W = jload(wd / 'words.json')
+    lines = [l for l in Path(ns.lines).read_text(encoding='utf-8').splitlines() if l.strip() and not l.startswith('#')]
+    cues = align_lines(W['words'], lines)
+    jsave(wd / 'subs.json', cues); write_srt(cues, wd / 'subs.srt')
+    log(f'{len(cues)} 条字幕已对齐 → {wd / "subs.json"}（edit.json 里 "subtitles":{{"cuesFile":"…/subs.json"}}）')
+    for c in cues: print(f"  {c['s']:6.2f}–{c['e']:6.2f} {c['t']}")
+
+# =================================================================== words（关键词时间）
+def find_word_times(words, kw, after=None, before=None):
+    """在字序列里找关键词（忽略空格大小写），返回每次出现的开始时间"""
+    seq = [(w['w'], w['s']) for w in words]
+    flat = ''; pos = []
+    for w, s in seq:
+        for ch in w: flat += ch.lower(); pos.append(s)
+    k = kw.lower().replace(' ', ''); flat2 = ''; pos2 = []
+    for ch, p in zip(flat, pos):
+        if ch != ' ': flat2 += ch; pos2.append(p)
+    out = []; i = flat2.find(k)
+    while i != -1:
+        t = pos2[i]
+        if (after is None or t >= after) and (before is None or t <= before): out.append(round(t, 3))
+        i = flat2.find(k, i + 1)
+    return out
+
+def cmd_words(ns):
+    W = jload(Path(ns.workdir) / 'words.json')
+    for k in ns.keys:
+        ts = find_word_times(W['words'], k); print(f'  {k}: {ts if ts else "未找到（检查识别错字，或用 asr-fixes 纠正）"}')
+
+# =================================================================== 内置动效（内置动效合同）
+from dms_templates import discover, load_template, validate_template, expand_template  # noqa: E402
+
+def cmd_template(ns):
+    if ns.action == 'list':
+        for t in discover():
+            c = t['contract']; comp = c.get('composition', {})
+            print(f"  {c['templateId']}@{c['version']:8s} {c.get('status',''):12s} {comp.get('width')}x{comp.get('height')} {comp.get('durationInFrames', 0) / max(1, comp.get('fps', 60)):.1f}s  {c.get('title', '')}")
+    elif ns.action == 'validate':
+        bad = 0
+        for t in discover():
+            if ns.id and t['contract']['templateId'] != ns.id: continue
+            errs, warns = validate_template(t)
+            print(('  ✓ ' if not errs else '  ✗ ') + t['contract']['templateId'] + ('' if not errs else '\n     ' + '\n     '.join(errs)) + ('' if not warns else '\n     ⚠ ' + '\n     ⚠ '.join(warns)))
+            bad += bool(errs)
+        sys.exit(1 if bad else 0)
+    elif ns.action == 'show':
+        t = load_template(ns.id); c = t['contract']
+        print(json.dumps({k: c[k] for k in ('templateId', 'version', 'title', 'use', 'composition', 'inputSlots', 'holds') if k in c}, ensure_ascii=False, indent=1))
+    elif ns.action == 'gallery':
+        template_gallery(ns)
+    elif ns.action == 'render':
+        t = load_template(ns.id); payload = jload(ns.payload) if ns.payload else {}
+        out = Path(ns.out); out.mkdir(parents=True, exist_ok=True)
+        comp = t['contract']['composition']; fps = comp.get('fps', 60)
+        dur = payload.pop('_duration', None) or comp['durationInFrames'] / fps
+        edit = {'schema': 'dayan-edit/1', 'title': t['contract']['templateId'], 'canvas': {'w': comp['width'], 'h': comp['height'], 'fps': fps}, 'theme': payload.pop('_theme', t['contract'].get('theme', 'dark-tech')),
+                'duration': dur, 'brand': EXAMPLE_BRAND, 'signature': {'enabled': False, 'name': EXAMPLE_BRAND['name'], 'pos': 'tl'}, 'subtitles': {'enabled': False}, 'music': {'mode': payload.pop('_music', 'none')},
+                'scenes': [{'template': f"{t['contract']['templateId']}@{t['contract']['version']}", 't0': 0, 't1': dur, 'slots': payload}]}
+        if payload.get('presenter'): edit['master'] = payload['presenter']
+        ep = out / 'edit.json'; jsave(ep, edit)
+        cmd_build(argparse.Namespace(edit=str(ep), project=str(out / 'project')))
+        cmd_audio(argparse.Namespace(project=str(out / 'project'), music_volume=None))
+        cmd_render(argparse.Namespace(project=str(out / 'project'), out=str(out / f"{t['contract']['templateId']}.mp4"), workers=None, preset='medium', crf=16, reuse=False))
+
+def _font(sz, bold=True):
+    from PIL import ImageFont
+    cands = (['/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc', 'C:/Windows/Fonts/msyhbd.ttc'] if bold else []) + \
+            ['/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc', 'C:/Windows/Fonts/msyh.ttc', '/System/Library/Fonts/PingFang.ttc']
+    for f in cands:
+        try: return ImageFont.truetype(f, sz)
+        except Exception: pass
+    return ImageFont.load_default()
+
+ORDER = ['hook-opener', 'chapter-card', 'compare-verdict', 'term-explainer', 'cta-outro', 'side-explainer']   # 按一期片子的顺序排；其余按名称
+
+def _ordered(ts):
+    return sorted(ts, key=lambda t: (ORDER.index(t['contract']['templateId']) if t['contract']['templateId'] in ORDER else 99, t['contract']['templateId']))
+
+def template_gallery(ns):
+    """每个内置动效出一张"动效样张"：从头到尾均匀截 12 帧（4×3），标时间点，顶部写名称、用途、横竖屏。不编号。
+    产物：templates/<动效>/style_sheet.png、preview.png（代表帧）、templates/_sheets/<名称>.png（全部样张一处）、templates/_gallery.png（单帧索引）。"""
+    from PIL import Image, ImageDraw
+    ts = _ordered([t for t in discover() if t.get('impl')])
+    work = Path(ns.out or (ROOT / 'templates' / '_gallery_work')); work.mkdir(parents=True, exist_ok=True)
+    sheets_dir = ROOT / 'templates' / '_sheets'; sheets_dir.mkdir(exist_ok=True)
+    for old in sheets_dir.glob('*.png'): old.unlink()
+    N, cols = 12, 4
+    shots = []
+    for t in ts:
+        c = t['contract']; tid = c['templateId']; comp = c['composition']; fps = comp.get('fps', 60)
+        pl = t['dir'] / 'example.payload.json'; payload = jload(pl) if pl.exists() else {}
+        dur = payload.pop('_duration', None) or comp['durationInFrames'] / fps
+        times = [round(dur * (0.04 + 0.92 * i / (N - 1)), 2) for i in range(N)]
+        key = float(c.get('previewAt') or round(dur * 0.8, 2))
+        edit = {'schema': 'dayan-edit/1', 'title': tid, 'canvas': {'w': comp['width'], 'h': comp['height'], 'fps': fps}, 'theme': payload.pop('_theme', c.get('theme', 'dark-tech')),
+                'duration': dur, 'signature': {'enabled': False}, 'subtitles': {'enabled': False}, 'music': {'mode': 'none'},
+                'scenes': [{'template': f"{tid}@{c['version']}", 't0': 0, 't1': dur, 'slots': payload}]}
+        d = work / tid; d.mkdir(exist_ok=True)
+        if payload.pop('_demoPresenter', False):   # 样张用示意人物（剪影），不放真人
+            demo = d / 'demo_presenter.mp4'
+            if not demo.exists():
+                img = Image.new('RGB', (comp['width'], comp['height'])); px = ImageDraw.Draw(img); Wd, Hd = img.size
+                for y in range(Hd):
+                    k = y / Hd; px.line([(0, y), (Wd, y)], fill=(int(44 + 30 * k), int(26 + 14 * k), int(70 + 26 * (1 - k))))
+                for i in range(9): px.rectangle([Wd * 0.06 + i * 70, Hd * 0.05, Wd * 0.06 + i * 70 + 26, Hd], fill=(64, 40, 104))
+                px.rectangle([Wd * 0.66, Hd * 0.42, Wd * 0.95, Hd * 0.62], fill=(30, 22, 44)); px.ellipse([Wd * 0.74, Hd * 0.12, Wd * 0.8, Hd * 0.22], outline=(255, 90, 200), width=6)
+                cx = Wd * 0.5; px.ellipse([cx - 120, Hd * 0.2, cx + 120, Hd * 0.52], fill=(176, 150, 140)); px.rounded_rectangle([cx - 330, Hd * 0.55, cx + 330, Hd * 1.1], 160, fill=(22, 20, 28))
+                px.rectangle([cx - 70, Hd * 0.48, cx + 70, Hd * 0.58], fill=(160, 134, 126))
+                fnt = _font(30); px.text((cx, Hd * 0.36), '人物画面（示意）', fill=(70, 50, 50), font=fnt, anchor='mm')
+                img.save(d / 'demo.png')
+                run([FF, '-v', 'error', '-y', '-loop', '1', '-i', str(d / 'demo.png'), '-f', 'lavfi', '-i', 'anullsrc=r=48000:cl=stereo', '-t', str(dur + 0.5), '-r', '30', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-shortest', str(demo)])
+            edit['master'] = str(demo); edit['presenter'] = {'face': {'cx': 0.5, 'cy': 0.34, 'h': 0.3}}
+        jsave(d / 'edit.json', edit)
+        cmd_build(argparse.Namespace(edit=str(d / 'edit.json'), project=str(d / 'project')))
+        _node_render(d / 'project', ['--stills', ','.join(str(x) for x in times + [key]), '--outdir', str(d)])
+        shutil.copy(d / f't{key:.2f}.png', t['dir'] / 'preview.png')
+        # 动效样张
+        tw, th, gap, head = 480, int(480 * comp['height'] / comp['width']), 16, 150
+        rows = (N + cols - 1) // cols
+        S = Image.new('RGB', (cols * tw + (cols + 1) * gap, head + rows * (th + 40) + rows * gap), '#0E1014'); dr = ImageDraw.Draw(S)
+        title = c.get('title', tid); name = title.split('：')[0]
+        lay = {'landscape': '仅横屏', 'portrait': '仅竖屏', 'any': '横竖通用'}.get(comp.get('layout', 'landscape'), '')
+        dr.text((gap, 22), title, fill='#E9EEF4', font=_font(36))
+        use = re.sub(r'（[^）]*）|\([^)]*\)', '', c.get('use', '')).strip('。 ')
+        use = use if len(use) <= 70 else use[:69] + '…'
+        dr.text((gap, 92), f"{tid} · {dur:.1f} 秒 · {comp['width']}×{comp['height']} {lay} · 用途：{use}", fill='#8A93A0', font=_font(20, False))
+        for i, tt in enumerate(times):
+            x = gap + (i % cols) * (tw + gap); y = head + (i // cols) * (th + 40 + gap)
+            S.paste(Image.open(d / f't{tt:.2f}.png').convert('RGB').resize((tw, th)), (x, y))
+            dr.text((x + 2, y + th + 6), f'{i + 1:02d}   {tt:.2f}s', fill='#C9D1DB', font=_font(20, False))
+        sp = t['dir'] / 'style_sheet.png'; S.save(sp); shutil.copy(sp, sheets_dir / f"{name}.png")
+        shots.append((name, tid, t['dir'] / 'preview.png'))
+        log('动效样张', name, tid, '→', sp)
+    # 单帧总览索引
+    tw, th, cap, gap, cols2 = 640, 360, 84, 24, 3
+    rows = (len(shots) + cols2 - 1) // cols2
+    G = Image.new('RGB', (cols2 * tw + (cols2 + 1) * gap, rows * (th + cap) + (rows + 1) * gap + 80), '#0E1014'); dr = ImageDraw.Draw(G)
+    dr.text((gap, 22), '内置动效索引 · 每个内置动效的完整样张见 templates/_sheets/', fill='#E9EEF4', font=_font(30))
+    for i, (title, tid, pth) in enumerate(shots):
+        x = gap + (i % cols2) * (tw + gap); y = 80 + gap + (i // cols2) * (th + cap + gap)
+        G.paste(Image.open(pth).convert('RGB').resize((tw, th)), (x, y))
+        dr.text((x + 2, y + th + 14), title, fill='#E9EEF4', font=_font(28))
+        dr.text((x + 2, y + th + 52), tid, fill='#8A93A0', font=_font(18, False))
+    G.save(ROOT / 'templates' / '_gallery.png'); log('内置动效索引 →', ROOT / 'templates' / '_gallery.png')
+    if not ns.out: shutil.rmtree(work, ignore_errors=True)
+
+FX_JS = """/* {name}（{id}）—— 剪辑时现做的新动效，已沉淀进动效库
+   什么时候用：{use}
+   标准（SKILL.md「动效不够时」）：画面跟着口播的字走（子元素 at/cue 相对本层）、有入场和落定的质感、带音效、
+   16:9 / 4:3 / 9:16 都排得下（尺寸用 cqw/cqh，不写死像素）、时间的纯函数（只用 lt/t，不用真实时间和 Math.random）、不出现任何人的品牌。 */
+(function () {{
+  'use strict';
+  const DMS = window.DMS, C = DMS.components, E = DMS.ease, lerp = DMS.lerp, prog = DMS.prog, clamp = DMS.clamp, el = DMS.el;
+  C['{id}'] = {{
+    enter: 'none',                         // 入场自己做（下面 update 里），不用外层默认入场
+    build(e, p) {{
+      e.classList.add('{id}');
+      const items = (p.items || []).map((it, i) => {{
+        const o = typeof it === 'string' ? {{ t: it }} : it;
+        return {{ o, at: o.at == null ? 0.25 + i * 0.4 : o.at, el: el('div', 'it', DMS.hl(o.t || '', o.hl), e) }};
+      }});
+      return {{ items }};
+    }},
+    update(e, lt, p, s) {{
+      s.items.forEach(x => {{
+        const k = prog(lt, x.at, 0.55), q = E.outExpo(k), sp = E.spring(k, 0.55, 11);
+        x.el.style.opacity = clamp(k * 2.5).toFixed(3);
+        x.el.style.transform = `translateY(${{lerp(3, 0, q)}}cqh) scale(${{lerp(0.94, 1, sp).toFixed(4)}})`;   // 入场 + 回弹落定
+        x.el.style.filter = `blur(${{lerp(8, 0, E.outQuart(k)).toFixed(2)}}px)`;
+      }});
+    }},
+    sfx: p => (p.items || []).map((it, i) => ({{ at: (it && it.at != null) ? it.at : 0.25 + i * 0.4, kind: 'pop', gain: 0.45 }})),
+  }};
+}})();
+"""
+FX_CSS = """.{id} {{ position: absolute; inset: 0; container-type: size; display: flex; flex-direction: column; justify-content: center; gap: 3cqh; }}
+.{id} .it {{ font: 800 min(6cqw, 11cqh)/1.2 var(--title-font); color: var(--fg); }}
+"""
+def cmd_effect(ns):
+    """动效库：new 新建骨架 / check 三种画幅出样张 / list 列出。剪辑时现做的新动效都走这里沉淀。"""
+    lib = ROOT / 'effects'; lib.mkdir(exist_ok=True)
+    if ns.action == 'list':
+        ds = effect_dirs()
+        if not ds: print('动效库还是空的（剪辑时现做的新动效会自动存进 effects/）'); return
+        for d in ds:
+            m = jload(d / 'effect.json'); print(f"  {m['id']:<22} {m.get('name', '')}  ·  {m.get('use', '')}")
+        return
+    if not ns.id: raise SystemExit('✗ 要给动效 id（英文小写和连字符，如 fx-before-after）')
+    fid = ns.id; d = lib / fid
+    if ns.action == 'new':
+        if fid in builtin_components(): raise SystemExit(f'✗ {fid} 和引擎自带组件重名，换一个（建议 fx- 开头）')
+        if d.exists(): raise SystemExit(f'✗ 动效库里已经有 {fid}：直接改 {d}')
+        d.mkdir(parents=True)
+        meta = {'id': fid, 'name': ns.name or fid, 'use': ns.use or '（说到什么时用：写清楚语义）', 'created': time.strftime('%Y-%m-%d'), 'version': '1.0.0',
+                'props': '（主要参数说明）', 'ref': '（参考了哪种风格的哪种做法，只写代号，如 C2 无限画布横移）', 'example': {'dur': 4.0, 'props': {'items': ['第一条', '第二条', '第三条']}, 'box': {'landscape': 'center', 'portrait': 'center'}}}
+        jsave(d / 'effect.json', meta)
+        (d / 'component.js').write_text(FX_JS.format(id=fid, name=meta['name'], use=meta['use']), encoding='utf-8')
+        (d / 'style.css').write_text(FX_CSS.format(id=fid), encoding='utf-8')
+        print(f'✓ 新动效骨架 → {d}\n  改 component.js / style.css / effect.json（use、example），然后 dms.py effect check {fid}')
+        return
+    if ns.action == 'check':
+        """三种画幅（16:9 1920×1080 / 4:3 1440×1080 / 9:16 1080×1920）各渲染 4 帧，拼成 sheet.png；页面报错直接失败"""
+        if not d.exists(): raise SystemExit(f'✗ 动效库里没有 {fid}')
+        from PIL import Image, ImageDraw
+        m = jload(d / 'effect.json'); ex = m.get('example') or {}; dur = float(ex.get('dur', 4))
+        work = d / '_check'; shutil.rmtree(work, ignore_errors=True); work.mkdir()
+        rows = []
+        for tag, (w, h) in (('16:9', (1920, 1080)), ('4:3', (1440, 1080)), ('9:16', (1080, 1920))):
+            bx = (ex.get('box') or {}).get('portrait' if h > w else 'landscape', 'center')
+            edit = {'schema': 'dayan-edit/1', 'title': fid, 'canvas': {'w': w, 'h': h, 'fps': 30}, 'theme': ex.get('theme', 'dark-tech'), 'duration': dur,
+                    'brand': EXAMPLE_BRAND, 'signature': {'enabled': False}, 'subtitles': {'enabled': False}, 'music': {'mode': 'none'},
+                    'scenes': [{'id': 'fx', 't0': 0, 't1': dur, 'bg': [{'c': 'bg-wall', 'props': {'skin': 'platinum'}}], 'layers': [{'c': fid, 'at': 0.2, 'box': bx, 'props': ex.get('props', {})}]}]}
+            sub_ = work / tag.replace(':', 'x'); sub_.mkdir(); jsave(sub_ / 'edit.json', edit)
+            cmd_build(argparse.Namespace(edit=str(sub_ / 'edit.json'), project=str(sub_ / 'p')))
+            times = [round(dur * f, 2) for f in (0.12, 0.35, 0.65, 0.95)]
+            r = subprocess.run([NODE, str(HERE / 'render.mjs'), str(sub_ / 'p'), '--stills', ','.join(map(str, times))], cwd=str(ROOT), capture_output=True, text=True)
+            errs = [l for l in (r.stdout + r.stderr).splitlines() if re.search(r'\[page\]|\[console\]|TypeError|ReferenceError|SyntaxError', l)]
+            if r.returncode or errs: raise SystemExit(f'✗ {tag} 渲染出错：\\n' + '\\n'.join(errs[:8] or [r.stderr[-800:]]))
+            r = subprocess.run([NODE, str(HERE / 'render.mjs'), str(sub_ / 'p'), '--sweep', '0.0333'], cwd=str(ROOT), capture_output=True, text=True)   # 逐帧试跑：抓抽帧看不到的瞬时报错
+            errs = [l for l in (r.stdout + r.stderr).splitlines() if re.search(r'\[page\]|\[console\]|TypeError|ReferenceError|SyntaxError', l)]
+            if r.returncode or errs: raise SystemExit(f'✗ {tag} 逐帧试跑出错：\n' + '\n'.join(sorted(set(errs))[:8] or [r.stderr[-800:]]))
+            rows.append((tag, [sub_ / 'p' / 'stills' / f't{t:.2f}.png' for t in times]))
+        th = 300; pad = 14; head = 70
+        tiles = [[Image.open(f).convert('RGB') for f in fs] for _, fs in rows]
+        widths = [sum(int(im.width * th / im.height) for im in r) + pad * (len(r) + 1) for r in tiles]
+        S = Image.new('RGB', (max(widths), head + len(rows) * (th + 44) + pad), (16, 17, 22)); dr = ImageDraw.Draw(S)
+        dr.text((pad, 18), f"{m.get('name', fid)}  {fid}  ·  {m.get('use', '')}", fill=(240, 240, 240), font=_font(26))
+        y = head
+        for (tag, _), r in zip(rows, tiles):
+            x = pad; dr.text((pad, y), tag, fill=(170, 170, 180), font=_font(22, False)); y += 30
+            for im in r:
+                w2 = int(im.width * th / im.height); S.paste(im.resize((w2, th)), (x, y)); x += w2 + pad
+            y += th + 14
+        S.save(d / 'sheet.png'); shutil.rmtree(work, ignore_errors=True)
+        m['checked'] = time.strftime('%Y-%m-%d %H:%M'); m['layouts'] = ['16:9', '4:3', '9:16']; jsave(d / 'effect.json', m)
+        print(f'✓ 三种画幅都渲染通过 → {d / "sheet.png"}（必须打开看：文字有没有溢出、有没有压到人物和字幕区）')
+
+def cmd_kickoff(ns):
+    """新作品开工时要问用户的问题（只在新作品时问；同一作品的修改、重渲染、补段都不问）。
+    有提问弹窗就用弹窗（最多 4 题，正好一题一个），没有就原样发给用户。技能暂不定义模板：不问"选哪个模板"。"""
+    b = load_brand()
+    print('新作品开工前请先确认（用户已经说明的项跳过；同一作品后续修改不再问）：')
+    src = next((q / BRAND_FILE for q in [Path.cwd().resolve()] + list(Path.cwd().resolve().parents) if (q / BRAND_FILE).exists()), None)
+    print('1. 画幅：横屏 16:9 / 横屏 4:3 / 竖屏 9:16 / 竖屏 3:4')
+    print('2. 分辨率：1080P（默认）/ 2K / 4K / 720P')
+    print('3. 帧率：60（默认）/ 30 / 25 / 24')
+    if src and b:
+        print(f"4. 文字墙品牌：已在 {src} 设定为 主行「{b['wall'][0]}」、副行「{b['wall'][1]}」——不用再问（用户要换时再改这个文件）")
+    else:
+      print('4. 文字墙品牌：背景文字墙会循环显示你的品牌，分两行——主行写品牌名，副行写英文名或口号。')
+      print('   示例：主行「小明说AI」、副行「XIAOMING · AI LAB」；或 主行「光影研究所」、副行「LIGHT · LAB · STUDIO」')
+      print(f"   {'上次用的是：主行「' + b['wall'][0] + '」、副行「' + b['wall'][1] + '」（回复"沿用"即可）' if b else '还没有保存过品牌；不想写可以回复"先不用"，文字墙会用中性占位字（MOTION · STUDIO）'}")
+      print('   拿到答案后：dms.py scaffold … --wall-main "主行" --wall-sub "副行"（会存进本机配置，下次新作品默认沿用）')
+    print('画幅 × 分辨率 → 画布：16:9 1920×1080 / 2560×1440 / 3840×2160 / 1280×720；4:3 1440×1080 / 1920×1440 / 2880×2160 / 960×720；')
+    print('                     9:16 1080×1920 / 1440×2560 / 2160×3840 / 720×1280；3:4 1080×1440 / 1440×1920 / 2160×2880 / 720×960')
+    fx = effect_dirs()
+    if fx:
+        print('（不用问用户）动效库里剪辑时沉淀的新动效，按 id 当组件用：')
+        for d in fx: m = jload(d / 'effect.json'); print(f"   {m['id']}  {m.get('name', '')}：{m.get('use', '')}")
+    ts = [t['contract'] for t in _ordered([t for t in discover() if t.get('impl')])]
+    print('（不用问用户）内置动效，剪辑时按语义决定是否调用；用户问起时发 templates/_sheets/ 的动效样张：')
+    for c in ts:
+        lay = c.get('composition', {}).get('layout', 'landscape')
+        print(f"   {c['templateId']}  {c.get('title', c['templateId'])}  [{'仅横屏' if lay == 'landscape' else '横竖通用' if lay == 'any' else '仅竖屏'}]")
+
+# =================================================================== lint
+def cmd_lint(ns):
+    E = jload(ns.edit); W, H = E['canvas']['w'], E['canvas']['h']; probs = []; warns = []
+    base = Path(ns.edit).resolve().parent
+    words = jload(base / E['words'])['words'] if E.get('words') and (base / E['words']).exists() else None
+    E['_words'] = words
+    scenes = expand_all(E, dry=True)
+    for s in scenes:
+        for L in s.get('layers', []):
+            resolve_cues(L, words, None, (s['t0'] - 1.0, s['t1'] + 0.5))
+            if L.get('_cueMissing'): probs.append(f"{s.get('id')}/{L.get('c')}: 关键词“{L['_cueMissing']}”在口播里找不到")
+    D = E.get('duration') or (scenes[-1]['t1'] if scenes else 0)
+    last = 0
+    for s in scenes:
+        if s['t0'] - last > 0.05: probs.append(f"{s.get('id')}: 与上一段之间空了 {s['t0'] - last:.2f}s")
+        last = s['t1']
+        n_layers = len(s.get('layers', [])); dur = s['t1'] - s['t0']
+        if n_layers / max(dur, 0.5) > 1.6: warns.append(f"{s.get('id')}: {dur:.1f}s 里放了 {n_layers} 个元素，偏密（建议每 1–2 秒一个）")
+        for L in s.get('layers', []):
+            at = L.get('at')
+            if at is None: probs.append(f"{s.get('id')}/{L.get('c')}: 缺少 at（或 cue 没解析到）")
+            elif at < s['t0'] - 0.6 or at > s['t1']: warns.append(f"{s.get('id')}/{L.get('c')}: at={at:.2f} 不在本段 {s['t0']:.2f}–{s['t1']:.2f} 内")
+            b = L.get('box')
+            if isinstance(b, list) and len(b) == 4 and L.get('c', '').startswith('bg-') is False:
+                if b[1] + b[3] > 0.86 and b[1] < 0.95 and not L.get('allowSubs'): warns.append(f"{s.get('id')}/{L.get('c')}: 下沿到 {b[1] + b[3]:.2f}，可能压字幕区（>0.86）")
+                if b[0] < 0.02 or b[0] + b[2] > 0.98: warns.append(f"{s.get('id')}/{L.get('c')}: 贴边，超出安全区")
+            txt = json.dumps(L.get('props', {}), ensure_ascii=False) if L.get('c') in ('title', 'stamp', 'chips', 'number', 'compare', 'flow', 'checklist', 'tags', 'equation', 'chapter') else ''
+            for m in re.findall(r'"(?:text|title|t)": "([^"]{24,})"', txt): warns.append(f"{s.get('id')}/{L.get('c')}: 文案偏长（{len(m)} 字）：{m[:20]}…，大字建议 ≤12 字")
+    if D and abs(last - D) > 0.1: probs.append(f'分镜结束于 {last:.2f}s，片长 {D:.2f}s')
+    keys = sorted([k for k in ((E.get('presenter') or {}).get('keys') or []) if 't' in k], key=lambda k: k['t'])
+    for a, b in zip(keys, keys[1:]):
+        if b['t'] - a['t'] < 0.8: warns.append(f"人物窗 {a['t']:.2f}→{b['t']:.2f} 变化太快（<0.8s），观众会晕")
+    print(('✓ 无硬错误' if not probs else '✗ 错误：\n  ' + '\n  '.join(probs)))
+    # 文字墙标准（2026-11-07 定稿）：偏离默认值就提醒
+    WALL_STD = {'layout': 'tight', 'blur': 5, 'k': 1.55, 'lh': 1.32, 'gap': 1.6, 'tilt': 0, 'mainStyle': None, 'mainOp': 0.2, 'subFade': 1.35}
+    for s in E.get('scenes', []):
+        bgs = s.get('bg') if isinstance(s.get('bg'), list) else ([s['bg']] if s.get('bg') else [])
+        for b in bgs:
+            if isinstance(b, dict) and b.get('c') == 'bg-wall':
+                pr = b.get('props') or {}
+                off = [f"{k}={pr[k]}" for k, v in WALL_STD.items() if k in pr and pr[k] != v]
+                if off: warns.append(f"{s.get('id')}/bg-wall: {', '.join(off)} 偏离文字墙标准（整墙柔焦 5px、主标识粗黑实心灰、错位交叉），除非用户要求，删掉这些参数用默认")
+        if s.get('depth'): warns.append(f"{s.get('id')}: 打开了前景局部柔焦 depth，文字墙标准是不加，除非用户要求")
+    for s in scenes:   # 演示区：样式要跟着内容变
+        for L in s.get('layers', []):
+            if L.get('c') == 'demo-zone':
+                bs = [b.get('c') for b in (L.get('props') or {}).get('beats') or []]
+                if len(bs) >= 3 and len(set(bs)) == 1: warns.append(f"{s.get('id')}/demo-zone: {len(bs)} 拍全是 {bs[0]}，演示样式要跟着口播内容变（见 playbook 4.5）")
+    br = E.get('brand')
+    if not br: warns.append('edit.json 没写 brand：文字墙会用本机保存的品牌或中性占位字；新作品开工时要问用户品牌（dms.py kickoff 第 4 题）')
+    elif br.get('_placeholder'): warns.append('品牌还是中性占位（MOTION · STUDIO）：确认用户是否真的不需要自己的品牌')
+    # 人物侧移不要一直停着
+    pk = sorted([k for k in ((E.get('presenter') or {}).get('keys') or []) if 't' in k], key=lambda k: k['t'])
+    for i, k in enumerate(pk):
+        if k.get('state') not in (None, 'full', 'side', 'card', 'story', 'circle', 'circle-big', 'pip', 'window', 'cutout', 'hidden'): probs.append(f"人物窗 {k['t']}s：不认识的状态 {k.get('state')}")
+        if k.get('state') == 'side':
+            end = pk[i + 1]['t'] if i + 1 < len(pk) else (E.get('duration') or 1e9)
+            if end - k['t'] > 20: warns.append(f"人物窗 {k['t']}s 起侧移了 {end - k['t']:.0f}s：侧移是讲解时的临时状态，建议 ≤ 20s 后回到全屏或换圆窗")
+    # 转场：类型要认识；morph 要有同名 share 层
+    TRANS = {'cut', 'fade', 'push-left', 'push-right', 'push-up', 'zoom-in', 'zoom-out', 'whip', 'flash', 'line', 'iris', 'slide-up', 'wipe-diag', 'split', 'rect', 'blinds', 'text-mask', 'morph', 'page', 'page-back'}
+    used = {}
+    for i, s in enumerate(scenes):
+        tr = s.get('transition') or {}
+        ty = tr.get('type') if isinstance(tr, dict) else tr
+        if not ty: continue
+        used[ty] = used.get(ty, 0) + 1
+        if ty not in TRANS: probs.append(f"{s.get('id')}: 不认识的转场 {ty}（可用：{' '.join(sorted(TRANS))}）")
+        if ty == 'morph' and i > 0:
+            a = {L.get('share') for L in scenes[i - 1].get('layers', []) if L.get('share')}
+            b = {L.get('share') for L in s.get('layers', []) if L.get('share')}
+            if not (a & b): warns.append(f"{s.get('id')}: morph 转场但和上一段没有同名 share 层，会退化成叠化")
+    for ty in ('morph', 'text-mask'):
+        if used.get(ty, 0) > max(2, len(scenes) // 5): warns.append(f"{ty} 用了 {used[ty]} 次，重点时刻才用，建议 ≤ {max(2, len(scenes) // 5)} 次")
+    base_types = [k for k in used if k not in ('cut', 'line', 'iris', 'morph', 'text-mask', 'page-back')]   # 录屏闪切、结尾展开、承接、字幕镂空是功能性转场，不算
+    if len(base_types) > 3: warns.append(f"常规转场用了 {len(base_types)} 种（{' '.join(base_types)}），建议 2–3 种为主")
+    if warns: print('⚠ 建议：\n  ' + '\n  '.join(warns))
+    sys.exit(1 if probs else 0)
+
+# =================================================================== direct（导演检查：语义 ↔ 画面）
+CN_NUM = {'零': 0, '一': 1, '二': 2, '两': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9}
+def cn2num(t):
+    """三十 → 30，四五 → 4–5，一百二 → 120；认不出返回 None"""
+    if re.fullmatch(r'[一二三四五六七八九]{2}', t) and t[0] != t[1]: return f'{CN_NUM[t[0]]}–{CN_NUM[t[1]]}'
+    tot, cur, ok = 0, 0, False
+    for ch in t:
+        if ch in CN_NUM: cur = CN_NUM[ch]; ok = True
+        elif ch in '十百千万':
+            m = {'十': 10, '百': 100, '千': 1000, '万': 10000}[ch]
+            if ch == '万': tot = (tot + cur) * m; cur = 0
+            else: tot += (cur or 1) * m; cur = 0
+            ok = True
+        else: return None
+    return str(tot + cur) if ok else None
+
+TURN = r'^(但是|不过|可是|然后|接下来|另外|第二|其次|最后|所以|结果|现在我们|那么|其实|反而)'
+TEXT_COMPS = ('title', 'stamp', 'chips', 'chapter', 'tags', 'strike', 'number', 'equation')
+def _layer_texts(L):
+    p = L.get('props') or {}; out = []
+    for k in ('text', 'title', 'to', 'from', 'label', 'sub'):
+        v = p.get(k)
+        if isinstance(v, str): out.append(v)
+        elif isinstance(v, list): out += [x for x in v if isinstance(x, str)]
+    for it in p.get('items') or []:
+        if isinstance(it, str): out.append(it)
+        elif isinstance(it, dict): out += [str(it[k]) for k in ('t', 'title', 'label', 'body') if it.get(k)]
+    return out
+def _events(L):
+    at = L.get('at') or 0; ev = [at]
+    if L.get('out') is not None: ev.append(L['out'])
+    def walk(o, base):
+        if isinstance(o, dict):
+            # 演示区里的一拍（有 c 和 at）：拍内元素的时间按这一拍的起点算
+            inner = base + o['at'] if o.get('c') and isinstance(o.get('at'), (int, float)) else base
+            for k, v in o.items():
+                if isinstance(v, (int, float)) and not isinstance(v, bool) and (k == 'at' or k.endswith('At')): ev.append(base + v)
+                elif k == 'props' and isinstance(v, dict): walk(v, inner)
+                elif isinstance(v, (dict, list)): walk(v, base)
+        elif isinstance(o, list):
+            for x in o: walk(x, base)
+    walk(L.get('props') or {}, at)
+    return ev
+DYNAMIC = ('window', 'media', 'type', 'chat', 'progress', 'number', 'dayan', 'nodes', 'flow')   # 自己在动的组件
+
+def _look_sig(S, T):
+    th = S.get('theme') or T.get('theme') or ''
+    bgs = []
+    for L in S.get('bg') or []:
+        p = L.get('props') or {}
+        c = L.get('c', '')   # 文字墙不同皮肤看起来仍是"文字墙"，只按背景种类归类；纯色 / 放射 / 纸张按颜色区分
+        bgs.append(c + (':' + str(p.get('gradient') or p.get('color') or p.get('c1') or p.get('tone') or '') if c in ('bg-solid', 'bg-burst', 'bg-paper') else ''))
+    return th + '|' + ','.join(bgs)
+
+def style_monotony(T):
+    out = []; scenes = T['scenes']; D = T['duration']
+    if not scenes: return out
+    sigs = [_look_sig(S, T) for S in scenes]
+    i = 0
+    while i < len(scenes):
+        j = i
+        while j + 1 < len(scenes) and sigs[j + 1] == sigs[i]: j += 1
+        dur = scenes[j]['t1'] - scenes[i]['t0']
+        if dur > 24 and j > i: out.append(f"{scenes[i]['id']}–{scenes[j]['id']} 连续 {dur:.0f}s 用同一个外观：换章节就换 look（a-blue / b-paper / d-neon / a-violet / b-film …），同一章节内再共用")
+        i = j + 1
+    kinds = len(set(sigs))
+    if D > 60 and kinds < 3: out.append(f"全片只用了 {kinds} 种外观：{D:.0f}s 的片子至少 3–4 种（开头暗底钩子、讲解色块、米白纸总结、结尾红色放射）")
+    keys = [k for k in ((T.get('presenter') or {}).get('keys') or []) if k.get('state') != 'hidden']
+    allk = (T.get('presenter') or {}).get('keys') or []
+    for a, b in zip(allk, allk[1:] + [{'t': D}]):
+        if a.get('state') in (None, 'hidden'): continue
+        if b['t'] - a['t'] > 25: out.append(f"人物 {a['t']:.1f}s 起保持「{a.get('state')}{'·' + str(a.get('pos')) if a.get('pos') else ''}」{b['t'] - a['t']:.0f}s：每 10–20s 换一次形态（全屏 ↔ 方卡 ↔ 圆窗 ↔ 大圆），或推近一次")
+    circ = [k.get('pos', 'br') for k in keys if k.get('state') == 'circle']
+    if len(circ) >= 3 and len(set(circ)) == 1: out.append(f"圆窗出现 {len(circ)} 次都在 {circ[0]}：内容换了，圆窗跟着换角落（内容在左 → 去右下，内容在右 → 去左下）")
+    states = {k.get('state') for k in keys}
+    if D > 45 and len(states) < 3: out.append(f"人物只用了 {len(states)} 种形态（{'、'.join(sorted(states))}）：至少用 3 种")
+    return out
+
+def cmd_direct(ns):
+    """读已 build 的工程（timeline.json），按"导演"标准检查语义与画面的对应。只给建议，不改文件。"""
+    import difflib
+    P = Path(ns.project); T = jload(P / 'timeline.json')
+    cues = [c for c in (T.get('subtitles') or {}).get('cues', []) if c.get('t')]
+    norm = lambda x: re.sub(r'[\s，。！？、,.!?：:；;“”"\'（）()《》~…—\-]', '', x or '').lower()
+    def say_between(a, b): return [c for c in cues if c['e'] > a and c['s'] < b]
+    def char_time(c, i): n = max(1, len(norm(c['t']))); return c['s'] + (c['e'] - c['s']) * i / n
+    def spoken_at(text, a, b):
+        k = norm(text)
+        for c in say_between(a, b):
+            j = norm(c['t']).find(k)
+            if j >= 0: return char_time(c, j)
+        return None
+    R = {'照抄字幕': [], '一段两件事': [], '画面静止': [], '口播有画面没有': [], '出现错位': [], '字幕可读性': [], '样式单一': []}
+    port = T['canvas']['h'] > T['canvas']['w']; maxc = 12 if port else 16
+    for c in cues:
+        n = _vlen(norm(c['t'])); d = c['e'] - c['s']
+        if n > maxc * 2: R['字幕可读性'].append(f"{c['s']:.1f}s「{c['t'][:14]}…」{n:.0f} 字，超过两行：拆成两条")
+        elif d > 0 and n / d > 8.5 and n >= 6: R['字幕可读性'].append(f"{c['s']:.1f}s「{c['t'][:14]}」每秒 {n / d:.1f} 字，读不过来（≤ 8）：合并口癖或拆条")
+        elif d < 0.5 and n >= 3: R['字幕可读性'].append(f"{c['s']:.1f}s「{c['t']}」只停留 {d:.2f}s：和相邻一条合并")
+    scenes = T['scenes']; keys = (T.get('presenter') or {}).get('keys', [])
+    for S in scenes:
+        sid, t0, t1 = S.get('id'), S['t0'], S['t1']; layers = [L for L in S.get('layers', []) if not str(L.get('c', '')).startswith('bg-')]
+        says = say_between(t0, t1)
+        # 1 大字照抄字幕
+        for L in layers:
+            if L.get('c') not in TEXT_COMPS: continue
+            for tx in _layer_texts(L):
+                k = norm(tx)
+                if len(k) < 9: continue
+                for c in say_between((L.get('at') or t0) - 1.5, (L.get('at') or t0) + 3):
+                    ck = norm(c['t'])
+                    if difflib.SequenceMatcher(None, k, ck).ratio() > 0.78 or (k in ck and len(k) / max(1, len(ck)) > 0.7):
+                        R['照抄字幕'].append(f"{sid}/{L['c']}「{tx[:16]}」≈ 字幕「{c['t'][:16]}」：大字只放 ≤12 字的结论/关键词，别把整句再排一遍"); break
+        # 2 一段讲两件事：中途转折，后面 2.5 秒内画面没变化
+        evs = sorted(e for L in layers for e in _events(L)) + [k['t'] for k in keys if t0 <= k['t'] <= t1]
+        for c in says:
+            if c['s'] < t0 + 3 or c['s'] > t1 - 3: continue
+            m = re.match(TURN, norm(c['t']))
+            if m and not any(c['s'] - 1.0 <= e <= c['s'] + 2.5 for e in evs):
+                R['一段两件事'].append(f"{sid} {c['s']:.1f}s 说「{c['t'][:14]}」换了意思，画面没跟着变：从这里拆成新段，或在这句上加一个元素")
+        # 3 画面静止
+        live = [(L.get('at') or 0, L.get('out') if L.get('out') is not None else t1) for L in layers if L.get('c') in DYNAMIC or (L.get('props') or {}).get('kenburns') or L.get('float')]
+        for L in layers:   # 演示区：自己在动的一拍（录屏/打字/进度/动效库动效等）从这一拍开始到下一拍
+            if L.get('c') != 'demo-zone': continue
+            bs = sorted([b for b in (L.get('props') or {}).get('beats') or [] if isinstance(b.get('at'), (int, float))], key=lambda b: b['at'])
+            end = L.get('out') if L.get('out') is not None else t1
+            for i, b in enumerate(bs):
+                if b.get('c') in DYNAMIC or str(b.get('c', '')).startswith('fx-'):
+                    live.append(((L.get('at') or 0) + b['at'], (L.get('at') or 0) + bs[i + 1]['at'] if i + 1 < len(bs) else end))
+        pts = sorted({t0, t1, *[e for e in evs if t0 <= e <= t1]})
+        for a, b in zip(pts, pts[1:]):
+            if b - a <= 4.2: continue
+            cov = sum(max(0, min(b, y) - max(a, x)) for x, y in live)
+            if cov < (b - a) * 0.6:
+                R['画面静止'].append(f"{sid} {a:.1f}–{b:.1f}s 有 {b - a:.1f}s 没有任何新元素/状态变化：在中间的关键词上加一个强调（印章、圈选、数字）或换人物窗状态")
+        # 4 口播里的数字 / 高亮词，画面上没有（只看在本段开始说的句子）
+        says = [c for c in says if t0 - 0.3 <= c['s'] < t1]
+        shown = norm(' '.join(t for L in layers for t in _layer_texts(L)) + json.dumps([L.get('props') for L in layers], ensure_ascii=False))
+        for c in says:
+            for m in re.finditer(r'(?<![几上数好近])(\d+(?:\.\d+)?|[一二三四五六七八九十两百千万]{1,4})(?=\s*(%|万|亿|倍|分钟|秒|小时|天|个|条|步|块|元|年))', c['t']):
+                raw = m.group(1); arab = raw if raw[0].isdigit() else cn2num(raw)
+                if arab is None or raw in ('十', '百', '千', '万') or arab in ('1', '2') and not raw[0].isdigit(): continue
+                if norm(raw) not in shown and norm(arab) not in shown and norm(arab.replace('–', '-')) not in shown:
+                    R['口播有画面没有'].append(f"{sid} {c['s']:.1f}s 说了「{raw}{m.group(2)}」，画面没有这个数字：数字是最好上屏的信息，用 number（cue 落在数字那个字，lead -0.15）")
+            for h in c.get('hl') or []:
+                nums = [cn2num(x) or x for x in re.findall(r'[一二三四五六七八九十两百千万]{2,4}|[二三四五六七八九两](?=分钟|秒|小时|天|个|条|步|倍|件)|\d+', h)]
+                if nums and all(norm(x) in shown or norm(x.replace('–', '-')) in shown for x in nums): continue
+                if norm(h) and norm(h) not in shown:
+                    R['口播有画面没有'].append(f"{sid} {c['s']:.1f}s 字幕高亮了「{h}」，画面没有呼应：要么上屏（印章/大字/圈选），要么取消字幕高亮")
+        # 5 出现错位：元素文字在口播里说到的时间 vs 元素出现时间
+        for L in layers:
+            if L.get('c') not in TEXT_COMPS or L.get('at') is None: continue
+            best = None
+            for tx in _layer_texts(L):
+                k = norm(tx)
+                if not (2 <= len(k) <= 12): continue
+                ts = spoken_at(tx, t0 - 1, t1 + 0.5)
+                if ts is not None: best = ts if best is None else min(best, ts)
+            if best is None: continue
+            d = L['at'] - best
+            if d > 0.9: R['出现错位'].append(f"{sid}/{L['c']} 晚了 {d:.1f}s：口播 {best:.1f}s 已经说到，元素 {L['at']:.1f}s 才出（改用 cue 对齐，lead -0.15）")
+            elif d < -1.6: R['出现错位'].append(f"{sid}/{L['c']} 早了 {-d:.1f}s：元素 {L['at']:.1f}s 就出来，口播 {best:.1f}s 才说到（剧透；改用 cue）")
+    # 7 样式单一（参考风格 A–D：换章节换底色；人物在全屏 / 方卡 / 圆窗 / 大圆之间切；圆窗每章换角；全屏段隔 8–15s 推近一次）
+    R['样式单一'] += style_monotony(T)
+    n = sum(len(v) for v in R.values())
+    print(f"导演检查 · {T.get('title', '')} · {len(scenes)} 段 · {T['duration']:.1f}s")
+    for k, v in R.items():
+        print(f"\n【{k}】{'✓ 无' if not v else f'{len(v)} 处'}")
+        for x in v: print('  · ' + x)
+    print(f"\n合计 {n} 处建议" + ('' if n else '：语义与画面对应良好'))
+    jsave(P / 'direct.json', R)
+    return R
+
+# =================================================================== build
+def resolve_cues(obj, words, base_at=None, window=None):
+    """把 {"cue":"关键词","lead":-0.15,"nth":1} 解析为时间。层级：at=绝对；嵌套 items 内 at=相对层 at"""
+    if isinstance(obj, list):
+        for x in obj: resolve_cues(x, words, base_at, window)
+        return
+    if not isinstance(obj, dict): return
+    if 'cue' in obj and not obj['cue']: obj.pop('cue')          # 内置动效里没填的 cue 槽位：用自然时间
+    if 'cue' in obj and words is not None:
+        a, b = window or (None, None)
+        ts = find_word_times(words, obj['cue'], after=(obj.get('after', a)), before=b)
+        if not ts: ts = find_word_times(words, obj['cue'])
+        if ts:
+            t = ts[min(len(ts) - 1, max(0, int(obj.get('nth', 1)) - 1))] + float(obj.get('lead', -0.12))
+            obj['at'] = round(t if base_at is None else t - base_at, 3); obj['_cueT'] = ts[0]
+        else:
+            obj.setdefault('_cueMissing', obj['cue'])
+    for k, v in list(obj.items()):
+        if base_at is not None and k != 'props' and isinstance(v, list):   # props 里更深的列表（cards[].items[]）同样按层 at 计相对时间
+            resolve_cues(v, words, base_at, window); continue
+        if k in ('props',) and isinstance(v, dict):
+            inner_base = obj.get('at') if base_at is None else base_at
+            if base_at is not None and obj.get('c') and isinstance(obj.get('at'), (int, float)): inner_base = base_at + obj['at']   # 演示区里的一拍：拍内的 cue 按这一拍的时间算
+            for kk, vv in v.items():
+                if isinstance(vv, (list, dict)): resolve_cues(vv, words, inner_base, window)
+                if isinstance(vv, dict) and 'cue' in vv and kk.endswith('At') is False: pass
+            for kk in list(v.keys()):
+                if kk.endswith('Cue') and isinstance(v[kk], str):  # 如 winnerCue:"Claude" → winnerAt
+                    ts = find_word_times(words or [], v[kk], after=window[0] if window else None)
+                    if ts: v[kk[:-3] + 'At'] = round(ts[0] - 0.1 - (inner_base or 0), 3)
+
+# 章节外观预设（从参考风格 A–D 迁移）：scene.look 一键换"主题 + 背景"，同一章节共用一个 look，换章节换 look
+LOOKS = {
+    'c-wall':   ('film-warm',   'C 品牌文字墙（深灰墙慢移，最"家常"的底）', lambda T: [{'c': 'bg-wall', 'props': {'skin': 'platinum'}}]),
+    'c-wall-gold': ('film-warm', 'C 品牌文字墙 · 金', lambda T: [{'c': 'bg-wall', 'props': {'skin': 'gold'}}]),
+    'a-blue':   ('comic-pop',   'A 纯蓝色块（讲解段、SHOW TIME）', lambda T: [{'c': 'bg-solid', 'props': {'gradient': 'radial-gradient(120% 90% at 30% 15%, #5584FF 0%, #2F6BFF 45%, #1A44C8 100%)'}}, {'c': 'bg-watermark', 'props': {'text': T, 'op': 0.10}}]),
+    'a-violet': ('violet-dream','A 紫色过渡页（章节之间、锚点页）', lambda T: [{'c': 'bg-solid', 'props': {'gradient': 'radial-gradient(110% 90% at 70% 15%, #7446FF 0%, #3A1C9E 55%, #220E70 100%)'}}, {'c': 'bg-glow'}]),
+    'a-red':    ('pop-red',     'A 红色放射（喊话、CTA、情绪高点）', lambda T: [{'c': 'bg-burst', 'props': {'c1': '#E2343E', 'c2': '#F25A52', 'rays': 20}}]),
+    'a-lime':   ('block-lime',  'A 荧光绿色块 + 巨字（节奏 / 数量 / 反差）', lambda T: [{'c': 'bg-solid', 'props': {'color': '#C8FF3D'}}, {'c': 'bg-watermark', 'props': {'text': T, 'op': 0.07}}]),
+    'a-thumbs': ('dark-tech',   'A 倾斜作品墙（证据蒙太奇、成果展示）', lambda T: [{'c': 'bg-thumbs', 'props': {'dim': 0.55}}]),
+    'b-film':   ('film-warm',   'B 暗胶片（情绪 / 产品 / 态度句）', lambda T: [{'c': 'bg-solid', 'props': {'gradient': 'radial-gradient(100% 80% at 50% 25%, #231A14 0%, #0B0907 100%)'}}, {'c': 'bg-glow', 'props': {'colors': ['#FF7A1A55', '#FF3D6E33', '#FFC24B33']}}, {'c': 'bg-film'}]),
+    'b-paper':  ('paper-swiss', 'B 米白纸（理性 / 叙述 / 总结）', lambda T: [{'c': 'bg-paper', 'props': {'tone': 'cream', 'dots': True}}]),
+    'd-neon':   ('neon-violet', 'D 霓虹紫 + 斜体章节水印（术语、概念）', lambda T: [{'c': 'bg-solid', 'props': {'gradient': 'radial-gradient(120% 90% at 50% 0%, #2E1660 0%, #0E0820 70%)'}}, {'c': 'bg-watermark', 'props': {'text': T, 'op': 0.16}}, {'c': 'bg-glow', 'props': {'colors': ['#B47CFF66', '#FF4FD844', '#4DE3FF33']}}]),
+    'd-hud':    ('hud-blue',    'D HUD 暗蓝（数据、系统、执行中）', lambda T: [{'c': 'bg-solid', 'props': {'gradient': 'radial-gradient(110% 90% at 50% 20%, #0F2A8A 0%, #061247 75%)'}}, {'c': 'bg-grid', 'props': {'color': '#33D1FF'}}, {'c': 'bg-hud'}]),
+}
+
+def apply_look(s, E):
+    lk = s.get('look')
+    if not lk: return s
+    name, text = (lk, None) if isinstance(lk, str) else (lk.get('name'), lk.get('text'))
+    if name not in LOOKS: return s
+    theme, _, bgf = LOOKS[name]
+    T = text or s.get('lookText') or ((E.get('brand') or {}).get('wall') or ['MOTION'])[0]
+    s.setdefault('theme', theme)
+    if not s.get('bg'): s['bg'] = bgf(T)
+    return s
+
+def expand_all(E, dry=False):
+    out = []
+    for s in E.get('scenes', []):
+        if 'template' in s: out.extend(apply_look(x, E) for x in expand_template(s, E))
+        else: out.append(apply_look(json.loads(json.dumps(s)), E))
+    return out
+
+def cmd_build(ns):
+    ep = Path(ns.edit).resolve(); E = jload(ep); base = ep.parent
+    P = Path(ns.project).resolve(); P.mkdir(parents=True, exist_ok=True)
+    W, H, FPS = E['canvas']['w'], E['canvas']['h'], E['canvas'].get('fps', 60)
+    # 1 引擎
+    if (P / 'engine').exists(): shutil.rmtree(P / 'engine')
+    shutil.copytree(ROOT / 'engine', P / 'engine')
+    lib = ROOT / 'assets' / 'dayan-library.html'
+    if lib.exists() and not (P / 'assets' / 'dayan-library.html').exists():
+        (P / 'assets').mkdir(exist_ok=True); shutil.copy(lib, P / 'assets' / 'dayan-library.html')
+    words = None
+    if E.get('words') and (base / E['words']).exists(): words = jload(base / E['words'])['words']
+    if E.get('presenter') is not None: E['presenter'].setdefault('keys', [{'t': 0, 'state': 'full'}])
+    E['_words'] = words
+    scenes = expand_all(E)   # 先展开 内置动效（内置动效可能追加人物关键帧与镜头）
+    # 2 母版 → 人物帧 + 人声
+    master = (base / E['master']).resolve() if E.get('master') else None
+    D = float(E.get('duration') or 0)
+    pres = None
+    if master and master.exists():
+        info = probe(master); D = D or info['duration']
+        pfps = min(info['fps'], FPS)
+        stamp = f"{sha(master)}-{pfps:.3f}"
+        if (P / 'talk' / '.stamp').exists() and (P / 'talk' / '.stamp').read_text() == stamp: log('人物帧已是最新，跳过抽帧')
+        else:
+            if (P / 'talk').exists(): shutil.rmtree(P / 'talk')
+            (P / 'talk').mkdir()
+            sc = 'scale=-2:min(ih\\,1440)' if info['h'] >= info['w'] else 'scale=min(iw\\,1920):-2'
+            log(f'抽取人物帧 {pfps:.2f}fps …'); run([FF, '-v', 'error', '-y', '-i', str(master), '-vf', f'fps={pfps:.4f},{sc}', '-q:v', '3', str(P / 'talk' / '%06d.jpg')])
+            (P / 'talk' / '.stamp').write_text(stamp)
+        if info['audio']: run([FF, '-v', 'error', '-y', '-i', str(master), '-vn', '-ac', '2', '-ar', '48000', str(P / 'voice.wav')])
+        nfr = len(list((P / 'talk').glob('*.jpg')))
+        from PIL import Image
+        fw, fh = Image.open(P / 'talk' / '000001.jpg').size
+        pc = dict(E.get('presenter') or {})
+        face = pc.get('face', 'auto')
+        if face == 'auto' or face is None:
+            fj = P / 'face.json'
+            if not fj.exists() or jload(fj).get('_src') != stamp:
+                fd = face_track(master, fj); fd['_src'] = stamp; jsave(fj, fd)
+            fd = jload(fj); face = fd['track'] or fd['median']
+        pres = {'frames': 'talk/%06d.jpg', 'fps': pfps, 'frameCount': nfr, 'srcW': fw, 'srcH': fh, 'face': face, 'keys': pc.get('keys', [{'t': 0, 'state': 'full'}]),
+                'windowTitle': pc.get('windowTitle', (brand_of(E, Path(ns.edit).resolve().parent).get('name') + ' · 口播') if brand_of(E, Path(ns.edit).resolve().parent).get('name') else '口播'), 'fullFit': pc.get('fullFit'), 'scrimColor': pc.get('scrimColor')}
+        if pc.get('matte'):
+            md = P / 'matte'
+            if not md.exists() or not any(md.glob('*.png')):
+                try:
+                    import dms_matte; dms_matte.matte_frames(P / 'talk', md); pres['matte'] = 'matte/%06d.png'; pres['personFront'] = bool(pc.get('personFront'))
+                except Exception as e: log('抠像不可用，跳过：', e)
+            else: pres['matte'] = 'matte/%06d.png'; pres['personFront'] = bool(pc.get('personFront'))
+    if not D: D = max((s.get('t1', 0) for s in E.get('scenes', [])), default=10)
+    # 3 B-roll 素材 → 帧序列
+    media = {}
+    for mid, m in (E.get('media') or {}).items():
+        src = (base / m['src']).resolve()
+        if not src.exists(): die(f'素材不存在：{src}')
+        if src.suffix.lower() in ('.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg'):
+            (P / 'media').mkdir(exist_ok=True); dst = P / 'media' / f'{mid}{src.suffix.lower()}'; shutil.copy(src, dst); media[mid] = {'src': f'media/{dst.name}'}
+        else:
+            d = P / 'media' / mid; fps = float(m.get('fps', 30)); stamp = f"{sha(src)}-{m.get('from', 0)}-{m.get('to', '')}-{fps}-{m.get('crop', '')}"
+            if not (d / '.stamp').exists() or (d / '.stamp').read_text() != stamp:
+                if d.exists(): shutil.rmtree(d)
+                d.mkdir(parents=True)
+                vf = [f'fps={fps}']
+                if m.get('crop'): cx = m['crop']; vf.append(f"crop=iw*{cx[2]}:ih*{cx[3]}:iw*{cx[0]}:ih*{cx[1]}")
+                vf.append('scale=min(iw\\,1600):-2')
+                cmd = [FF, '-v', 'error', '-y']
+                if m.get('from') is not None: cmd += ['-ss', str(m['from'])]
+                if m.get('to') is not None: cmd += ['-to', str(m['to'])]
+                run(cmd + ['-i', str(src), '-vf', ','.join(vf), '-q:v', '3', str(d / '%05d.jpg')]); (d / '.stamp').write_text(stamp)
+            media[mid] = {'seq': {'path': f'media/{mid}/%05d.jpg', 'fps': fps, 'count': len(list(d.glob('*.jpg')))}, 'clock': m.get('clock'), 'from': float(m.get('from') or 0)}
+    # 4 场景：关键词对齐 → 媒体引用
+    extra_js, extra_css = [], []
+    for s in scenes:
+        for f in s.pop('_assets_js', []): extra_js.append(f)
+        for f in s.pop('_assets_css', []): extra_css.append(f)
+    missing = []
+    for s in scenes:
+        win = (s['t0'] - 1.0, s['t1'] + 0.5)
+        for L in s.get('layers', []) + [b for b in (s.get('bg') or []) if isinstance(b, dict)]:
+            resolve_cues(L, words, None, win)
+            if L.get('_cueMissing'): missing.append(f"{s.get('id')}: “{L['_cueMissing']}”")
+            if 'at' not in L and L.get('c', '').startswith('bg-') is False: L['at'] = s['t0'] + 0.25
+        def subst(o, L=None):
+            if isinstance(o, dict):
+                for k, v in list(o.items()):
+                    if isinstance(v, str) and v.startswith('@') and v[1:] in media:
+                        m = media[v[1:]]; o.pop(k)
+                        if 'seq' in m:
+                            q = dict(m['seq'])
+                            # clock=master：素材与母版同一时钟（如母版后半段本身就是录屏），帧号 = 全片时间
+                            if m.get('clock') == 'master' and L is not None: q['offset'] = round(float(L.get('at', 0)) - m['from'], 3)
+                            o['seq'] = q
+                        else: o['src' if k in ('src', 'media') else ('image' if k == 'image' else k)] = m['src']
+                    else: subst(v, L)
+            elif isinstance(o, list):
+                for x in o: subst(x, L)
+        for L in s.get('layers', []) + [b for b in (s.get('bg') or []) if isinstance(b, dict)]: subst(L, L)
+    if missing: log('⚠ 这些关键词没在口播里找到（已用段首时间代替）：' + '；'.join(missing))
+    # 5 人物关键帧也支持 cue
+    if pres:
+        for k in pres['keys']:
+            if isinstance(k, dict) and 'cue' in k and words:
+                ts = find_word_times(words, k['cue']);
+                if ts: k['t'] = round(ts[0] + float(k.get('lead', -0.2)), 3)
+        pres['keys'] = sorted(pres['keys'], key=lambda k: k['t'])
+    # 6 字幕
+    sub = dict(E.get('subtitles') or {})
+    cues = sub.get('cues')
+    if cues is None and sub.get('cuesFile') and (base / sub['cuesFile']).exists(): cues = jload(base / sub['cuesFile'])
+    if cues is None and words: cues = words_to_cues(words, max_chars=int(sub.get('maxChars', 16 if W >= H else 12)))
+    hl = sub.get('highlight') or []
+    for c in cues or []:
+        c.setdefault('hl', [h for h in hl if h in c['t']])
+    for fix in sub.get('replace', []):
+        for c in cues or []: c['t'] = c['t'].replace(fix[0], fix[1])
+    burn = sub.get('burn', 'ass')
+    tl_sub = {'style': sub.get('style', 'clean'), 'cues': cues or [], 'hide': sub.get('hide', []), 'enabled': sub.get('enabled', True) and bool(cues), 'size': sub.get('size')}
+    if burn == 'ass': tl_sub['previewOnly'] = True
+    if cues: write_srt(cues, P / 'subtitles.srt'); write_ass(cues, P / 'subtitles.ass', W, H, sub, words)
+    TL = {'version': VERSION, 'title': E.get('title', ''), 'canvas': {'w': W, 'h': H, 'fps': FPS}, 'duration': round(D, 3), 'theme': E.get('theme', 'dark-tech'),
+          'brand': brand_of(E, Path(ns.edit).resolve().parent), 'signature': E.get('signature', {'enabled': False, 'name': brand_of(E, Path(ns.edit).resolve().parent).get('name', '')}), 'presenter': pres, 'subtitles': tl_sub, 'scenes': scenes, 'camera': E.get('camera', []),
+          'sfx': E.get('sfx', []), 'globals': E.get('globals', []), 'previewAudio': 'mix.wav', 'dayanLibrary': 'assets/dayan-library.html'}
+    E.pop('_words', None)
+    for k in ('motionBlur', 'lift', 'sheen', 'depth'):
+        if k in E: TL[k] = E[k]
+    jsave(P / 'timeline.json', TL)
+    (P / 'timeline.js').write_text('window.TIMELINE = ' + json.dumps(TL, ensure_ascii=False) + ';\n', encoding='utf-8')
+    html = (ROOT / 'engine' / 'stage.html').read_text(encoding='utf-8')
+    html = html.replace('{{TITLE}}', E.get('title', 'Motion Studio')).replace('{{EXTRA_JS}}', '\n'.join(f'<script src="{j}"></script>' for j in dict.fromkeys(extra_js))).replace('{{EXTRA_CSS}}', '\n'.join(f'<link rel="stylesheet" href="{c}">' for c in dict.fromkeys(extra_css)))
+    # 动效库里的新动效：全部带进工程（体积很小），剪辑时按名字直接用
+    fx_tags = []
+    for d in effect_dirs():
+        dst = P / 'effects' / d.name
+        if dst.exists(): shutil.rmtree(dst)
+        shutil.copytree(d, dst, ignore=shutil.ignore_patterns('*.png', '_check'))
+        if (d / 'style.css').exists(): fx_tags.append(f'<link rel="stylesheet" href="effects/{d.name}/style.css">')
+        fx_tags.append(f'<script src="effects/{d.name}/component.js"></script>')
+    html = html.replace('<script src="timeline.js"></script>', '\n'.join(fx_tags) + '\n<script src="timeline.js"></script>', 1) if fx_tags else html
+    (P / 'index.html').write_text(html, encoding='utf-8')
+    for f in dict.fromkeys(extra_js + extra_css):
+        src = ROOT / f
+        if src.exists(): (P / f).parent.mkdir(parents=True, exist_ok=True); shutil.copy(src, P / f)
+    shutil.copy(ep, P / 'edit.json')
+    jsave(P / 'project.json', {'tool': 'dayan-motion-studio', 'version': VERSION, 'built': time.strftime('%Y-%m-%d %H:%M:%S'), 'edit': str(ep), 'master': str(master) if master else None, 'canvas': TL['canvas'], 'duration': TL['duration'], 'scenes': len(scenes)})
+    log(f'工程已生成 {P}  画布 {W}x{H}@{FPS}  {len(scenes)} 段  {D:.2f}s  （浏览器打开 index.html 可拖动预览）')
+
+# =================================================================== 字幕 ASS（烧录用，可编辑）
+def _ass_color(hexs, alpha=0):
+    h = hexs.lstrip('#'); r, g, b = h[0:2], h[2:4], h[4:6]; return f'&H{alpha:02X}{b}{g}{r}'.upper()
+
+def _vlen(t): return sum(0.55 if ord(ch) < 128 else 1 for ch in t)
+def wrap_cn(t, maxc, keep=()):
+    """中文字幕断行：超过 maxc 才断；优先断在标点后、靠近中间；不拆英文单词、不拆高亮词；不留单字孤行。最多两行。"""
+    t = t.strip().rstrip('，。,.;；')
+    if _vlen(t) <= maxc: return t
+    n = len(t); best, bs = None, 1e9
+    protect = set(); bounds = None
+    try:   # 有 jieba 就按词边界断（不会把"自己"拆成两行）；没有就用虚词启发式
+        import warnings; warnings.filterwarnings('ignore', category=SyntaxWarning)
+        import jieba, logging; jieba.setLogLevel(logging.WARNING); bounds = set(); k = 0
+        for w in jieba.cut(t): k += len(w); bounds.add(k)
+    except Exception: pass
+    for w in keep:
+        for m in re.finditer(re.escape(w), t): protect.update(range(m.start() + 1, m.end()))
+    for i in range(2, n - 1):
+        if i in protect: continue
+        if t[i - 1].isascii() and t[i - 1].isalnum() and t[i].isascii() and t[i].isalnum(): continue   # 英文单词中间
+        a, b = _vlen(t[:i]), _vlen(t[i:])
+        if a > maxc + 1 or b > maxc + 1: continue
+        punct = t[i - 1] in '，、,：:；;！？!?'
+        sc = abs(a - b) * 1.0 + (0 if punct else 8) + (0 if a >= b else 0.6)   # 标点处最好；上长下短更好看
+        if not punct:
+            if bounds is not None: sc += 0 if i in bounds else 6
+            elif not (t[i - 1] in '的了着过吧呢啊' or t[i] in '就让把给在和跟为是也都还又而但所'): sc += 4
+        if t[i] in '，。、,.：:；;！？!?）)」”': sc += 20                                              # 标点不能放行首
+        if sc < bs: best, bs = i, sc
+    if best is None: return t
+    l1, l2 = t[:best].rstrip('，、,'), t[best:].lstrip(' ')
+    return l1 + '\\N' + l2
+
+def write_ass(cues, path, W, H, sub, words=None):
+    font = sub.get('font') or ('Microsoft YaHei' if sys.platform.startswith('win') else 'PingFang SC' if sys.platform == 'darwin' else 'Noto Sans CJK SC')
+    port = H > W
+    size = int(sub.get('size') or (52 if port else 46) * (H if not port else W) / (1080))
+    style = sub.get('style', 'clean'); hl = sub.get('hlColor', '#FFC24B')
+    mv = int(H * (0.18 if port else 0.074))
+    if style == 'pill': st = f'Style: Default,{font},{int(size * .82)},&H00FFFFFF,&H00FFFFFF,&H00000000,&H50101012,-1,0,0,0,100,100,1,0,3,14,0,2,60,60,{mv},1'
+    elif style == 'bold': st = f'Style: Default,{font},{int(size * 1.08)},&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,-1,0,0,0,100,100,1,0,1,5,0,2,60,60,{mv},1'
+    else: st = f'Style: Default,{font},{size},&H00FFFFFF,&H00FFFFFF,&H00141414,&H78000000,-1,0,0,0,100,100,1,0,1,2.6,1.2,2,60,60,{mv},1'
+    def ts(x):
+        cs = int(round(x * 100)); h, cs = divmod(cs, 360000); m, cs = divmod(cs, 6000); s, cs = divmod(cs, 100); return f'{h}:{m:02}:{s:02}.{cs:02}'
+    lines = ['[Script Info]', 'ScriptType: v4.00+', f'PlayResX: {W}', f'PlayResY: {H}', 'WrapStyle: 0', 'ScaledBorderAndShadow: yes', '', '[V4+ Styles]',
+             'Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding', st, '', '[Events]',
+             'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text']
+    hide = sub.get('hide') or []; maxc = int(sub.get('maxChars', 12 if port else 16)); pop = sub.get('pop', True)
+    for c in cues:
+        if any(a <= c['s'] < b for a, b in hide): continue
+        t = wrap_cn(c['t'].replace('{', '(').replace('}', ')'), maxc, c.get('hl') or [])
+        for w in sorted(c.get('hl') or [], key=len, reverse=True):
+            if w not in t: continue
+            col = _ass_color(hl)
+            if not pop: t = t.replace(w, '{\\c' + col + '&}' + w + '{\\r}', 1); continue
+            # 关键词强调：说到这个词的那一刻变色 + 外发光一闪 + 纵向轻弹（只改高度，不挤动整行）
+            wt = find_word_times(words, w, after=c['s'] - 0.3, before=c['e']) if words else []
+            off = int(max(0, (wt[0] - c['s']) if wt else 0) * 1000)
+            glow = _ass_color(hl, 0x60)
+            tag = (f'{{\\t({off},{off + 80},\\c{col}&\\3c{glow}&\\bord{max(4, size // 9)}\\blur6\\fscy114)'
+                   f'\\t({off + 80},{off + 300},\\bord2.6\\blur0.6\\fscy100\\3c&H00141414&)}}')
+            t = t.replace(w, tag + w + '{\\r}', 1)
+        lines.append(f"Dialogue: 0,{ts(c['s'])},{ts(c['e'])},Default,,0,0,0,,{{\\fad(90,40)}}{t}")
+    Path(path).write_text('\n'.join(lines) + '\n', encoding='utf-8')
+
+# =================================================================== stills
+def cmd_stills(ns):
+    P = Path(ns.project); _node_render(P, ['--stills', ns.times, '--outdir', 'stills'])
+    from PIL import Image
+    fs = sorted((P / 'stills').glob('t*.png'), key=lambda p: float(p.stem[1:]))
+    sel = [f for f in fs if f'{float(f.stem[1:]):.2f}' in {f'{float(x):.2f}' for x in ns.times.split(',')}]
+    if not sel: return
+    w0, h0 = Image.open(sel[0]).size; tw = 640; th = int(h0 * tw / w0); cols = 3 if w0 >= h0 else 5; rows = math.ceil(len(sel) / cols)
+    S = Image.new('RGB', (cols * tw, rows * (th + 30)), 'white')
+    from PIL import ImageDraw
+    d = ImageDraw.Draw(S)
+    for i, f in enumerate(sel):
+        x, y = (i % cols) * tw, (i // cols) * (th + 30); S.paste(Image.open(f).convert('RGB').resize((tw, th)), (x, y + 30)); d.text((x + 8, y + 8), f'{float(f.stem[1:]):.2f}s', fill='black')
+    S.save(P / 'stills' / 'contact.jpg', quality=86); log('接触表 →', P / 'stills' / 'contact.jpg')
+
+def _node_render(P, extra):
+    run([NODE, str(HERE / 'render.mjs'), str(Path(P).resolve())] + [str(Path(x).resolve()) if x.endswith('.mp4') else x for x in extra], cwd=str(ROOT))
+
+# =================================================================== audio
+def cmd_audio(ns):
+    import dms_audio as A
+    P = Path(ns.project); TL = jload(P / 'timeline.json'); E = jload(P / 'edit.json'); D = TL['duration']
+    _node_render(P, ['--cues', 'sfx_cues.json'])
+    cues = jload(P / 'sfx_cues.json')
+    used = A.render_sfx(cues, D, P / 'sfx.wav', seed=int((E.get('sfxSeed') or 11)))
+    log('音效', sum(used.values()), '个：', '、'.join(f'{k}×{v}' for k, v in sorted(used.items(), key=lambda x: -x[1])[:12]))
+    mus = E.get('music') or {'mode': 'none'}; bgm = None
+    if mus.get('mode', 'none') == 'none':   # 不配乐：清掉上一版留下的配乐文件，免得导出时混进分轨
+        for f in P.glob('bgm*.wav'): f.unlink()
+    if mus.get('mode') == 'generate':
+        secs = [{'t0': s['t0'], 't1': s['t1'], 'energy': int(s.get('energy', 2))} for s in TL['scenes']]
+        bgm, info = A.compose_bgm(D, mus.get('mood', 'tech-pulse'), secs, seed=int(mus.get('seed', 7)), key_shift=int(mus.get('key', 0)), bpm=mus.get('bpm'), out_dir=P)
+        log(f"原创配乐 {info['mood']} {info['bpm']}bpm {info['bars']} 小节（{info['desc']}）")
+        if mus.get('range'):   # 只在一段里出声（如片头 solo 卡点配乐），其余时间静音；分轨同样裁切
+            a, b = [float(x) for x in mus['range']]; fo = float(mus.get('fadeOut', 0.6)); fi = float(mus.get('fadeIn', 0.02))
+            for f in sorted(P.glob('bgm*.wav')):
+                tmp = f.with_name(f.stem + '_r.wav')
+                run([FF, '-v', 'error', '-y', '-i', str(f), '-af', f'atrim=0:{b + fo:.3f},afade=t=in:st={a:.3f}:d={fi:.3f},afade=t=out:st={b:.3f}:d={fo:.3f},adelay=0:all=1,apad=whole_dur={D:.3f}', '-ar', '48000', '-ac', '2', str(tmp)])
+                if a > 0: run([FF, '-v', 'error', '-y', '-i', str(tmp), '-af', f'volume=enable=\'lt(t,{a:.3f})\':volume=0', str(f)]); tmp.unlink()
+                else: tmp.replace(f)
+            log(f'配乐只在 {a:.1f}–{b:.1f}s 出声，{fo:.1f}s 淡出')
+    elif mus.get('mode') == 'track':
+        src = (Path(E.get('_base', P)) / mus['path']) if not Path(mus['path']).is_absolute() else Path(mus['path'])
+        if not src.exists(): src = Path(jload(P / 'project.json')['edit']).parent / mus['path']
+        bgm = str(P / 'bgm.wav'); run([FF, '-v', 'error', '-y', '-ss', str(mus.get('offset', 0)), '-i', str(src), '-t', str(D + 1), '-af', f'afade=t=out:st={max(0, D - 2.2)}:d=2.2', '-ar', '48000', '-ac', '2', bgm])
+    voice = P / 'voice.wav'
+    if not voice.exists():  # 无口播（纯内置动效片段）：生成静音人声轨
+        run([FF, '-v', 'error', '-y', '-f', 'lavfi', '-i', 'anullsrc=r=48000:cl=stereo', '-t', str(D), str(voice)])
+    vol = ns.music_volume if getattr(ns, 'music_volume', None) is not None else float(mus.get('volume', 0.30))
+    A.mix(str(voice), str(P / 'mix.wav'), bgm=bgm, sfx=str(P / 'sfx.wav'), music_vol=vol, sfx_vol=float(E.get('sfxVolume', 0.85)), duration=D, denoise=bool(E.get('denoise')))
+    L = A.loudness(str(P / 'mix.wav')); log(f"混音 → mix.wav  响度 {L['I']} LUFS  峰值 {L['TP']} dBTP")
+    jsave(P / 'audio.json', {'sfx': used, 'music': mus, 'musicVolume': vol, 'loudness': L})
+
+# =================================================================== render / check
+def cmd_render(ns):
+    P = Path(ns.project).resolve(); TL = jload(P / 'timeline.json'); out = Path(ns.out).resolve()
+    if not (P / 'mix.wav').exists(): cmd_audio(argparse.Namespace(project=str(P), music_volume=None))
+    TL = jload(P / 'timeline.json')
+    burn = TL['subtitles'].get('previewOnly') and (P / 'subtitles.ass').exists()
+    pic = P / 'picture.mp4' if burn else out
+    reuse = getattr(ns, 'reuse', False) and burn and pic.exists() and pic.stat().st_mtime > (P / 'timeline.json').stat().st_mtime
+    if reuse: log('画面未改动，复用 picture.mp4（只重新烧字幕和混音）')
+    else:
+        args = [str(pic), '--crf', str(ns.crf or 16), '--preset', ns.preset or 'medium']
+        if ns.workers: args += ['--workers', str(ns.workers)]
+        if not burn: args += ['--audio', 'mix.wav']
+        _node_render(P, args)
+    if burn:
+        log('烧录字幕 + 混音 …')
+        ass = str(P / 'subtitles.ass').replace('\\', '/').replace(':', '\\:')
+        fontsdir = ROOT / 'assets' / 'fonts'
+        vf = f"ass='{ass}'" + (f":fontsdir='{str(fontsdir).replace(chr(92), '/').replace(':', chr(92) + ':')}'" if fontsdir.exists() else '')
+        run([FF, '-v', 'error', '-y', '-i', str(pic), '-i', str(P / 'mix.wav'), '-vf', vf, '-map', '0:v', '-map', '1:a', '-c:v', 'libx264', '-crf', str(ns.crf or 16), '-preset', ns.preset or 'medium', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '256k', '-ar', '48000', '-t', f"{TL['duration']:.3f}", '-movflags', '+faststart', str(out)])
+    log('成片 →', out)
+    (P / 'last_final.txt').write_text(str(out), encoding='utf-8')   # 导出时优先用这一版
+    cmd_check(argparse.Namespace(video=str(out)))
+
+def cmd_sweep(ns):
+    """逐帧试跑整条时间轴（不截图），页面报错按出错的组件汇总；渲染前跑一遍，0 报错再渲染"""
+    P = Path(ns.project).resolve()
+    args = [NODE, str(HERE / 'render.mjs'), str(P), '--sweep', str(ns.step)] + (['--from', str(ns.start)] if ns.start is not None else []) + (['--to', str(ns.end)] if ns.end is not None else [])
+    r = subprocess.run(args, cwd=str(ROOT), capture_output=True, text=True)
+    errs = [l.strip() for l in (r.stdout + r.stderr).splitlines() if re.search(r'^\s*\[(page|console)\]', l)]
+    if r.returncode or errs:
+        print(f'✗ 逐帧试跑发现 {len(errs)} 次页面报错（{len(set(errs))} 种）：'); [print('  · ' + e) for e in sorted(set(errs))[:12]]
+        sys.exit(1)
+    log('✓ 逐帧试跑无报错', (r.stdout.strip().splitlines() or [''])[-1])
+
+def cmd_check(ns):
+    import dms_audio as A
+    info = probe(ns.video)
+    r = subprocess.run([FF, '-v', 'error', '-i', ns.video, '-f', 'null', '-'], capture_output=True, text=True)
+    L = A.loudness(ns.video) if info['audio'] else {}
+    print(f"  {info['w']}x{info['h']} @ {info['fps']:.2f}fps  {info['duration']:.2f}s  音轨:{'有' if info['audio'] else '无'}  解码:{'通过' if not r.stderr.strip() else '有错误'}  响度:{L.get('I')} LUFS  峰值:{L.get('TP')} dBTP")
+    if r.stderr.strip(): print(r.stderr[:500])
+
+# =================================================================== export
+def cmd_overlay(ns):
+    """透明动效层：只有动画元素（无背景、无人物、无字幕），叠在原片上用。.mov = ProRes 4444（Premiere/达芬奇/FCP），.webm = VP9 透明（剪映/网页）"""
+    P = Path(ns.project).resolve(); out = Path(ns.out or (P / '动效层_透明.mov')).resolve()
+    extra = [str(out), '--alpha']
+    if ns.workers: extra += ['--workers', str(ns.workers)]
+    run([NODE, str(HERE / 'render.mjs'), str(P)] + extra, cwd=str(ROOT))
+    (P / 'last_overlay.txt').write_text(str(out), encoding='utf-8')
+    log('透明动效层 →', out)
+
+def cmd_export(ns):
+    import dms_export
+    out = dms_export.export_project(Path(ns.project).resolve(), include_frames=ns.frames, media_root=ns.media_root)
+    log('导出完成 →', out)
+
+# =================================================================== main
+def main():
+    ap = argparse.ArgumentParser(prog='dms', description='大琰DAYAN Motion Studio — 口播自动剪辑 + 内置动效')
+    sp = ap.add_subparsers(dest='cmd')
+    sp.add_parser('doctor')
+    sp.add_parser('kickoff', help='新作品开工前要问用户的问题（画幅 / 分辨率 / 帧率 / 文字墙品牌）')
+    a = sp.add_parser('effect', help='动效库：new 新建 / check 三画幅样张 / list'); a.add_argument('action', choices=['new', 'check', 'list']); a.add_argument('id', nargs='?'); a.add_argument('--name'); a.add_argument('--use')
+    a = sp.add_parser('brand', help='查看 / 保存本机品牌（文字墙两行等）'); a.add_argument('action', choices=['show', 'set']); a.add_argument('--main'); a.add_argument('--sub'); a.add_argument('--name'); a.add_argument('--mark')
+    a = sp.add_parser('asr'); a.add_argument('video'); a.add_argument('workdir'); a.add_argument('--engine'); a.add_argument('--fix', help='识别纠错表 json')
+    a = sp.add_parser('cut'); a.add_argument('video'); a.add_argument('spec'); a.add_argument('workdir')
+    a = sp.add_parser('face'); a.add_argument('video'); a.add_argument('workdir'); a.add_argument('--step', default='0.25')
+    a = sp.add_parser('scaffold'); a.add_argument('workdir'); a.add_argument('out'); a.add_argument('--canvas', default='1920x1080'); a.add_argument('--fps', default='60'); a.add_argument('--theme', default='dark-tech'); a.add_argument('--title'); a.add_argument('--wall-main', dest='wall_main', help='文字墙主行（品牌名）'); a.add_argument('--wall-sub', dest='wall_sub', help='文字墙副行（英文名/口号）'); a.add_argument('--brand-name', dest='brand_name')
+    a = sp.add_parser('words'); a.add_argument('workdir'); a.add_argument('keys', nargs='+')
+    a = sp.add_parser('subs'); a.add_argument('workdir'); a.add_argument('lines', help='每行一条润色后的字幕')
+    a = sp.add_parser('direct', help='导演检查：大字照抄字幕 / 一段两件事 / 画面静止 / 口播有画面没有 / 出现错位'); a.add_argument('project'); a.set_defaults(fn=cmd_direct)
+    a = sp.add_parser('lint'); a.add_argument('edit')
+    a = sp.add_parser('build'); a.add_argument('edit'); a.add_argument('project')
+    a = sp.add_parser('stills'); a.add_argument('project'); a.add_argument('times')
+    a = sp.add_parser('audio'); a.add_argument('project'); a.add_argument('--music-volume', dest='music_volume', type=float)
+    a = sp.add_parser('sweep', help='逐帧试跑查页面报错（渲染前跑）'); a.add_argument('project'); a.add_argument('--step', type=float, default=1 / 30); a.add_argument('--from', dest='start', type=float); a.add_argument('--to', dest='end', type=float); a.set_defaults(fn=cmd_sweep)
+    a = sp.add_parser('render'); a.add_argument('project'); a.add_argument('out'); a.add_argument('--workers', type=int); a.add_argument('--preset', default='medium'); a.add_argument('--crf', type=int, default=16); a.add_argument('--reuse', action='store_true', help='画面没改时复用已渲染的 picture.mp4，只重做字幕和声音')
+    a = sp.add_parser('overlay', help='导出透明动效层（.mov ProRes 4444 / .webm VP9）'); a.add_argument('project'); a.add_argument('out', nargs='?'); a.add_argument('--workers', type=int)
+    a = sp.add_parser('check'); a.add_argument('video')
+    a = sp.add_parser('export'); a.add_argument('project'); a.add_argument('--frames', action='store_true', help='连人物帧一起打包（体积大）'); a.add_argument('--media-root', dest='media_root', help='交付文件夹在用户电脑上的路径，XML 里的媒体路径按它写')
+    a = sp.add_parser('template'); a.add_argument('action', choices=['list', 'validate', 'show', 'render', 'gallery']); a.add_argument('id', nargs='?'); a.add_argument('payload', nargs='?'); a.add_argument('out', nargs='?')
+    ns = ap.parse_args()
+    fn = globals().get('cmd_' + (ns.cmd or ''))
+    if not fn: ap.print_help(); return
+    fn(ns)
+
+if __name__ == '__main__':
+    main()

@@ -1,0 +1,33 @@
+{
+ "id": "fx-repo-card",
+ "name": "开源仓库卡",
+ "use": "说到开源、放到 GitHub/代码仓库、免费给大家用时：代码仓库卡片浮起，文件列表逐行出现，开源印章盖下",
+ "created": "2026-11-08",
+ "version": "1.0.0",
+ "props": "owner / name 仓库名；visibility 默认 Public；desc 一句介绍；tags:[{t,at|cue}]；files:[{t,d,dir}]（省略=技能目录示例）；stamp:{t,sub}|false 印章；stampAt / stampCue（落在说出\"开源\"那个字）",
+ "ref": "C 卡片落定 + A 印章砸下",
+ "example": {
+  "dur": 4.0,
+  "props": {
+   "owner": "you",
+   "name": "my-skill",
+   "desc": "一句话自动剪口播",
+   "tags": [
+    "开源",
+    "免费",
+    "MIT"
+   ],
+   "stampAt": 1.8
+  },
+  "box": {
+   "landscape": "center",
+   "portrait": "center"
+  }
+ },
+ "checked": "2026-11-08 18:09",
+ "layouts": [
+  "16:9",
+  "4:3",
+  "9:16"
+ ]
+}

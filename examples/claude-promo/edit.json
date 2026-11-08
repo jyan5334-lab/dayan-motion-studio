@@ -1,0 +1,993 @@
+{
+ "schema": "dayan-edit/1",
+ "title": "Claude做动画夯爆了",
+ "canvas": {
+  "w": 1920,
+  "h": 1080,
+  "fps": 60
+ },
+ "theme": "film-warm",
+ "signature": {
+  "name": "品牌名",
+  "pos": "tl",
+  "enabled": false
+ },
+ "master": "work/master.mp4",
+ "words": "work/words.json",
+ "presenter": {
+  "face": "auto",
+  "windowTitle": "品牌名 · 口播",
+  "keys": [
+   {
+    "t": 0,
+    "state": "full",
+    "pos": "c"
+   },
+   {
+    "t": 4.15,
+    "state": "card",
+    "pos": "r",
+    "dur": 0.75
+   },
+   {
+    "t": 13.2,
+    "state": "circle",
+    "pos": "br",
+    "dur": 0.7
+   },
+   {
+    "t": 21.35,
+    "state": "hidden",
+    "dur": 0.4
+   }
+  ]
+ },
+ "media": {
+  "rec": {
+   "src": "work/master.mp4",
+   "clock": "master",
+   "fps": 30,
+   "crop": [
+    0,
+    0.03,
+    1,
+    0.5
+   ]
+  }
+ },
+ "subtitles": {
+  "style": "clean",
+  "burn": "ass",
+  "cuesFile": "work/subs.json",
+  "highlight": [
+   "夯爆了",
+   "一句话",
+   "四五分钟",
+   "精致",
+   "几条街",
+   "上百条",
+   "背景还会动",
+   "福音",
+   "自动剪辑"
+  ],
+  "pop": true,
+  "replace": [
+   [
+    "然后我就说：行吧",
+    "我就说：行吧"
+   ]
+  ]
+ },
+ "music": {
+  "mode": "none"
+ },
+ "scenes": [
+  {
+   "id": "s01-hook",
+   "t0": 0,
+   "t1": 4.25,
+   "energy": 2,
+   "say": "Claude 的动画制作真的是夯爆了",
+   "layers": [
+    {
+     "c": "logo",
+     "at": 0.35,
+     "box": [
+      0.685,
+      0.14,
+      0.27,
+      0.3
+     ],
+     "props": {
+      "text": "Claude",
+      "sub": "ANIMATION · 实测",
+      "icon": "spark",
+      "style": "glass"
+     }
+    },
+    {
+     "c": "title",
+     "cue": "夯爆",
+     "lead": -0.3,
+     "box": [
+      0.02,
+      0.28,
+      0.305,
+      0.34
+     ],
+     "props": {
+      "text": "夯爆了！",
+      "hl": "夯爆了",
+      "reveal": "slam",
+      "size": 136,
+      "align": "right",
+      "sub": "Claude 做动画",
+      "subAt": 0.5
+     }
+    },
+    {
+     "c": "sticker",
+     "cue": "夯爆",
+     "lead": 0.1,
+     "box": [
+      0.72,
+      0.5,
+      0.2,
+      0.2
+     ],
+     "props": {
+      "icon": "🔥",
+      "text": "实测",
+      "style": "round",
+      "rotate": 8
+     }
+    }
+   ]
+  },
+  {
+   "id": "s02-prompt",
+   "t0": 4.25,
+   "t1": 13.25,
+   "energy": 1,
+   "transition": {
+    "type": "push-left",
+    "dur": 0.6
+   },
+   "say": "我刚下好以后，就让它自己给自己做一个宣传片 / 我就说了一句话 / 那你给我随便做一个你的宣传片吧 / 三十秒",
+   "bg": [
+    {
+     "c": "bg-wall",
+     "props": {
+      "skin": "gold"
+     }
+    }
+   ],
+   "layers": [
+    {
+     "c": "chapter",
+     "at": 4.6,
+     "box": [
+      0.05,
+      0.08,
+      0.55,
+      0.08
+     ],
+     "props": {
+      "no": "01",
+      "title": "实测 · 一句话出片",
+      "style": "eyebrow"
+     }
+    },
+    {
+     "c": "title",
+     "cue": "宣传片",
+     "lead": -0.5,
+     "box": [
+      0.05,
+      0.17,
+      0.56,
+      0.2
+     ],
+     "props": {
+      "text": "让它给自己做宣传片",
+      "hl": "宣传片",
+      "size": 78
+     }
+    },
+    {
+     "c": "stamp",
+     "cue": "一句话",
+     "lead": -0.15,
+     "box": [
+      0.06,
+      0.39,
+      0.3,
+      0.13
+     ],
+     "props": {
+      "text": "只说了一句话",
+      "style": "tape",
+      "rotate": -5,
+      "size": 44,
+      "shake": 6
+     }
+    },
+    {
+     "c": "type",
+     "cue": "随便做",
+     "lead": -0.95,
+     "box": [
+      0.05,
+      0.55,
+      0.56,
+      0.17
+     ],
+     "props": {
+      "text": "那你给我随便做一个你的宣传片吧",
+      "label": "我的提示词",
+      "icon": "chat",
+      "cps": 11,
+      "typeAt": 0.1,
+      "submitCue": "三十秒"
+     }
+    },
+    {
+     "c": "chips",
+     "cue": "三十秒",
+     "lead": -0.1,
+     "box": [
+      0.05,
+      0.74,
+      0.3,
+      0.08
+     ],
+     "props": {
+      "items": [
+       {
+        "t": "30 秒",
+        "icon": "clock",
+        "tone": "hl"
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "s03-result",
+   "t0": 13.25,
+   "t1": 21.75,
+   "energy": 2,
+   "transition": {
+    "type": "text-mask",
+    "dur": 0.9,
+    "text": "哗"
+   },
+   "say": "然后它哗一下 / 四五分钟就做出来了 / 哇非常的精致 / 非常的水准高 / 真的甩 Codex 几条街 / 现在我们来看一下",
+   "bg": [
+    {
+     "c": "bg-grid",
+     "props": {
+      "color": "#FF7A1A",
+      "speed": 30
+     }
+    }
+   ],
+   "layers": [
+    {
+     "c": "burst",
+     "cue": "哗",
+     "lead": -0.05,
+     "box": [
+      0.05,
+      0.07,
+      0.5,
+      0.33
+     ],
+     "props": {
+      "lines": 30,
+      "dur": 0.6
+     }
+    },
+    {
+     "c": "title",
+     "cue": "哗",
+     "lead": -0.25,
+     "out": 14.5,
+     "exit": "blur",
+     "box": [
+      0.05,
+      0.1,
+      0.5,
+      0.25
+     ],
+     "props": {
+      "text": "“哗”一下",
+      "reveal": "slam",
+      "size": 120,
+      "shake": 10
+     }
+    },
+    {
+     "c": "number",
+     "cue": "四五分钟",
+     "lead": -0.2,
+     "box": [
+      0.05,
+      0.07,
+      0.5,
+      0.33
+     ],
+     "props": {
+      "value": 5,
+      "text": "4–5",
+      "decimals": 0,
+      "unit": "分钟",
+      "label": "从一句话到成片",
+      "size": 200,
+      "dur": 0.8
+     }
+    },
+    {
+     "c": "chips",
+     "cue": "精致",
+     "lead": -0.15,
+     "box": [
+      0.05,
+      0.42,
+      0.6,
+      0.1
+     ],
+     "props": {
+      "items": [
+       {
+        "t": "非常精致",
+        "icon": "star",
+        "tone": "accent",
+        "at": 0
+       },
+       {
+        "t": "水准很高",
+        "icon": "crown",
+        "cue": "水准",
+        "lead": -0.15
+       }
+      ]
+     }
+    },
+    {
+     "c": "compare",
+     "cue": "Codex",
+     "lead": -0.7,
+     "box": [
+      0.05,
+      0.55,
+      0.6,
+      0.27
+     ],
+     "props": {
+      "items": [
+       {
+        "tag": "A",
+        "title": "Codex",
+        "body": "同样一句话"
+       },
+       {
+        "tag": "B",
+        "title": "Claude",
+        "body": "4–5 分钟 · 精致"
+       }
+      ],
+      "op": "vs",
+      "winner": 1,
+      "winnerCue": "几条街",
+      "stagger": 0.35
+     }
+    }
+   ]
+  },
+  {
+   "id": "s04-replay",
+   "t0": 21.75,
+   "t1": 52.6,
+   "energy": 2,
+   "transition": {
+    "type": "line",
+    "dur": 0.5
+   },
+   "say": "对话回放：问能力 → 擅长什么 → 要不要试一试 → 做宣传片 → 调用工具 → 4–5 分钟 → 夯爆了的动画",
+   "bg": [
+    {
+     "c": "bg-wall",
+     "props": {
+      "skin": "platinum"
+     }
+    }
+   ],
+   "layers": [
+    {
+     "c": "window",
+     "at": 21.95,
+     "box": [
+      0.04,
+      0.1,
+      0.52,
+      0.72
+     ],
+     "props": {
+      "chrome": "browser",
+      "title": "claude.ai · 实拍",
+      "badge": "实拍",
+      "seq": "@rec",
+      "fit": "cover",
+      "zoom": [
+       {
+        "at": 0.3,
+        "x": 0.4,
+        "y": 0.42,
+        "s": 1.6,
+        "dur": 1.1
+       },
+       {
+        "at": 9.0,
+        "x": 0.38,
+        "y": 0.6,
+        "s": 1.5,
+        "dur": 1.0
+       },
+       {
+        "at": 17.3,
+        "x": 0.42,
+        "y": 0.72,
+        "s": 1.45,
+        "dur": 1.0
+       },
+       {
+        "at": 24.6,
+        "x": 0.5,
+        "y": 0.5,
+        "s": 1.0,
+        "dur": 1.3
+       }
+      ]
+     },
+     "share": "rec"
+    },
+    {
+     "c": "chat",
+     "at": 22.0,
+     "out": 32.5,
+     "exit": "slide-r",
+     "box": [
+      0.585,
+      0.1,
+      0.375,
+      0.64
+     ],
+     "props": {
+      "title": "Claude",
+      "icon": "spark",
+      "msgs": [
+       {
+        "who": "me",
+        "t": "你现在做动画的能力怎么样？",
+        "cue": "能力",
+        "lead": -1.0
+       },
+       {
+        "who": "ai",
+        "t": "挺能做的！不过是用代码生成动画，不像视频模型那样。",
+        "cue": "挺能做",
+        "lead": -0.8,
+        "think": 0.5
+       },
+       {
+        "who": "me",
+        "t": "你比较擅长什么？",
+        "cue": "擅长",
+        "lead": -0.8
+       },
+       {
+        "who": "ai",
+        "t": "网页动画、讲解动画、导出视频、动态图形……",
+        "cue": "还挺多",
+        "lead": -1.4,
+        "think": 0.5
+       }
+      ]
+     }
+    },
+    {
+     "c": "bubble",
+     "cue": "试一试",
+     "lead": -0.6,
+     "out": 44.0,
+     "box": [
+      0.585,
+      0.13,
+      0.375,
+      0.2
+     ],
+     "props": {
+      "text": "要不要试一试？",
+      "sub": "一句话就能生成",
+      "style": "speech",
+      "icon": "spark"
+     }
+    },
+    {
+     "c": "type",
+     "cue": "行吧",
+     "lead": -0.1,
+     "out": 44.0,
+     "box": [
+      0.585,
+      0.39,
+      0.375,
+      0.17
+     ],
+     "props": {
+      "text": "那你做一个你的宣传片吧，30 秒",
+      "label": "于是我说",
+      "icon": "chat",
+      "cps": 10,
+      "submitCue": "三十秒"
+     }
+    },
+    {
+     "c": "progress",
+     "cue": "调用",
+     "lead": -0.4,
+     "out": 52.4,
+     "box": [
+      0.585,
+      0.12,
+      0.375,
+      0.38
+     ],
+     "props": {
+      "title": "Claude 正在做宣传片",
+      "icon": "bot",
+      "from": 0,
+      "to": 100,
+      "at": 0.1,
+      "dur": 3.0,
+      "steps": [
+       "理解需求",
+       "调用工具",
+       "写动画代码"
+      ],
+      "done": {
+       "at": 3.3,
+       "text": "宣传片做好了"
+      }
+     }
+    },
+    {
+     "c": "number",
+     "cue": "四五分钟",
+     "lead": -0.2,
+     "out": 49.0,
+     "box": [
+      0.585,
+      0.55,
+      0.375,
+      0.2
+     ],
+     "props": {
+      "value": 5,
+      "text": "4–5",
+      "unit": "分钟",
+      "label": "总用时",
+      "size": 118,
+      "dur": 0.7
+     }
+    },
+    {
+     "c": "stamp",
+     "cue": "夯爆",
+     "lead": -0.2,
+     "box": [
+      0.6,
+      0.55,
+      0.34,
+      0.2
+     ],
+     "props": {
+      "text": "夯爆了！",
+      "style": "box",
+      "rotate": -8,
+      "size": 76
+     }
+    },
+    {
+     "c": "chips",
+     "cue": "代码写",
+     "lead": -0.25,
+     "box": [
+      0.585,
+      0.76,
+      0.375,
+      0.08
+     ],
+     "props": {
+      "items": [
+       {
+        "t": "全是代码写出来的",
+        "icon": "code",
+        "tone": "dark"
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "s05-proof",
+   "t0": 52.6,
+   "t1": 63.15,
+   "energy": 3,
+   "transition": {
+    "type": "morph",
+    "dur": 0.8
+   },
+   "say": "真的这真的可以甩 GPT 几条街 / 十条、上百条 / 一句话做出来的 / 我觉得非常精致 / 而且它的背景还会动",
+   "bg": [
+    {
+     "c": "bg-film"
+    }
+   ],
+   "layers": [
+    {
+     "c": "window",
+     "at": 52.75,
+     "box": [
+      0.36,
+      0.08,
+      0.6,
+      0.74
+     ],
+     "props": {
+      "chrome": "browser",
+      "title": "Claude 宣传片 · 实拍回放",
+      "badge": "成片",
+      "seq": "@rec",
+      "fit": "cover",
+      "zoom": [
+       {
+        "at": 0.0,
+        "x": 0.5,
+        "y": 0.5,
+        "s": 1.18,
+        "dur": 0.1
+       },
+       {
+        "at": 8.6,
+        "x": 0.55,
+        "y": 0.45,
+        "s": 1.05,
+        "dur": 1.2
+       }
+      ]
+     },
+     "share": "rec"
+    },
+    {
+     "c": "strike",
+     "cue": "GPT",
+     "lead": -0.3,
+     "box": [
+      0.04,
+      0.1,
+      0.31,
+      0.24
+     ],
+     "props": {
+      "from": "几条街",
+      "to": "上百条！",
+      "layout": "stack",
+      "size": 70,
+      "strikeCue": "十条",
+      "toCue": "上百条"
+     }
+    },
+    {
+     "c": "chips",
+     "cue": "一句话",
+     "lead": -0.15,
+     "box": [
+      0.04,
+      0.4,
+      0.31,
+      0.08
+     ],
+     "props": {
+      "items": [
+       {
+        "t": "一句话做出来的",
+        "icon": "chat"
+       }
+      ]
+     }
+    },
+    {
+     "c": "chips",
+     "cue": "精致",
+     "lead": -0.15,
+     "box": [
+      0.04,
+      0.5,
+      0.31,
+      0.08
+     ],
+     "props": {
+      "items": [
+       {
+        "t": "非常精致",
+        "icon": "star",
+        "tone": "accent"
+       }
+      ]
+     }
+    },
+    {
+     "c": "chips",
+     "cue": "背景",
+     "lead": -0.1,
+     "box": [
+      0.04,
+      0.6,
+      0.31,
+      0.08
+     ],
+     "props": {
+      "items": [
+       {
+        "t": "背景还会动",
+        "icon": "layers",
+        "tone": "hl"
+       }
+      ]
+     }
+    },
+    {
+     "c": "mark",
+     "cue": "背景",
+     "lead": 0.0,
+     "box": [
+      0.385,
+      0.2,
+      0.55,
+      0.56
+     ],
+     "props": {
+      "style": "box",
+      "label": "背景也在动",
+      "dur": 0.6
+     }
+    }
+   ]
+  },
+  {
+   "id": "s06-wow",
+   "t0": 63.15,
+   "t1": 67.95,
+   "energy": 3,
+   "theme": "comic-pop",
+   "transition": {
+    "type": "whip",
+    "dur": 0.45
+   },
+   "say": "哇真的太精致，夯爆了 / 我太喜欢它的这种动画能力",
+   "bg": [
+    {
+     "c": "bg-burst",
+     "props": {
+      "c1": "#E8304E",
+      "c2": "#FF5A6E",
+      "rays": 22
+     }
+    }
+   ],
+   "layers": [
+    {
+     "c": "media",
+     "at": 63.3,
+     "box": [
+      0.29,
+      0.38,
+      0.42,
+      0.44
+     ],
+     "props": {
+      "seq": "@rec",
+      "frame": "glass",
+      "radius": 26
+     }
+    },
+    {
+     "c": "title",
+     "cue": "太精致",
+     "lead": -0.35,
+     "box": [
+      0.08,
+      0.06,
+      0.84,
+      0.26
+     ],
+     "props": {
+      "text": "太精致了！",
+      "reveal": "slam",
+      "size": 150,
+      "align": "center",
+      "style": "3d",
+      "color": "#FFFFFF",
+      "shake": 12
+     }
+    },
+    {
+     "c": "stamp",
+     "cue": "夯爆",
+     "lead": -0.15,
+     "box": [
+      0.7,
+      0.34,
+      0.26,
+      0.2
+     ],
+     "props": {
+      "text": "夯爆了",
+      "style": "sticker",
+      "rotate": 8,
+      "size": 66
+     }
+    },
+    {
+     "c": "confetti",
+     "cue": "夯爆",
+     "lead": 0.05,
+     "box": "full",
+     "props": {
+      "x": 0.5,
+      "y": 0.45,
+      "count": 90
+     }
+    },
+    {
+     "c": "sticker",
+     "cue": "太喜欢",
+     "lead": -0.2,
+     "box": [
+      0.04,
+      0.5,
+      0.24,
+      0.2
+     ],
+     "props": {
+      "icon": "😍",
+      "text": "太喜欢了",
+      "style": "round",
+      "rotate": -6
+     }
+    }
+   ]
+  },
+  {
+   "id": "s07-next",
+   "t0": 67.95,
+   "t1": 75.1,
+   "energy": 2,
+   "theme": "dark-tech",
+   "transition": {
+    "type": "push-left",
+    "dur": 0.6
+   },
+   "say": "有了它的动画能力 / 后面为我们做这种自动剪辑口播 / 那真的是福音",
+   "bg": [
+    {
+     "c": "bg-glow",
+     "props": {
+      "colors": [
+       "#FF7A1A",
+       "#8E7CFF",
+       "#2CE0C0"
+      ]
+     }
+    }
+   ],
+   "layers": [
+    {
+     "c": "title",
+     "cue": "动画能力",
+     "lead": -0.4,
+     "box": [
+      0.08,
+      0.12,
+      0.84,
+      0.24
+     ],
+     "props": {
+      "eyebrow": "NEXT",
+      "text": "有了它的动画能力",
+      "hl": "动画能力",
+      "size": 84,
+      "align": "center",
+      "underline": true
+     }
+    },
+    {
+     "c": "flow",
+     "cue": "动画能力",
+     "lead": 0.5,
+     "box": [
+      0.04,
+      0.44,
+      0.92,
+      0.24
+     ],
+     "props": {
+      "steps": [
+       {
+        "t": "Claude 动画能力",
+        "icon": "spark",
+        "at": 0
+       },
+       {
+        "t": "自动剪辑口播",
+        "icon": "video",
+        "cue": "自动剪辑",
+        "lead": -0.2
+       },
+       {
+        "t": "福音",
+        "icon": "gift",
+        "cue": "福音",
+        "lead": -0.15,
+        "tone": "hl"
+       }
+      ],
+      "highlightLast": true
+     }
+    }
+   ]
+  },
+  {
+   "id": "s08-outro",
+   "template": "cta-outro",
+   "t0": 75.1,
+   "t1": 81.55,
+   "presenter": false,
+   "energy": 1,
+   "transition": {
+    "type": "iris",
+    "dur": 0.7
+   },
+   "pin": {
+    "bye": {
+     "cue": "下期再见",
+     "lead": -0.35
+    },
+    "next": {
+     "cue": "下期我给大家",
+     "lead": -0.1
+    }
+   },
+   "slots": {
+    "ask": "大家敬请期待！",
+    "bye": "我们下期再见",
+    "next": "下期：自动剪辑口播"
+   }
+  }
+ ],
+ "motionBlur": true,
+ "lift": true,
+ "sheen": true,
+ "brand": {
+  "name": "品牌名",
+  "wall": [
+   "品牌名-AI",
+   "BRAND · AI STUDIO"
+  ],
+  "mark": "品"
+ }
+}

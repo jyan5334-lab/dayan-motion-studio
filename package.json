@@ -1,0 +1,22 @@
+{
+  "name": "dayan-motion-studio",
+  "version": "1.7.0",
+  "private": true,
+  "description": "大琰DAYAN 口播自动剪辑 + 内置动效技能：时间轴引擎与渲染器",
+  "author": "大琰DAYAN",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "playwright-core": "1.48.2"
+  },
+  "scripts": {
+    "doctor": "python scripts/dms.py doctor"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jyan5334-lab/dayan-motion-studio.git"
+  }
+}

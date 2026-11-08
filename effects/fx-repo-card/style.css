@@ -1,0 +1,22 @@
+.fx-repo-card { position: absolute; inset: 0; container-type: size; perspective: 1600px; }
+.fx-repo-card .card { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 2.6cqh; padding: 5cqh 4.4cqw; border-radius: 2.8cqmin; overflow: hidden;
+  background: linear-gradient(170deg, #1B1F27, #0F1116); border: 1px solid rgba(255,255,255,.13); box-shadow: 0 2.4cqmin 7cqmin rgba(0,0,0,.55); transform-origin: 50% 100%; }
+.fx-repo-card .hd { display: flex; align-items: center; gap: 1.6cqmin; font: 600 min(3.8cqw, 7cqh)/1.1 var(--f-sans); color: rgba(236,238,244,.88); }
+.fx-repo-card .hd .dms-ico { width: 1.15em; height: 1.15em; color: rgba(236,238,244,.7); }
+.fx-repo-card .nm em { font-style: normal; color: #7FB0FF; } .fx-repo-card .nm b { color: #9CC2FF; font-weight: 800; }
+.fx-repo-card .pub { margin-left: auto; padding: .6cqmin 1.8cqmin; border-radius: 99px; border: 1px solid rgba(255,255,255,.3); font: 700 min(2.4cqw, 4.4cqh)/1 var(--f-sans); color: rgba(236,238,244,.75); }
+.fx-repo-card .ds { font: 500 min(3cqw, 5.4cqh)/1.4 var(--f-sans); color: rgba(236,238,244,.72); }
+.fx-repo-card .ds:empty { display: none; }
+.fx-repo-card .tags { display: flex; gap: 1.4cqmin; flex-wrap: wrap; }
+.fx-repo-card .tag { padding: .9cqmin 2.2cqmin; border-radius: 99px; font: 800 min(2.6cqw, 4.8cqh)/1 var(--f-sans); color: #fff; background: color-mix(in srgb, var(--accent) 30%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 70%, transparent); }
+.fx-repo-card .files { flex: 1 1 auto; display: flex; flex-direction: column; border-radius: 1.6cqmin; border: 1px solid rgba(255,255,255,.1); overflow: hidden; min-height: 0; }
+.fx-repo-card .f { flex: 1 1 0; display: flex; align-items: center; gap: 1.8cqmin; padding: 0 2.4cqw; border-top: 1px solid rgba(255,255,255,.07); font: 700 min(2.7cqw, 5cqh)/1 var(--f-mono, ui-monospace, monospace); color: rgba(240,242,248,.92); min-height: 0; }
+.fx-repo-card .f:first-child { border-top: 0; }
+.fx-repo-card .f .dms-ico { width: 1.15em; height: 1.15em; color: rgba(236,238,244,.55); flex: 0 0 auto; }
+.fx-repo-card .f.dir .dms-ico { color: #7FB0FF; }
+.fx-repo-card .f span { margin-left: auto; font: 500 min(2.3cqw, 4.2cqh)/1 var(--f-sans); color: rgba(236,238,244,.5); }
+.fx-repo-card .stamp { position: absolute; white-space: nowrap; left: 74%; top: 30%; display: flex; flex-direction: column; align-items: center; gap: .6cqmin; padding: 1.8cqmin 3.6cqmin; border-radius: 1.6cqmin;
+  border: .7cqmin solid var(--accent); color: var(--accent); background: rgba(10,10,12,.55); opacity: 0;
+  box-shadow: 0 0 0 calc(var(--ring, 0) * 5cqmin) color-mix(in srgb, var(--accent) calc((1 - var(--ring, 0)) * 50%), transparent); }
+.fx-repo-card .stamp span { font: 900 min(9cqw, 17cqh)/1 var(--title-font); letter-spacing: .08em; }
+.fx-repo-card .stamp small { font: 800 min(2.2cqw, 4cqh)/1 var(--f-sans); letter-spacing: .3em; }

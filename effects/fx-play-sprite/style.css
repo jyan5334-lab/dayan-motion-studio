@@ -1,0 +1,28 @@
+.fx-play-sprite { position: absolute; inset: 0; container-type: size; pointer-events: none; --sp1: #FFC65A; --sp2: #FF7A1A; --sp3: #DE3E14; }
+.fx-play-sprite .spr { position: absolute; width: var(--sps); aspect-ratio: 1; transform-origin: 50% 86%; z-index: 3; filter: drop-shadow(0 0.8cqmin 1.4cqmin rgba(0,0,0,.45)); }
+.fx-play-sprite .spr.ghost { z-index: 2; filter: blur(0.25cqmin); }
+.fx-play-sprite .spr svg { width: 100%; height: 100%; overflow: visible; }
+.fx-play-sprite .tri { fill: url(#spg); stroke: url(#spg); stroke-width: 17; stroke-linejoin: round; }
+.fx-play-sprite .tri-d { fill: url(#spd); stroke: url(#spd); stroke-width: 17; stroke-linejoin: round; }
+.fx-play-sprite .tri-h { fill: url(#sph); stroke: url(#sph); stroke-width: 17; stroke-linejoin: round; }
+.fx-play-sprite .spec { fill: #fff; opacity: .85; }
+.fx-play-sprite .spec2 { fill: #fff; opacity: .7; }
+.fx-play-sprite .eye { fill: #1C1230; }
+.fx-play-sprite .hl { fill: #fff; }
+.fx-play-sprite .hl.s { opacity: .85; }
+.fx-play-sprite .mo { fill: #4A1406; }
+.fx-play-sprite .ck { fill: #FF6F86; opacity: .5; }
+.fx-play-sprite .legs line, .fx-play-sprite .rig line { display: none; }
+.fx-play-sprite .fb, .fx-play-sprite .ff { fill: url(#spg); filter: drop-shadow(0 1px 1px rgba(0,0,0,.35)); }
+.fx-play-sprite .hb, .fx-play-sprite .hf { fill: url(#spk2); filter: drop-shadow(0 1.2px 1.2px rgba(0,0,0,.35)); }
+.fx-play-sprite .aura { opacity: 0; }
+.fx-play-sprite .fxl { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; z-index: 2; }
+.fx-play-sprite .beam { stroke: color-mix(in srgb, var(--sp1) 70%, #fff); stroke-width: 22; opacity: 0; filter: blur(6px); }
+.fx-play-sprite .beam2 { stroke: #fff; stroke-width: 6; opacity: 0; }
+.fx-play-sprite .spk { fill: #FFF2C8; opacity: 0; }
+.fx-play-sprite .rip { position: absolute; width: 9cqmin; aspect-ratio: 1; border-radius: 50%; border: 0.6cqmin solid var(--sp1); opacity: 0; z-index: 2; box-shadow: 0 0 2cqmin color-mix(in srgb, var(--sp1) 70%, transparent); }
+.fx-play-sprite .rip.r2 { border-color: #fff; border-width: 0.3cqmin; }
+.fx-play-sprite .shd { position: absolute; width: calc(var(--sps) * .62); height: calc(var(--sps) * .12); border-radius: 50%; background: radial-gradient(closest-side, rgba(0,0,0,.6), transparent); opacity: 0; z-index: 1; }
+.fx-play-sprite .spd { position: absolute; width: calc(var(--sps) * .9); height: calc(var(--sps) * .5); display: flex; flex-direction: column; justify-content: space-around; opacity: 0; z-index: 1; }
+.fx-play-sprite .spd i { display: block; height: 0.45cqmin; border-radius: 99px; background: linear-gradient(90deg, transparent, rgba(255,255,255,.85)); }
+.fx-play-sprite .spd i:nth-child(2) { width: 70%; margin-left: 30%; }

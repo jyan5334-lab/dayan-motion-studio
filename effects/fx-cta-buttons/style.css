@@ -1,0 +1,18 @@
+.fx-cta-buttons { position: absolute; inset: 0; container-type: size; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4cqh; }
+.fx-cta-buttons .row { display: flex; align-items: flex-start; justify-content: center; gap: min(7cqw, 10cqh); }
+.fx-cta-buttons.col .row { flex-direction: column; align-items: center; gap: 3cqh; }
+.fx-cta-buttons .btn { display: flex; flex-direction: column; align-items: center; gap: 2.2cqh; }
+.fx-cta-buttons .disc { position: relative; width: min(25cqw, 50cqh); aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center;
+  background: radial-gradient(80% 80% at 35% 25%, rgba(255,255,255,.22), rgba(255,255,255,.06) 60%), rgba(18,20,26,.72);
+  border: 1px solid rgba(255,255,255,.22); box-shadow: 0 1.6cqmin 4cqmin rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.25); }
+.fx-cta-buttons .disc.on { background: radial-gradient(80% 80% at 35% 25%, color-mix(in srgb, var(--c) 55%, #fff), var(--c) 55%, color-mix(in srgb, var(--c) 70%, #000));
+  border-color: color-mix(in srgb, var(--c) 60%, #fff); box-shadow: 0 1.6cqmin 5cqmin color-mix(in srgb, var(--c) 55%, transparent), inset 0 1px 0 rgba(255,255,255,.4); }
+.fx-cta-buttons .disc svg { position: absolute; width: 50%; height: 50%; }
+.fx-cta-buttons .g0 { fill: none; stroke: rgba(255,255,255,.9); stroke-width: 1.8; stroke-linejoin: round; stroke-linecap: round; }
+.fx-cta-buttons .g1 { fill: #fff; stroke: #fff; stroke-width: 1; stroke-linejoin: round; }
+.fx-cta-buttons .g1.k-follow { fill: none; stroke-width: 3; stroke-linecap: round; }
+.fx-cta-buttons .ring { position: absolute; inset: -4%; border-radius: 50%; border: .7cqmin solid var(--c); opacity: 0; }
+.fx-cta-buttons .plus { position: absolute; left: 50%; top: -6%; font: 900 min(5.4cqw, 11cqh)/1 var(--f-sans); font-style: normal; color: var(--c); text-shadow: 0 .4cqmin 1.4cqmin rgba(0,0,0,.6); opacity: 0; }
+.fx-cta-buttons .btn b { font: 800 min(5cqw, 10cqh)/1 var(--f-sans); color: rgba(240,242,248,.72); letter-spacing: .06em; }
+.fx-cta-buttons .btn b.on { color: #fff; }
+.fx-cta-buttons .cap { font: 800 min(4.4cqw, 9cqh)/1.2 var(--f-sans); color: rgba(240,242,248,.9); opacity: 0; text-align: center; }

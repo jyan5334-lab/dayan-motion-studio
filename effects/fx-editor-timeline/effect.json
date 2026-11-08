@@ -1,0 +1,44 @@
+{
+ "id": "fx-editor-timeline",
+ "name": "剪辑工程时间线",
+ "use": "说到工程文件、导进剪映/PR、还能改字幕改音乐时：一个剪辑软件时间线窗口，多轨素材排好，播放头走动，按口播逐个改动片段",
+ "created": "2026-11-08",
+ "version": "1.0.0",
+ "props": "title 窗口标题；tag 右上角标签；caption 预览画面里的字幕；tracks:[{name,icon,tone:v/fx/sub/sfx/bgm,clips:[{x,w,t,wave}]}]（省略=画面/动效/字幕/音效/配乐五轨示例）；edits:[{track,clip,to 改成的文字,note 弹出说明,caption 预览字幕同步改成,at|cue}]（落在说出\"改字幕/改音乐\"那个字）；speed 播放头速度",
+ "ref": "C 同一窗口内状态推进 + A 光标点击改写",
+ "example": {
+  "dur": 6.0,
+  "props": {
+   "title": "工程文件 · 可继续编辑",
+   "tag": "已导入",
+   "caption": "全是 AI 做的",
+   "edits": [
+    {
+     "track": 2,
+     "clip": 1,
+     "to": "全是 AI 剪的",
+     "note": "改字幕",
+     "caption": "全是 AI 剪的",
+     "at": 2.0
+    },
+    {
+     "track": 4,
+     "clip": 0,
+     "to": "背景音乐 B",
+     "note": "换音乐",
+     "at": 3.6
+    }
+   ]
+  },
+  "box": {
+   "landscape": "center",
+   "portrait": "center"
+  }
+ },
+ "checked": "2026-11-08 18:09",
+ "layouts": [
+  "16:9",
+  "4:3",
+  "9:16"
+ ]
+}
