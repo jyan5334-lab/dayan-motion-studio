@@ -1,0 +1,71 @@
+{
+ "id": "fx-director-scan",
+ "name": "导演检查扫描",
+ "use": "讲自动检查、帮你挑错、审片质检：分镜缩略图被扫描线扫过，有问题的格子亮红框标出问题，随后自动改正变绿勾，顶部建议数降到 0",
+ "created": "2026-11-09",
+ "version": "1.0.0",
+ "props": "thumbs:[{title, sub, subtitle 底部字幕, person:false 不画人物, bg, issue 问题标签, fixTitle/fixSub 改好后的文字, fixMove 改好后补一排动效, fixText}]；scanAt / scanDur 扫描；fixAt 第一个改正时刻；fixStagger；title",
+ "ref": "D HUD 扫描 + C 同页连续演示",
+ "example": {
+  "dur": 4.5,
+  "props": {
+   "scanAt": 0.4,
+   "scanDur": 1.5,
+   "fixAt": 2.4,
+   "thumbs": [
+    {
+     "title": "一条口播",
+     "sub": "满是口误"
+    },
+    {
+     "title": "我只做了一件事",
+     "subtitle": "我只做了一件事",
+     "issue": "大字照抄字幕",
+     "fixTitle": "人只管一件事",
+     "fixSub": "给稿子"
+    },
+    {
+     "title": "三步出片",
+     "sub": "转写 · 编排 · 渲染"
+    },
+    {
+     "title": "129",
+     "sub": "数字滚出来",
+     "person": false
+    },
+    {
+     "title": "",
+     "sub": "",
+     "person": false,
+     "issue": "画面静止 3 秒",
+     "fixTitle": "补一个动作",
+     "fixMove": true
+    },
+    {
+     "title": "开源",
+     "sub": "MIT"
+    }
+   ]
+  },
+  "box": {
+   "landscape": [
+    0.06,
+    0.2,
+    0.88,
+    0.62
+   ],
+   "portrait": [
+    0.06,
+    0.2,
+    0.88,
+    0.6
+   ]
+  }
+ },
+ "checked": "2026-11-09 18:06",
+ "layouts": [
+  "16:9",
+  "4:3",
+  "9:16"
+ ]
+}

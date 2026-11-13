@@ -1,12 +1,21 @@
 ---
 name: dayan-motion-studio
-description: 大琰DAYAN 口播自动剪辑 + 内置动效技能。把口播原片剪成带包装动效、人物窗连续迁移、关键词同步画面、转场音效和字幕的 60fps 成片，并交付可编辑工程（HTML 动画工程、分轨、SRT、Premiere/达芬奇 XML）；也可单独调用或制作可复用的 内置动效。用于"剪口播""自动剪辑""做包装动效""加转场音效""做/调用 内置动效"等请求。
+description: 大琰DAYAN 口播自动剪辑 + 内置动效技能。把口播原片剪成带包装动效、人物窗连续迁移、关键词同步画面、转场音效和字幕的 60fps 成片，并交付可编辑工程（HTML 动画工程、分轨、SRT、Premiere/达芬奇 XML）和一套封面（A 手账贴纸 / B 科技海报 / C 电影海报 × 竖屏 3:4 + 横屏 4:3）；也可单独调用或制作可复用的 内置动效。用于"剪口播""自动剪辑""做包装动效""加转场音效""做/调用 内置动效""做封面"等请求。
 metadata:
-  version: "1.7.0"
+  version: "1.11.0"
   author: "大琰DAYAN"
 ---
 
 # 大琰DAYAN Motion Studio
+
+> **给所有助手（Claude / Codex / 豆包 / WorkBuddy / CodeBuddy）的硬规则**，用户 2026-11-13 定：
+> - 编排前先读 [orchestration.md](references/orchestration.md)，**先写编排单再写 edit.json**。
+> - 每段都要有一个非文字的主画面（数字、对比、流程、界面、录屏放大、对话、物件动效…）。**只有字幕和大字的片子 = 失败。**
+> - **每分钟至少 15–20 个动效**；**一两句话换一次画面**（4–10 秒一屏）；**每分钟 2–3 种背景**，文字墙换皮肤换颜色（wall-gold / wall-jade / wall-acid … 16 套）。
+> - **328 张原卡都能改来用**：卡里内容是样板，`dms.py card <卡号>` 看样板文字，用 `replace` 换成本期口播内容。
+> - 不能千篇一律：同一个组件不超过 35% 的段落，自制动效一条片子最多用 3 段。
+> - 先在 [catalog.md](references/catalog.md) 里找（组件 / 动效库 / 原卡，或 `dms.py catalog 关键词` 搜），找不到再现做"这一句专属"的新动效。
+> - 必须看静帧接触表，`direct` 导演检查（含「画面单调」）做到 0 条建议才能渲染。
 
 `SKILL_DIR` = 本文件所在目录。命令入口：`python SKILL_DIR/scripts/dms.py <命令>`（macOS/Linux 用 `python3`）。第一次用先跑 `doctor`，缺什么按 [platforms.md](references/platforms.md) 装。
 
@@ -52,13 +61,14 @@ A 和 B 可以混用：一期片子里大部分段落按语义现编，开场/�
 2. **剪口误和停顿**：读转写，找出口误、重复、"这个这个"、超过 1 秒的停顿、开头结尾杂音，写 `cut.json`：`{"keep": [[1.2, 23.1], [29.5, 58.35], …]}`，运行 `dms.py cut 原片.mp4 cut.json work` → `work/master.mp4`，时间码自动同步到母版。口播稿开头是"你刚才看到的…"这类需要先放一段片头 solo 的，在 cut.json 加 `"pre": 6.5`（口播前补几秒：首帧定格 + 静音，字幕和词时间自动后移）。只剪真正的废话，观点和内容原样保留；剪了什么要告诉用户。
 3. **润色字幕**：把识别稿改成通顺的字幕行写进 `lines.txt`（每行一条、≤16 字、按语义断句、改错字、去口癖），`dms.py subs work lines.txt` 自动对齐时间 → `work/subs.json`。
 4. **分镜草稿**：`dms.py scaffold work edit.json --canvas 1920x1080 --fps 60 --theme dark-tech`，得到按停顿切好的场景、每段的语义提示（数字、情绪词、列举、对比、流程、产品名、引用、问句、CTA），以及按提示放好的**草稿元素**（`draft: true`，已用 cue 钉在关键词上，文案带括号的是占位）。草稿是起点：改文案、删多余、补承接，交付前不能留 `draft` 和括号占位。
-5. **编排**（最重要的一步，由你完成）：按 playbook 第 4 节"语义 → 画面对照表"给每段选组件，用 `cue` 把元素钉到关键词（`dms.py words work 关键词` 查时间）；按第 3 节安排人物窗关键帧；按第 5 节保证翻页连续（同话题共用环境、同一窗口跨句承接）；按第 4.6 节**换章节换外观（`look`）、人物在几种形态之间轮换、圆窗每章换角**——4:3 和竖屏尤其要做，不能一面墙 + 一张人物卡用到底；给每段写 `energy`（0–3）（开配乐时驱动配乐起伏）。字段见 [edit-spec.md](references/edit-spec.md)，组件见 [components.md](references/components.md)。想用库里原卡见 [dayan-library.md](references/dayan-library.md)。
-6. **检查**：`dms.py lint edit.json` → `dms.py build edit.json proj` → **`dms.py direct proj`（导演检查）** → `dms.py stills proj 0.5,3,8,…`，看接触表，按 [qa.md](references/qa.md) 修到满意。导演检查查七类问题：大字照抄字幕、一段讲两件事、画面静止超过 4 秒、口播里的数字/高亮词画面上没有、元素出现与口播错位、字幕读不过来、**样式单一**（同一外观连续超过 24 秒、全片外观少于 3 种、人物同一形态超过 25 秒、圆窗总在一个角、人物形态少于 3 种）；**合计 0 处建议才进入渲染**（个别建议确实不适用时，在交付说明里写理由）。渲染前再跑 `dms.py sweep proj`：按 1/30 秒把整条时间轴逐帧试跑一遍（不截图，约一两分钟），抽帧看不到的瞬时页面报错靠它抓，0 报错再渲染。
+5. **编排**（最重要的一步，由你完成；先按 [orchestration.md](references/orchestration.md) 填编排单，每段先 `dms.py catalog 关键词` 找动效，写完用 `dms.py plan proj` 出编排单自查）：按 playbook 第 4 节"语义 → 画面对照表"给每段选组件，用 `cue` 把元素钉到关键词（`dms.py words work 关键词` 查时间）；按第 3 节安排人物窗关键帧；按第 5 节保证翻页连续（同话题共用环境、同一窗口跨句承接）；按第 4.6 节**换章节换外观（`look`）、人物在几种形态之间轮换、圆窗每章换角**——4:3 和竖屏尤其要做，不能一面墙 + 一张人物卡用到底；给每段写 `energy`（0–3）（开配乐时驱动配乐起伏）。字段见 [edit-spec.md](references/edit-spec.md)，组件见 [components.md](references/components.md)。想用库里原卡见 [dayan-library.md](references/dayan-library.md)。
+6. **检查**：`dms.py lint edit.json` → `dms.py build edit.json proj` → **`dms.py direct proj`（导演检查）** → `dms.py stills proj 0.5,3,8,…`，看接触表，按 [qa.md](references/qa.md) 修到满意。导演检查查八类问题：大字照抄字幕、一段讲两件事、画面静止超过 4 秒、口播里的数字/高亮词画面上没有、元素出现与口播错位、字幕读不过来、**样式单一**（同一外观连续超过 24 秒、全片外观少于 3 种、人物同一形态超过 25 秒、圆窗总在一个角、人物形态少于 3 种）、**画面单调**（某段只有文字、同一个组件超过 35% 的段落、自制动效超过 3 段、画面组件种类太少、每分钟动效少于 15 个、一段超过 12 秒没换画面）；背景每分钟 2–3 种、同一背景不超过 20 秒；**合计 0 处建议才进入渲染**（个别建议确实不适用时，在交付说明里写理由）。渲染前再跑 `dms.py sweep proj`：按 1/30 秒把整条时间轴逐帧试跑一遍（不截图，约一两分钟），抽帧看不到的瞬时页面报错靠它抓，0 报错再渲染。
 7. **声音**：`dms.py audio proj` —— 收集所有动作音效事件，用 CC0 真实采样（`assets/sfx/`，没有采样的种类用合成兜底）混成 sfx.wav，和人声一起混音到 −15 LUFS。开了配乐时才作曲 bgm.wav。音效说明见 [sound.md](references/sound.md)。
-8. **渲染**：`dms.py render proj 成片.mp4 --workers 2`（逐帧渲染 → ASS 烧字幕 → 混音 → 自动 check）。
-9. **交付**：（可选）`dms.py overlay proj 动效层.mov` 导出只有动画元素的透明视频（.mov = ProRes 4444 给 Premiere/达芬奇/FCP，.webm = VP9 透明给剪映）；然后 `dms.py export proj` → `proj/deliver/`：成片、无字幕画面、SRT/ASS、分轨（人声/音效；开配乐时另有配乐分轨）、Premiere/达芬奇 XML（V1 画面、V2 透明动效层、每段一个标记点）、段落标记 CSV、HTML 动画工程 zip、剪映导入说明。把成片和工程包交给用户，说明剪掉了什么、哪些需要用户试听确认。
+8. **渲染**：`dms.py render proj 成片.mp4 --workers 2`（逐帧渲染 → ASS 烧字幕 → 混音 → 自动 check → **自动出封面**）。
+   **封面（用户 2026-11-13 要求，随成片一起输出）**：渲染完自动跑 `dms.py cover proj`，3 种风格 × 竖屏 3:4（1080×1440）+ 横屏 4:3（1440×1080）共 6 张，放在成片旁边的 `<成片名>_封面/` 和 `proj/cover/`。有真人 → 从人物可见的区间里挑状态和动作完整的 3 帧，抠像后按风格轻度调色（不改五官、不去痣、不镜像）；没有真人 → 文字 + 背景版。封面文案写在 edit.json 的 `cover`（标题两行 + 1 个高亮词 + 副标题、数字徽章、话题截图），**编排时就写好**，规格和自检见 [cover.md](references/cover.md)。**封面要和设计美学挂钩：前景色和背景色必须鲜明对比**（浅底配深字、深底配浅字，绝不能深字压深底；模板会自动按对比度检查和修正，日志出现"[对比度]"提醒时要改）。出完打开 `封面_总览.jpg` 看一遍，人物帧不理想就 `dms.py cover proj --frames a,b,c` 换帧。只想单独重出封面不用重渲染：`dms.py cover proj`；这次不要封面：`render … --no-cover`。
+9. **交付**：（可选）`dms.py overlay proj 动效层.mov` 导出只有动画元素的透明视频（.mov = ProRes 4444 给 Premiere/达芬奇/FCP，.webm = VP9 透明给剪映）；然后 `dms.py export proj` → `proj/deliver/`：成片、无字幕画面、SRT/ASS、分轨（人声/音效；开配乐时另有配乐分轨）、Premiere/达芬奇 XML（V1 画面、V2 透明动效层、每段一个标记点）、段落标记 CSV、HTML 动画工程 zip、剪映导入说明、`封面/`（6 张 + 总览）。把成片、封面和工程包交给用户，说明剪掉了什么、哪些需要用户试听确认。
 10. **存进本地工作库**（用户电脑已连接 `D:\Claude\Claude motion动画` 时，每次都做，不用用户提醒）：
-    - 成片、字幕（SRT/ASS）、工程包 → `04_成片\年-月_选题\<画幅>_<语速>_v<版本>\`；
+    - 成片、字幕（SRT/ASS）、工程包 → `04_成片\年-月_选题\<画幅>_<语速>_v<版本>\`；封面 6 张 + 总览 → `04_成片\年-月_选题\封面\`；
     - 技能新版本 → `05_模板与脚本\dayan-motion-studio\`（zip + 解压后的文件夹）；
     - 改了规范（playbook、文字墙标准等）→ `01_规范与技能\` 和项目文档同时更新；
     - 在 `版本记录.md` 顶部追加一条：日期、做了什么、改了什么；
@@ -68,7 +78,7 @@ A 和 B 可以混用：一期片子里大部分段落按语义现编，开场/�
 
 ## 动效不够时：先选、再做、检查、沉淀（用户 2026-11-07 定稿）
 
-1. **先选**：剪辑时逐段判断，现有组件（`references/components.md`）、动效库（`dms.py effect list`）和内置动效里有贴切的就用。
+1. **先选**：剪辑时逐段判断，现有组件（`references/components.md`）、动效库（`dms.py effect list`）、内置动效和原卡库里有贴切的就用。全部清单见 `references/catalog.md`，也可以 `dms.py catalog 关键词` 搜。原卡里的文字、数字、价格都是样板，`dms.py card <卡号>` 看清后用 `replace` 换成本期内容就能用。
 2. **再做**：没有贴切的就**现做一个新的**，不硬套一个意思不对的。`dms.py effect new fx-名字 --name 中文名 --use "说到什么时用"` 生成骨架，在 `effects/fx-名字/` 里写 component.js / style.css。新动效必须满足：
    - **画面跟着口播的字走**：每个子元素都能写 `at` / `cue`，关键状态（揭晓、替换、计数到位）落在说出那个词的字上；
    - **有入场和落定的质感**：虚化→清晰、上浮、轻微回弹落定，退场有方向；不要一下子整块出现；
@@ -107,12 +117,14 @@ A 和 B 可以混用：一期片子里大部分段落按语义现编，开场/�
 ```
 SKILL.md                 本文件
 engine/                  时间轴引擎（core / presenter / 45 个组件 / 7 套主题）
-scripts/dms.py           命令行入口；dms_audio.py 声音；dms_templates.py 内置动效；dms_export.py 导出；render.mjs 渲染
+scripts/dms.py           命令行入口；dms_audio.py 声音；dms_templates.py 内置动效；dms_export.py 导出；render.mjs 渲染；dms_cover.py + cover.mjs 封面
+assets/cover/cover.html  封面模板（A 手账贴纸 / B 科技海报 / C 电影海报；有真人 / 文字 + 背景两种版式）
 effects/                 动效库：剪辑时现做、自动沉淀的新动效（每个一个文件夹：effect.json + component.js + style.css + sheet.png 三画幅样张）
 templates/               内置动效（钩子开场 hook-opener / 章节页 chapter-card / 对比裁决 compare-verdict / 术语讲解 term-explainer / 侧推讲解 side-explainer / 结尾 cta-outro）；每个内置动效有 preview.png 动效样张（12 帧），_gallery.png 是带名称的总览图
-assets/dayan-library.html  大琰DAYAN 动效库 v6.1（334 条原卡，可用 dayan 组件嵌入；公开仓库不含此文件，自行放入）
+assets/dayan-library.html  大琰DAYAN 动效库 v6.1（334 条原卡，可用 dayan 组件嵌入）
 assets/sfx/              CC0 真实采样音效库（35 类，来源见 LICENSES.md）
 assets/models/           YuNet 人脸检测模型（OpenCV Zoo，MIT）
-references/              playbook 剪辑语法 · edit-spec · components · motion-templates · sound · qa · dayan-library · reference-videos · platforms
-examples/                样片的 edit.json / cut.json / lines.txt（完整可复现）
+references/              orchestration 编排手册 · catalog 动效目录 · playbook 剪辑语法 · cover 封面 · edit-spec · components · motion-templates · sound · qa · dayan-library · reference-videos · platforms
+examples/                样片的 edit.json / cut.json / lines.txt（完整可复现）；claude-vs-codex/ 是带编排单的完整范例
+AGENTS.md                给 Codex 等编码助手的入口说明
 ```

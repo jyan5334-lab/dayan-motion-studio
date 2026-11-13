@@ -1,0 +1,64 @@
+{
+ "id": "fx-storyboard",
+ "name": "分镜翻牌",
+ "use": "讲'说到什么画面就出什么'、口播的词变成分镜、语义对应画面：一排字卡，念到哪个词哪张就翻成一格分镜并立刻演出（步骤条 / 数字滚动 / 前后对比 / 清单打勾）",
+ "created": "2026-11-09",
+ "version": "1.0.0",
+ "props": "items:[{key 字卡上的词, tc 时间码, kind: steps/number/compare/check, at|cue 翻牌时刻, no 镜号, label 底部说明, steps[] / value unit sub / before beforeT after afterT / items[]}]；横向 box 横排，竖向 box 竖排",
+ "ref": "C 同页连续演示 + B 卡片翻转",
+ "example": {
+  "dur": 4.5,
+  "props": {
+   "items": [
+    {
+     "key": "三步",
+     "tc": "3.20s",
+     "kind": "steps",
+     "steps": [
+      "转写",
+      "编排",
+      "渲染"
+     ],
+     "at": 0.6,
+     "label": "弹出步骤条"
+    },
+    {
+     "key": "129",
+     "tc": "5.84s",
+     "kind": "number",
+     "value": 129,
+     "unit": "元",
+     "at": 1.4,
+     "label": "数字滚出来"
+    },
+    {
+     "key": "以前",
+     "tc": "8.02s",
+     "kind": "compare",
+     "at": 2.2,
+     "label": "前后对比"
+    }
+   ]
+  },
+  "box": {
+   "landscape": [
+    0.04,
+    0.26,
+    0.92,
+    0.46
+   ],
+   "portrait": [
+    0.08,
+    0.2,
+    0.84,
+    0.6
+   ]
+  }
+ },
+ "checked": "2026-11-09 18:02",
+ "layouts": [
+  "16:9",
+  "4:3",
+  "9:16"
+ ]
+}

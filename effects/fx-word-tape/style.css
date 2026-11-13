@@ -1,0 +1,20 @@
+.fx-word-tape { position: absolute; inset: 0; container-type: size; pointer-events: none; }
+.fx-word-tape > * { font-size: var(--fs); }
+.fx-word-tape .wave { position: absolute; left: 2%; right: 2%; top: 50%; height: 2.6em; translate: 0 -50%; display: flex; align-items: center; gap: .35%; }
+.fx-word-tape .wave i { flex: 1; height: 100%; border-radius: 99px; background: linear-gradient(var(--accent2, #4DA3FF), var(--accent, #2CE0C0)); }
+.fx-word-tape .head { position: absolute; top: 50%; height: 2.9em; width: 0; translate: 0 -50%; z-index: 3; }
+.fx-word-tape .head i { position: absolute; left: -0.06em; top: 0; bottom: 0; width: .12em; border-radius: 99px; background: var(--hl, #FFC24B); box-shadow: 0 0 .5em var(--hl, #FFC24B); }
+.fx-word-tape .head i::before { content: ''; position: absolute; left: 50%; top: -.35em; width: .5em; height: .5em; translate: -50% 0; background: var(--hl, #FFC24B); clip-path: polygon(0 0, 100% 0, 50% 100%); }
+.fx-word-tape .row { position: absolute; inset: 0; }
+.fx-word-tape .chip { position: absolute; top: 50%; height: 1.9em; border-radius: .38em; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .08em;
+  background: color-mix(in srgb, var(--card, #1B1E27) 92%, #fff); border: .06em solid var(--line, rgba(255,255,255,.18)); color: var(--card-fg, #F2F3F7);
+  box-shadow: 0 .22em .5em rgba(0,0,0,.28), 0 0 calc(var(--lit, 0) * 1em) color-mix(in srgb, var(--hl, #FFC24B) calc(var(--lit, 0) * 80%), transparent); }
+.fx-word-tape .chip b { font: 900 1em/1 var(--f-title); white-space: nowrap; }
+.fx-word-tape .chip small { font: 700 .34em/1 var(--f-en); letter-spacing: .04em; color: color-mix(in srgb, var(--card-fg, #F2F3F7) 55%, transparent); }
+.fx-word-tape .chip.bad { background: color-mix(in srgb, color-mix(in srgb, var(--card, #1B1E27) 92%, #fff) calc(100% - var(--red, 0) * 100%), #E8343C);
+  border-color: color-mix(in srgb, var(--line, rgba(255,255,255,.18)) calc(100% - var(--red, 0) * 100%), #FF8A8A); }
+.fx-word-tape .chip.bad b, .fx-word-tape .chip.bad small { color: color-mix(in srgb, var(--card-fg, #F2F3F7) calc(100% - var(--red, 0) * 100%), #fff); }
+.fx-word-tape .shard { position: absolute; top: 50%; width: .42em; height: .3em; background: #E8343C; border-radius: .06em; opacity: 0; box-shadow: 0 0 .2em rgba(232,52,60,.6); }
+.fx-word-tape .shard:nth-of-type(3n) { width: .26em; height: .5em; background: #FF8A8A; }
+.fx-word-tape .cutl { position: absolute; left: 50%; top: calc(50% - 2.3em); opacity: 0; z-index: 4; }
+.fx-word-tape .cutl span { display: block; padding: .28em .7em; border-radius: 99px; background: #E8343C; color: #fff; font: 900 .62em/1 var(--f-title); white-space: nowrap; box-shadow: 0 .2em .6em rgba(232,52,60,.45); }

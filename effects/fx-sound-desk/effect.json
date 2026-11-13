@@ -1,0 +1,65 @@
+{
+ "id": "fx-sound-desk",
+ "name": "音效台",
+ "use": "讲每个动作都有音效、音效卡在动作接触点上、混音和响度标准：动作排在时间轴上，音效波形掉下来正好落在接触点，动作亮起；右边响度表指针收敛到 −15 LUFS",
+ "created": "2026-11-09",
+ "version": "1.0.0",
+ "props": "hits:[{t 动作名, icon, kind 音效种类（也是落地时播的音效）, name 波形上的音效名, tone 颜色, at|cue 落地时刻}]；meterAt 响度表开始收敛；target 目标值（默认 −15）；title / laneText / passText",
+ "ref": "D 霓虹数据面板 + C 同页连续演示",
+ "example": {
+  "dur": 4.5,
+  "props": {
+   "hits": [
+    {
+     "t": "弹出",
+     "icon": "plus",
+     "kind": "pop",
+     "name": "POP",
+     "at": 0.6
+    },
+    {
+     "t": "甩镜",
+     "icon": "arrow",
+     "kind": "whoosh",
+     "name": "WHOOSH",
+     "at": 1.1
+    },
+    {
+     "t": "印章",
+     "icon": "star",
+     "kind": "stamp",
+     "name": "STAMP",
+     "at": 1.6
+    },
+    {
+     "t": "打勾",
+     "icon": "check",
+     "kind": "tick-ok",
+     "name": "TICK",
+     "at": 2.1
+    }
+   ],
+   "meterAt": 2.4
+  },
+  "box": {
+   "landscape": [
+    0.05,
+    0.24,
+    0.9,
+    0.5
+   ],
+   "portrait": [
+    0.06,
+    0.24,
+    0.88,
+    0.5
+   ]
+  }
+ },
+ "checked": "2026-11-09 18:05",
+ "layouts": [
+  "16:9",
+  "4:3",
+  "9:16"
+ ]
+}

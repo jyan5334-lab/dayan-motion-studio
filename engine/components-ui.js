@@ -250,7 +250,7 @@
     update(e, lt, p, s) {
       const job = (async () => {
         await s.ready;
-        if (!s.mounted) { s.mounted = true; await s.call({ cmd: 'mount', id: p.id, text: p.text, props: p.props, brand: p.brand, wall: p.wall, ident: p.ident || { name: ((window.TIMELINE || {}).brand || {}).name || '', handle: ((window.TIMELINE || {}).brand || {}).handle || '' }, noTag: true, t: 0 }); }
+        if (!s.mounted) { s.mounted = true; await s.call({ cmd: 'mount', id: p.id, text: p.text, replace: p.replace, props: p.props, brand: p.brand, wall: p.wall, ident: p.ident || { name: ((window.TIMELINE || {}).brand || {}).name || '', handle: ((window.TIMELINE || {}).brand || {}).handle || '' }, noTag: true, t: 0 }); }
         const tt = Math.max(0, lt * (p.speed || 1));
         if (Math.abs(tt - s.lastT) > 1e-4) { s.lastT = tt; await s.call({ cmd: 'seek', t: tt }); }
       })();

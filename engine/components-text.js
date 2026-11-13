@@ -60,9 +60,11 @@
       if (p.color) e.style.setProperty('--t-color', p.color);
       if (p.size) e.style.setProperty('--t-size', p.size + 'px');
       const eb = p.eyebrow ? el('div', 'eyebrow', esc(p.eyebrow), e) : null;
+      if (eb && p.ebSize) { eb.style.fontSize = p.ebSize + 'px'; eb.style.marginBottom = Math.round(p.ebSize * 0.6) + 'px'; }
       const sp = splitChars(p.text || '', p.hl);
       const h = el('div', 'tt', sp.html, e);
       const sub = p.sub ? el('div', 'sub', DMS.hl(p.sub, p.subHl), e) : null;
+      if (sub && p.subSize) sub.style.fontSize = p.subSize + 'px';
       const bar = p.underline ? el('div', 'uline', '', e) : null;
       if (p.reveal === 'slam') DMS.shake(L.at + 0.14, p.shake == null ? 16 : p.shake);
       return { chars: [...h.querySelectorAll('.ch')], h, eb, sub, bar, n: sp.n };

@@ -19,13 +19,13 @@
   python dms.py template render 内置动效ID payload.json 输出目录  单独渲染一个 内置动效片段
 """
 from __future__ import annotations
-import argparse, hashlib, json, math, os, re, shutil, subprocess, sys, tempfile, time
+import argparse, math, hashlib, json, math, os, re, shutil, subprocess, sys, tempfile, time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 sys.path.insert(0, str(HERE))
-VERSION = '1.7.0'
+VERSION = '1.11.0'
 CACHE = Path(os.environ.get('DMS_CACHE', Path.home() / '.cache' / 'dayan-motion-studio'))
 CONFIG = Path(os.environ.get('DMS_CONFIG', Path.home() / '.dayan-motion-studio' / 'config.json'))   # 用户自己的品牌（文字墙等），不随技能分发
 
@@ -121,6 +121,7 @@ def cmd_doctor(ns):
     chk('人脸定位(可选)', lambda: 'opencv ' + __import__('cv2').__version__ + (' · YuNet' if hasattr(__import__('cv2'), 'FaceDetectorYN') else ' · 仅 Haar（升级 opencv-python ≥ 4.8 可用 YuNet）'))
     chk('字幕分词(可选)', lambda: 'jieba ' + __import__('jieba').__version__)
     chk('抠像(可选)', lambda: 'onnxruntime ' + __import__('onnxruntime').__version__)
+    chk('封面抠图(可选)', lambda: 'MODNet 已下载' if (CACHE / 'models' / 'modnet.onnx').exists() else '第一次出封面时自动下载（下载不了会改用照片卡）')
     print('环境就绪' if ok else '有缺项：按上面提示安装后重试（缺"可选"项不影响出片）')
 
 def _has(m):
@@ -492,7 +493,7 @@ def draft_layers(scenes, words, landscape=True):
         S['layers'] = lay
 
 # 外观 + 人物版式轮换（参考风格 A–D：换章节换底色、人物在全屏 / 方卡 / 圆窗 / 大圆之间切，圆窗每章换角）
-LOOK_CYCLE = ['a-blue', 'b-paper', 'd-neon', 'c-wall', 'a-violet', 'b-film', 'a-lime', 'd-hud']
+LOOK_CYCLE = ['a-blue', 'wall-acid', 'b-paper', 'd-neon', 'wall-gold', 'a-violet', 'b-film', 'wall-jade', 'a-lime', 'd-hud', 'wall-chrome', 'wall-lacquer']
 PRESENTER_MENU = {
     'wide':     [('full', 'c'), ('side', 'r'), ('circle', 'br'), ('full', 'c'), ('card', 'r'), ('circle', 'tl'), ('side', 'r'), ('circle', 'bl')],
     'narrow':   [('story', 'c'), ('side', 'r'), ('circle', 'br'), ('story', 'l'), ('side', 'r'), ('circle', 'tl'), ('story', 'r'), ('circle', 'bl')],
@@ -838,7 +839,8 @@ def cmd_kickoff(ns):
     else:
       print('4. 文字墙品牌：背景文字墙会循环显示你的品牌，分两行——主行写品牌名，副行写英文名或口号。')
       print('   示例：主行「小明说AI」、副行「XIAOMING · AI LAB」；或 主行「光影研究所」、副行「LIGHT · LAB · STUDIO」')
-      print(f"   {'上次用的是：主行「' + b['wall'][0] + '」、副行「' + b['wall'][1] + '」（回复"沿用"即可）' if b else '还没有保存过品牌；不想写可以回复"先不用"，文字墙会用中性占位字（MOTION · STUDIO）'}")
+      _hint = ('上次用的是：主行「' + b['wall'][0] + '」、副行「' + b['wall'][1] + '」（回复"沿用"即可）') if b else '还没有保存过品牌；不想写可以回复"先不用"，文字墙会用中性占位字（MOTION · STUDIO）'
+      print('   ' + _hint)
       print('   拿到答案后：dms.py scaffold … --wall-main "主行" --wall-sub "副行"（会存进本机配置，下次新作品默认沿用）')
     print('画幅 × 分辨率 → 画布：16:9 1920×1080 / 2560×1440 / 3840×2160 / 1280×720；4:3 1440×1080 / 1920×1440 / 2880×2160 / 960×720；')
     print('                     9:16 1080×1920 / 1440×2560 / 2160×3840 / 720×1280；3:4 1080×1440 / 1440×1920 / 2160×2880 / 720×960')
@@ -981,7 +983,7 @@ def _look_sig(S, T):
     for L in S.get('bg') or []:
         p = L.get('props') or {}
         c = L.get('c', '')   # 文字墙不同皮肤看起来仍是"文字墙"，只按背景种类归类；纯色 / 放射 / 纸张按颜色区分
-        bgs.append(c + (':' + str(p.get('gradient') or p.get('color') or p.get('c1') or p.get('tone') or '') if c in ('bg-solid', 'bg-burst', 'bg-paper') else ''))
+        bgs.append(c + (':' + str(p.get('gradient') or p.get('color') or p.get('c1') or p.get('tone') or '') if c in ('bg-solid', 'bg-burst', 'bg-paper') else (':' + str(p.get('skin') or 'platinum') if c == 'bg-wall' else '')))
     return th + '|' + ','.join(bgs)
 
 def style_monotony(T):
@@ -993,10 +995,10 @@ def style_monotony(T):
         j = i
         while j + 1 < len(scenes) and sigs[j + 1] == sigs[i]: j += 1
         dur = scenes[j]['t1'] - scenes[i]['t0']
-        if dur > 24 and j > i: out.append(f"{scenes[i]['id']}–{scenes[j]['id']} 连续 {dur:.0f}s 用同一个外观：换章节就换 look（a-blue / b-paper / d-neon / a-violet / b-film …），同一章节内再共用")
+        if dur > 20 and j > i: out.append(f"{scenes[i]['id']}–{scenes[j]['id']} 连续 {dur:.0f}s 用同一个外观：换章节就换 look（a-blue / b-paper / d-neon / a-violet / b-film …），同一章节内再共用")
         i = j + 1
-    kinds = len(set(sigs))
-    if D > 60 and kinds < 3: out.append(f"全片只用了 {kinds} 种外观：{D:.0f}s 的片子至少 3–4 种（开头暗底钩子、讲解色块、米白纸总结、结尾红色放射）")
+    kinds = len(set(sigs)); need = max(4, math.ceil(D / 60 * 2.5))
+    if D > 40 and kinds < need: out.append(f"全片只用了 {kinds} 种背景：{D:.0f}s 的片子至少 {need} 种（每分钟 2–3 种）——色块（a-blue / a-violet / a-lime / a-red）、暗胶片 b-film、米白纸 b-paper、霓虹 d-neon、HUD d-hud，文字墙换皮肤 wall-gold / wall-jade / wall-acid / wall-chrome / wall-lacquer / wall-pop …（16 套），同一个话题内再共用")
     keys = [k for k in ((T.get('presenter') or {}).get('keys') or []) if k.get('state') != 'hidden']
     allk = (T.get('presenter') or {}).get('keys') or []
     for a, b in zip(allk, allk[1:] + [{'t': D}]):
@@ -1005,7 +1007,46 @@ def style_monotony(T):
     circ = [k.get('pos', 'br') for k in keys if k.get('state') == 'circle']
     if len(circ) >= 3 and len(set(circ)) == 1: out.append(f"圆窗出现 {len(circ)} 次都在 {circ[0]}：内容换了，圆窗跟着换角落（内容在左 → 去右下，内容在右 → 去左下）")
     states = {k.get('state') for k in keys}
-    if D > 45 and len(states) < 3: out.append(f"人物只用了 {len(states)} 种形态（{'、'.join(sorted(states))}）：至少用 3 种")
+    if D > 45 and keys and len(states) < 3: out.append(f"人物只用了 {len(states)} 种形态（{'、'.join(sorted(states))}）：至少用 3 种")
+    return out
+
+TEXT_ONLY = {'title', 'chips', 'glow-quote', 'stamp', 'strike', 'echo', 'tags', 'chapter', 'namecard', 'bubble', 'quote', 'equation', 'nav'}
+def _vis_comps(L):
+    c = L.get('c', '')
+    if c == 'demo-zone': return [b.get('c', '') for b in (L.get('props') or {}).get('beats') or []]
+    return [c]
+
+def visual_monotony(T):
+    """画面单调（用户 2026-11-13：除了文字没有别的动画 = 失败；几百种动效不用、一个自制动效套到底 = 千篇一律）"""
+    from collections import Counter
+    out = []; scenes = T['scenes']; n = len(scenes)
+    if n < 4: return out
+    per = []
+    for S in scenes:
+        comps = [x for L in S.get('layers', []) if not str(L.get('c', '')).startswith('bg-') for x in _vis_comps(L)]
+        vis = [x for x in comps if x not in TEXT_ONLY]
+        per.append((S, comps, vis))
+        if S['t1'] - S['t0'] >= 3 and not vis:
+            out.append(f"{S['id']} {S['t0']:.1f}–{S['t1']:.1f}s 只有文字（{'、'.join(sorted(set(comps))) or '空'}）：字幕已经在说了，画面要“证明”它——数字 → number / gauge，对比 → compare / bars / fx-before-after，步骤 → flow / checklist，工具 / 界面 → window / phone / 录屏放大，物件和比喻 → 现做一个动效；先 `dms.py catalog 关键词` 找现成的")
+    cnt = Counter(x for _, _, vis in per for x in set(vis))
+    for c, k in cnt.most_common():
+        limit = 3 if c.startswith('fx-') else max(4, int(n * 0.35))
+        if c in ('window', 'media'): limit = max(limit, int(n * 0.45))   # 真录屏 / 真截图可以多用
+        if k > limit:
+            out.append(f"「{c}」用在 {k}/{n} 段：同一个画面反复出现，片子会千篇一律。" + ('自己做的动效一条片子最多用 3 段，其余段落按语义换别的组件 / 动效库 / 原卡（`dms.py catalog`）' if c.startswith('fx-') else '同一个对象跨句承接可以共用，其余段落换别的组件'))
+    need = max(5, round(n / 3))
+    if len(cnt) < need:
+        out.append(f"全片只用了 {len(cnt)} 种画面组件（{'、'.join(sorted(cnt)) or '无'}）：{n} 段至少 {need} 种。数字、对比、流程、清单、对话、界面、进度、节点、印章、贴纸、彩纸……按 references/catalog.md 的语义分组挑")
+    D = T['duration']; total = sum(len(comps) for _, comps, _ in per)
+    if D > 30 and total / (D / 60) < 15:
+        out.append(f"全片 {total} 个动效 / {D / 60:.1f} 分钟 = 每分钟 {total / (D / 60):.0f} 个：至少每分钟 15–20 个（每段 2–4 层：主画面 + 强调 + 辅助，一两句话换一次画面）")
+    for S, comps, vis in per:
+        dur = S['t1'] - S['t0']
+        swaps = sum(1 for L in S.get('layers', []) if L.get('out') is not None) + sum(max(0, len((L.get('props') or {}).get('beats') or []) - 1) for L in S.get('layers', []) if L.get('c') == 'demo-zone') + len([z for L in S.get('layers', []) for z in ((L.get('props') or {}).get('zoom') or [])])
+        if dur > 12 and swaps < int(dur // 8):
+            out.append(f"{S['id']} {S['t0']:.1f}–{S['t1']:.1f}s 一段 {dur:.0f}s 画面没换过：一两句话（4–10 秒）就该换一次画面——拆成两段换背景 / 换主画面，或在段内用 out + 新元素翻页、demo-zone 换拍、窗口推近到新位置")
+    textish = sum(1 for _, _, vis in per if not vis)
+    if textish > n * 0.25: out.append(f"{textish}/{n} 段只有文字：超过 1/4 的段落画面只是把字幕换个字号再排一遍")
     return out
 
 def cmd_direct(ns):
@@ -1022,7 +1063,7 @@ def cmd_direct(ns):
             j = norm(c['t']).find(k)
             if j >= 0: return char_time(c, j)
         return None
-    R = {'照抄字幕': [], '一段两件事': [], '画面静止': [], '口播有画面没有': [], '出现错位': [], '字幕可读性': [], '样式单一': []}
+    R = {'照抄字幕': [], '一段两件事': [], '画面静止': [], '口播有画面没有': [], '出现错位': [], '字幕可读性': [], '样式单一': [], '画面单调': []}
     port = T['canvas']['h'] > T['canvas']['w']; maxc = 12 if port else 16
     for c in cues:
         n = _vlen(norm(c['t'])); d = c['e'] - c['s']
@@ -1094,6 +1135,7 @@ def cmd_direct(ns):
             elif d < -1.6: R['出现错位'].append(f"{sid}/{L['c']} 早了 {-d:.1f}s：元素 {L['at']:.1f}s 就出来，口播 {best:.1f}s 才说到（剧透；改用 cue）")
     # 7 样式单一（参考风格 A–D：换章节换底色；人物在全屏 / 方卡 / 圆窗 / 大圆之间切；圆窗每章换角；全屏段隔 8–15s 推近一次）
     R['样式单一'] += style_monotony(T)
+    R['画面单调'] += visual_monotony(T)
     n = sum(len(v) for v in R.values())
     print(f"导演检查 · {T.get('title', '')} · {len(scenes)} 段 · {T['duration']:.1f}s")
     for k, v in R.items():
@@ -1149,10 +1191,16 @@ LOOKS = {
     'd-hud':    ('hud-blue',    'D HUD 暗蓝（数据、系统、执行中）', lambda T: [{'c': 'bg-solid', 'props': {'gradient': 'radial-gradient(110% 90% at 50% 20%, #0F2A8A 0%, #061247 75%)'}}, {'c': 'bg-grid', 'props': {'color': '#33D1FF'}}, {'c': 'bg-hud'}]),
 }
 
+WALL_SKINS = ['pop', 'gold', 'acid', 'song', 'chrome', 'lime', 'obsidian', 'platinum', 'abyss', 'hollow', 'satin', 'lacquer', 'frost', 'porcelain', 'jade', 'mist']
 def apply_look(s, E):
     lk = s.get('look')
     if not lk: return s
     name, text = (lk, None) if isinstance(lk, str) else (lk.get('name'), lk.get('text'))
+    if isinstance(name, str) and name.startswith('wall-') and name[5:] in WALL_SKINS:   # 文字墙换皮肤：wall-gold / wall-jade / wall-acid …（16 套），{"name": "wall-lime", "light": true} 用亮底原貌
+        light = isinstance(lk, dict) and lk.get('light')
+        s.setdefault('theme', 'paper-swiss' if light else 'film-warm')
+        if not s.get('bg'): s['bg'] = [{'c': 'bg-wall', 'props': dict({'skin': name[5:]}, **({'light': True} if light else {}))}]
+        return s
     if name not in LOOKS: return s
     theme, _, bgf = LOOKS[name]
     T = text or s.get('lookText') or ((E.get('brand') or {}).get('wall') or ['MOTION'])[0]
@@ -1175,7 +1223,7 @@ def cmd_build(ns):
     if (P / 'engine').exists(): shutil.rmtree(P / 'engine')
     shutil.copytree(ROOT / 'engine', P / 'engine')
     lib = ROOT / 'assets' / 'dayan-library.html'
-    if lib.exists() and not (P / 'assets' / 'dayan-library.html').exists():
+    if lib.exists() and (not (P / 'assets' / 'dayan-library.html').exists() or (P / 'assets' / 'dayan-library.html').stat().st_size != lib.stat().st_size or (P / 'assets' / 'dayan-library.html').stat().st_mtime < lib.stat().st_mtime):   # 技能里的原卡库更新过就重新拷
         (P / 'assets').mkdir(exist_ok=True); shutil.copy(lib, P / 'assets' / 'dayan-library.html')
     words = None
     if E.get('words') and (base / E['words']).exists(): words = jload(base / E['words'])['words']
@@ -1188,7 +1236,7 @@ def cmd_build(ns):
     pres = None
     if master and master.exists():
         info = probe(master); D = D or info['duration']
-        pfps = min(info['fps'], FPS)
+        pfps = min(info['fps'], FPS, float((E.get('presenter') or {}).get('fps') or 999))
         stamp = f"{sha(master)}-{pfps:.3f}"
         if (P / 'talk' / '.stamp').exists() and (P / 'talk' / '.stamp').read_text() == stamp: log('人物帧已是最新，跳过抽帧')
         else:
@@ -1456,6 +1504,72 @@ def cmd_render(ns):
     log('成片 →', out)
     (P / 'last_final.txt').write_text(str(out), encoding='utf-8')   # 导出时优先用这一版
     cmd_check(argparse.Namespace(video=str(out)))
+    if not getattr(ns, 'no_cover', False):   # 成片出来后顺带出一套封面（失败不影响成片）
+        try:
+            files = cmd_cover(argparse.Namespace(project=str(P), out=None, person=None, frames=None))
+            if files:
+                dst = out.parent / f'{out.stem}_封面'; dst.mkdir(exist_ok=True)
+                for f in list(files) + [P / 'cover' / '封面_总览.jpg']:
+                    if Path(f).exists(): shutil.copy(f, dst / Path(f).name)
+                log('封面 →', dst)
+        except Exception as e: log('封面没出成（不影响成片），可单独运行 dms.py cover：', e)
+
+def cmd_catalog(ns):
+    """动效目录：无参数 → 生成 references/catalog.md；带关键词 → 搜索组件 / 动效库 / 内置动效 / 原卡库并给出写法"""
+    import dms_catalog as K
+    if ns.keys: K.search(ns.keys, ns.limit)
+    else:
+        n, p = K.write_md(ns.out)
+        log(f"动效目录 → {p}（组件 {n['组件']} · 动效库 {n['动效库']} · 内置动效 {n['内置动效']} · 原卡 {n['原卡库']}）")
+
+def cmd_card(ns):
+    """看一张原卡：截 3 帧拼图 + 列出卡里全部可见文字（都是样板，按口播换掉），给出可直接写进 edit.json 的写法"""
+    from PIL import Image
+    out = Path(ns.out or (Path.cwd() / 'cards')).resolve(); out.mkdir(parents=True, exist_ok=True)
+    args = [NODE, str(HERE / 'card.mjs'), ns.id, str(out)] + ([str(Path(ns.replace).resolve())] if ns.replace else [])
+    r = subprocess.run(args, cwd=str(ROOT), capture_output=True, text=True)
+    if r.returncode: die('原卡挂载失败：' + (r.stderr or r.stdout)[-400:])
+    d = json.loads(r.stdout.strip().splitlines()[-1])
+    ims = [Image.open(f).convert('RGB').resize((640, 360)) for f in d['shots']]
+    sheet = Image.new('RGB', (640 * 3 + 20, 360), 'white')
+    for i, im in enumerate(ims): sheet.paste(im, (i * 650, 0))
+    safe = ns.id.replace('·', '-'); dst = out / f'原卡_{safe}.jpg'; sheet.save(dst, quality=88)
+    for f in d['shots']: Path(f).unlink(missing_ok=True)
+    (out / '_card.html').unlink(missing_ok=True)
+    print(f'样张（入场 / 落定 / 后段）→ {dst}')
+    print('卡里的可见文字（全部是样板，按本期口播换掉；不需要的换成空字符串）：')
+    for t in d['texts']: print('   ', t)
+    rep = [[t, '…'] for t in d['texts']]
+    print('写法：')
+    print('  ' + json.dumps({'c': 'dayan', 'cue': '关键词', 'box': 'full', 'props': {'id': ns.id, 'replace': rep}}, ensure_ascii=False))
+    print('提示：替换后再跑一次 `dms.py card ' + ns.id + ' --replace 替换表.json` 看样张，确认画面里没有残留的样板文字、价格、别家产品名')
+
+def cmd_plan(ns):
+    """把 edit.json / 已 build 的工程整理成一张编排单（每段：口播 → 外观 → 人物 → 主画面 → 文字 → 转场），交付前自查"千篇一律"用"""
+    src = Path(ns.src)
+    T = jload(src / 'timeline.json') if src.is_dir() else jload(src)
+    rows = ['| 段 | 时间 | 口播 | 外观 | 主画面（非文字） | 文字层 | 转场 |', '|---|---|---|---|---|---|---|']
+    from collections import Counter
+    cnt = Counter()
+    for S in T.get('scenes', []):
+        comps = [x for L in S.get('layers', []) if not str(L.get('c', '')).startswith('bg-') for x in _vis_comps(L)]
+        vis = [x for x in comps if x not in TEXT_ONLY]; txt = [x for x in comps if x in TEXT_ONLY]; cnt.update(set(vis))
+        look = S.get('look') if isinstance(S.get('look'), str) else (S.get('look') or {}).get('name') if S.get('look') else ','.join(L.get('c', '') + ':' + str((L.get('props') or {}).get('skin', '')) for L in S.get('bg') or [])
+        tr = (S.get('transition') or {}).get('type', '')
+        say = (S.get('say') or '').replace('|', '/')[:40]
+        rows.append(f"| {S.get('id')} | {S.get('t0', 0):.1f}–{S.get('t1', 0):.1f} | {say} | {look or ''} | {'、'.join(vis) or '⚠ 只有文字'} | {'、'.join(txt)} | {tr} |")
+    rows += ['', '主画面组件使用次数：' + '、'.join(f'{k}×{v}' for k, v in cnt.most_common())]
+    out = Path(ns.out) if ns.out else (src / 'plan.md' if src.is_dir() else src.with_name('plan.md'))
+    out.write_text('\n'.join(rows), encoding='utf-8'); log('编排单 →', out)
+
+def cmd_cover(ns):
+    """封面：A 手账贴纸 / B 科技海报 / C 电影海报 × 竖屏 3:4 + 横屏 4:3。有真人就从母版挑人物帧抠像，没有就出文字 + 背景版"""
+    import dms_cover
+    P = Path(ns.project).resolve(); E = jload(P / 'edit.json')
+    pj = jload(P / 'project.json') if (P / 'project.json').exists() else {}
+    start = Path(pj['edit']).parent if pj.get('edit') else P
+    frames = [float(x) for x in ns.frames.split(',')] if getattr(ns, 'frames', None) else None
+    return dms_cover.make_covers(P, brand_of(E, start), getattr(ns, 'out', None), getattr(ns, 'person', None) or 'auto', frames)
 
 def cmd_sweep(ns):
     """逐帧试跑整条时间轴（不截图），页面报错按出错的组件汇总；渲染前跑一遍，0 报错再渲染"""
@@ -1511,7 +1625,11 @@ def main():
     a = sp.add_parser('stills'); a.add_argument('project'); a.add_argument('times')
     a = sp.add_parser('audio'); a.add_argument('project'); a.add_argument('--music-volume', dest='music_volume', type=float)
     a = sp.add_parser('sweep', help='逐帧试跑查页面报错（渲染前跑）'); a.add_argument('project'); a.add_argument('--step', type=float, default=1 / 30); a.add_argument('--from', dest='start', type=float); a.add_argument('--to', dest='end', type=float); a.set_defaults(fn=cmd_sweep)
-    a = sp.add_parser('render'); a.add_argument('project'); a.add_argument('out'); a.add_argument('--workers', type=int); a.add_argument('--preset', default='medium'); a.add_argument('--crf', type=int, default=16); a.add_argument('--reuse', action='store_true', help='画面没改时复用已渲染的 picture.mp4，只重做字幕和声音')
+    a = sp.add_parser('render'); a.add_argument('project'); a.add_argument('out'); a.add_argument('--workers', type=int); a.add_argument('--preset', default='medium'); a.add_argument('--crf', type=int, default=16); a.add_argument('--reuse', action='store_true', help='画面没改时复用已渲染的 picture.mp4，只重做字幕和声音'); a.add_argument('--no-cover', dest='no_cover', action='store_true', help='不顺带出封面')
+    a = sp.add_parser('catalog', help='动效目录：生成 references/catalog.md，或按关键词搜索可调用的组件 / 动效 / 原卡'); a.add_argument('keys', nargs='*'); a.add_argument('--limit', type=int, default=20); a.add_argument('--out')
+    a = sp.add_parser('card', help='看一张原卡：样张 + 卡里全部可见文字（样板，按口播替换）+ 写法'); a.add_argument('id'); a.add_argument('--out'); a.add_argument('--replace', help='替换表 json：[[原文, 新文], …]')
+    a = sp.add_parser('plan', help='把 edit.json / 工程整理成编排单 plan.md（每段主画面一目了然）'); a.add_argument('src'); a.add_argument('--out')
+    a = sp.add_parser('cover', help='封面：A/B/C 三种风格 × 竖屏 3:4 + 横屏 4:3（有真人抠像，没有出文字 + 背景版）'); a.add_argument('project'); a.add_argument('--out'); a.add_argument('--person', choices=['auto', 'yes', 'no']); a.add_argument('--frames', help='手动指定 A,B,C 三帧的母版秒数，如 12.3,40.1,70.2')
     a = sp.add_parser('overlay', help='导出透明动效层（.mov ProRes 4444 / .webm VP9）'); a.add_argument('project'); a.add_argument('out', nargs='?'); a.add_argument('--workers', type=int)
     a = sp.add_parser('check'); a.add_argument('video')
     a = sp.add_parser('export'); a.add_argument('project'); a.add_argument('--frames', action='store_true', help='连人物帧一起打包（体积大）'); a.add_argument('--media-root', dest='media_root', help='交付文件夹在用户电脑上的路径，XML 里的媒体路径按它写')

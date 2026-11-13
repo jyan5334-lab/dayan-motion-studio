@@ -1,0 +1,69 @@
+{
+ "id": "fx-word-tape",
+ "name": "字卡听写 / 口误剪除",
+ "use": "讲逐字听写、字级时间码（mode:listen：声波压成一排带时间码的字卡）；讲口误自动剪掉（mode:cut：口误字卡变红 → 碎裂 → 两边合拢，弹出剪掉几秒）",
+ "created": "2026-11-09",
+ "version": "1.0.0",
+ "props": "words:[{t,tc,bad}]；mode: listen/cut；listen：pressAt 声波压扁时刻、stagger 字卡间隔；cut：badAt 变红、smashAt 碎裂（适合配精灵踩下）、closeAt 合拢、cutText 弹出的标签；maxSize 字号上限（cqh）",
+ "ref": "C 同页连续演示 + A 碎裂冲击",
+ "example": {
+  "dur": 4.0,
+  "props": {
+   "mode": "cut",
+   "badAt": 0.6,
+   "smashAt": 1.4,
+   "words": [
+    {
+     "t": "大家好",
+     "tc": "0.18s"
+    },
+    {
+     "t": "今天",
+     "tc": "0.62s"
+    },
+    {
+     "t": "the the",
+     "tc": "0.95s",
+     "bad": true
+    },
+    {
+     "t": "不对",
+     "tc": "1.40s",
+     "bad": true
+    },
+    {
+     "t": "我们",
+     "tc": "1.83s"
+    },
+    {
+     "t": "来剪",
+     "tc": "2.10s"
+    },
+    {
+     "t": "口播",
+     "tc": "2.41s"
+    }
+   ]
+  },
+  "box": {
+   "landscape": [
+    0.04,
+    0.3,
+    0.92,
+    0.4
+   ],
+   "portrait": [
+    0.04,
+    0.38,
+    0.92,
+    0.2
+   ]
+  }
+ },
+ "checked": "2026-11-09 18:01",
+ "layouts": [
+  "16:9",
+  "4:3",
+  "9:16"
+ ]
+}

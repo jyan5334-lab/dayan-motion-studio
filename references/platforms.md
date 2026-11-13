@@ -15,7 +15,7 @@ python scripts/dms.py doctor
 macOS / Linux：`brew install ffmpeg node`（或 apt），其余同上，`python` 换成 `python3`。
 
 - 浏览器：自动找本机 Chrome 或 Edge；都没有时运行 `npx playwright install chromium`。也可用环境变量 `DMS_CHROME` 指定。
-- 语音识别模型（约 230MB）、人脸模型、抠像模型第一次使用时自动下载到 `~/.cache/dayan-motion-studio/models`，都来自 GitHub。
+- 语音识别模型（约 230MB）、人脸模型、抠像模型第一次使用时自动下载到 `~/.cache/dayan-motion-studio/models`，都来自 GitHub。封面人像抠图模型 MODNet（约 25MB）第一次出封面时从 Hugging Face 下载（下载不了时自动试 hf-mirror.com，也可设 `DMS_HF_MIRROR` 或 `DMS_MODNET_URL`；都不行时封面改用照片卡，照样出图）。
 - 中文字体：Windows 默认微软雅黑，macOS 苹方。想要更有冲击力的标题，安装免费商用字体（阿里巴巴普惠体 3.0、思源黑体 Heavy、MiSans），引擎会优先使用；字幕烧录的字体可在 `subtitles.font` 指定，或把字体文件放进 `assets/fonts/`。
 
 ## 放在哪里

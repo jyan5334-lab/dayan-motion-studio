@@ -51,13 +51,14 @@
   "sfxVolume": 0.85, "sfxSeed": 11, "denoise": false,
   "sfx": [{"t": 12.3, "kind": "impact", "gain": 0.6}],  // 额外手动音效（组件自带的不用写）
   "camera": [{"t": 30, "zoom": 1.06, "x": 0, "y": 0, "dur": 1.2}],   // 场景层整体推拉（不影响人物与字幕）
+  "cover": {"title": ["同一句提示词", "Claude 夯爆了"], "hl": "夯爆了", "sub": "副标题", "badges": [{"t": "10×", "d": "响应速度"}], "shots": [{"t": 50, "crop": [0.5, 0.1, 0.5, 0.6], "label": "截图说明"}]},   // 封面文案（render 后自动出 A/B/C × 竖 3:4 + 横 4:3），完整字段见 cover.md
   "globals": [ /* 跨场景常驻层，如章节导航 nav：{"c":"nav","at":0,"box":"side-l","props":{...}} */ ],
 
   "scenes": [
     {
       "id": "s02-prompt", "t0": 4.25, "t1": 13.25,      // 场景首尾相接，不留空档
       "energy": 1,                                      // 配乐能量 0–3（0 只有铺底 … 3 全编制）
-      "look": "a-blue",                                 // 章节外观预设：一键换主题 + 背景（b-film a-blue b-paper d-neon a-violet a-lime d-hud a-thumbs c-wall c-wall-gold a-red），也可写 {"name":"d-neon","text":"SKILL"}；写了 theme/bg 就以手写为准
+      "look": "a-blue",                                 // 章节外观预设：一键换主题 + 背景（b-film a-blue b-paper d-neon a-violet a-lime d-hud a-thumbs c-wall c-wall-gold a-red；文字墙换皮肤 wall-<皮肤>：wall-gold wall-jade wall-acid wall-chrome wall-lacquer wall-pop … 16 套，亮底 {"name":"wall-porcelain","light":true}），也可写 {"name":"d-neon","text":"SKILL"}；写了 theme/bg 就以手写为准；每分钟换 2–3 种
       "theme": "dark-tech",                             // 可选：本场景换主题
       "transition": {"type": "push-left", "dur": 0.6},  // 进入本场景的转场
       "transitionSfx": "whoosh",                        // 可选：覆盖默认转场音效；false 关闭

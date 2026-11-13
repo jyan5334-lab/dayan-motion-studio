@@ -1,0 +1,22 @@
+.fx-conveyor { position: absolute; inset: 0; container-type: size; pointer-events: none; --in: 0; --v: 0; }
+.fx-conveyor .belt { position: absolute; left: -2%; right: -2%; top: 87.6cqh; height: 3.4cqh; transform: translateY(calc((1 - var(--in)) * 12cqh)); opacity: var(--in); }
+.fx-conveyor .belt .top { position: absolute; left: 0; right: 0; top: 0; height: 0.5cqh; background: linear-gradient(90deg, transparent, rgba(255,255,255,.55) 20%, rgba(255,255,255,.55) 80%, transparent); }
+.fx-conveyor .belt .tread { position: absolute; inset: 0.5cqh 0 0; border-radius: 0 0 1cqh 1cqh;
+  background: repeating-linear-gradient(90deg, #262833 0 2.4cqw, #1A1C24 2.4cqw 2.7cqw), linear-gradient(#2E313D, #14151B);
+  background-blend-mode: normal; box-shadow: 0 1.2cqh 2.6cqh rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.12); }
+.fx-conveyor .belt .glow { position: absolute; inset: 0.5cqh 0 0; opacity: calc(.15 + var(--v) * .85);
+  background: repeating-linear-gradient(90deg, transparent 0 9cqw, rgba(255,170,80,.75) 9cqw 9.6cqw, transparent 9.6cqw 18cqw); mix-blend-mode: screen; }
+.fx-conveyor .rollers { position: absolute; left: 0; right: 0; top: 91.6cqh; height: 0; opacity: var(--in); transform: translateY(calc((1 - var(--in)) * 12cqh)); }
+.fx-conveyor .rollers i { position: absolute; top: 0; width: 2.4cqh; height: 2.4cqh; border-radius: 50%; background: radial-gradient(circle, #9A9DA8 0 18%, #3A3D48 20% 60%, #23252D 62%); }
+.fx-conveyor .rollers b { position: absolute; left: 45%; top: 8%; width: 10%; height: 84%; background: rgba(255,255,255,.35); border-radius: 99px; }
+.fx-conveyor .nav { position: absolute; left: 8%; right: 8%; top: 93.6cqh; height: 5cqh; display: flex; justify-content: space-between; align-items: center;
+  opacity: var(--in); transform: translateY(calc((1 - var(--in)) * 8cqh)); }
+.fx-conveyor .nav .ln { position: absolute; left: 1.6cqh; right: 1.6cqh; top: 50%; height: 0.3cqh; margin-top: -0.15cqh; background: rgba(255,255,255,.18); border-radius: 99px; }
+.fx-conveyor .nav .ln u { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, #FFC65A, #FF7A1A); transform-origin: 0 50%; box-shadow: 0 0 1cqh #FF8A2A; }
+.fx-conveyor .st { position: relative; display: flex; align-items: center; gap: 0.7cqw; padding: 0.5cqh 1cqw 0.5cqh 0.5cqh; border-radius: 99px; --on: 0; --done: 0;
+  background: color-mix(in srgb, #16171D calc(100% - var(--on) * 100%), #FF8A2A); border: 1px solid color-mix(in srgb, rgba(255,255,255,.22) calc(100% - var(--on) * 100%), #FFD08A);
+  box-shadow: 0 0 calc(var(--on) * 2.4cqh) rgba(255,138,42,.7); }
+.fx-conveyor .st i { width: 3.4cqh; height: 3.4cqh; border-radius: 50%; display: grid; place-items: center; font: 900 1.9cqh/1 var(--f-en); font-style: normal;
+  background: color-mix(in srgb, rgba(255,255,255,.12) calc(100% - max(var(--on), var(--done)) * 100%), #fff); color: color-mix(in srgb, #fff calc(100% - max(var(--on), var(--done)) * 100%), #1A0E02); }
+.fx-conveyor .st i .dms-ico { width: 60%; height: 60%; }
+.fx-conveyor .st span { font: 900 2.4cqh/1 var(--f-sans); color: color-mix(in srgb, rgba(255,255,255,.62) calc(100% - var(--on) * 100%), #1A0E02); white-space: nowrap; }

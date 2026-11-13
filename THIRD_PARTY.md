@@ -8,4 +8,6 @@
 | 人脸检测模型 YuNet | `assets/models/face_detection_yunet_2023mar.onnx` | OpenCV Zoo（github.com/opencv/opencv_zoo） | MIT |
 | 得意黑 Smiley Sans 字体 | `engine/fonts/SmileySans-Oblique.woff2` | atelier-anchor/smiley-sans | SIL Open Font License 1.1，详见 `engine/fonts/LICENSE.md` |
 
+封面人像抠图模型 MODNet（ZHKKKe/MODNet，ONNX 版来自 Hugging Face Xenova/modnet，Apache-2.0）首次出封面时下载到本机缓存，不随仓库分发。
+
 运行时依赖（不随仓库分发，安装时下载）：FFmpeg（LGPL/GPL）、Node.js、playwright-core（Apache-2.0）、numpy / scipy / pillow / soundfile / opencv-python / jieba / sherpa-onnx（各自开源许可）；语音识别模型首次使用时从 GitHub 下载。

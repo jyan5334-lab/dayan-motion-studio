@@ -11,6 +11,3 @@ proj/
 *.mov
 *.webm
 !assets/**/*.mp4
-
-# 大琰DAYAN 动效库原文件不公开发布
-assets/dayan-library.html

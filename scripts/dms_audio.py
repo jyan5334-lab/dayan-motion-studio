@@ -513,7 +513,7 @@ def mix(voice, out, bgm=None, sfx=None, music_vol=0.30, sfx_vol=0.85, duration=N
     ins = ['-i', voice]; fc = []
     vchain = 'highpass=f=75,lowpass=f=16000' + (',afftdn=nf=-25' if denoise else '') + ',acompressor=threshold=-20dB:ratio=3:attack=8:release=160:makeup=3,loudnorm=I=-16:TP=-2:LRA=9'
     # 先补静音再处理：单遍 loudnorm 在结尾会吞掉约 3 秒，最后按 duration 精确裁切
-    fc.append(f'[0:a]aresample=48000,apad=pad_dur=6,{vchain},asplit=2[v][vk]')
+    fc.append(f'[0:a]aresample=48000,apad=pad_dur=6,{vchain},aformat=sample_fmts=fltp:sample_rates=48000:channel_layouts=stereo,asplit=2[v][vk]')
     mixins = ['[v]']; idx = 1
     if bgm:
         # 配乐先按实测响度对齐到"人声下方约 5 dB（闪避后约 10 dB）"（music_vol=0.30 → −21 LUFS，每翻倍 +6 dB），保留编曲的能量起伏
@@ -521,7 +521,7 @@ def mix(voice, out, bgm=None, sfx=None, music_vol=0.30, sfx_vol=0.85, duration=N
         tgt = -21.0 + 20 * math.log10(max(music_vol, 0.01) / 0.30)
         mi = (loudness(bgm) or {}).get('I')
         gdb = (tgt - mi) if mi is not None and mi > -70 else 20 * math.log10(max(music_vol, 0.01))
-        ins += ['-i', bgm]; fc.append(f'[{idx}:a]aresample=48000,volume={gdb:.2f}dB[m0]'); fc.append('[m0][vk]sidechaincompress=threshold=0.06:ratio=2.5:attack=40:release=600:makeup=1[m]'); mixins.append('[m]'); idx += 1
+        ins += ['-i', bgm]; fc.append(f'[{idx}:a]aresample=48000,volume={gdb:.2f}dB,aformat=sample_fmts=fltp:sample_rates=48000:channel_layouts=stereo[m0]'); fc.append('[m0][vk]sidechaincompress=threshold=0.06:ratio=2.5:attack=40:release=600:makeup=1[m]'); mixins.append('[m]'); idx += 1
     else:
         fc.append('[vk]anullsink')
     if sfx:

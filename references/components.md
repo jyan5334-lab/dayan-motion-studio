@@ -7,7 +7,7 @@
 ## 文字与标注
 | 组件 | 用途 | 主要 props |
 |---|---|---|
-| `title` | 大标题（逐字升起 / 上浮 / 擦出 / 砸入 / 打字） | `text` `hl` `sub` `eyebrow` `size` `align` `reveal: chars/rise/mask/slam/type` `style: heavy/serif/outline/glow/3d/marker/block` `underline` `color` |
+| `title` | 大标题（逐字升起 / 上浮 / 擦出 / 砸入 / 打字） | `text` `hl` `sub` `eyebrow` `size` `ebSize`（眉标字号） `subSize`（副标题字号） `align` `reveal: chars/rise/mask/slam/type` `style: heavy/serif/outline/glow/3d/marker/block` `underline` `color` |
 | `stamp` | 印章 / 斜贴纸砸下 + 冲击环 + 微震 | `text` `sub` `style: box/tape/round/sticker` `rotate` `size` `color` `shake` |
 | `strike` | 划掉 → 改写盖章 | `from` `to` `mark: line/x` `layout: inline/stack` `strikeAt/strikeCue` `toAt/toCue` `size` |
 | `type` | 输入框 / 终端逐字打出 → 发送 | `text` `label` `icon` `boxStyle: input/terminal/plain` `size`（字号 px） `cps` `typeAt` `submitAt/submitCue` `strikeAt` |
@@ -52,7 +52,7 @@
 | `sticker` | 图标 / emoji 贴纸 | `icon` `text` `style: round/plain/hl` `rotate` `bob` |
 | `mark` | 圈选 / 下划线 / 荧光笔 | `style: box/circle/under/marker` `label` `dur` |
 | `arrow` | 指引箭头 | `from:[x,y]` `to:[x,y]` `curve` `label` |
-| `dayan` | 嵌入大琰DAYAN 动效库原卡（334 条），逐帧 seek | `id` `text:{槽位:文案}` `props` `brand` `wall` |
+| `dayan` | 嵌入大琰DAYAN 原卡（328 张），逐帧 seek；卡里的文字都是样板，用 `replace` 换成本期内容（先 `dms.py card <卡号>` 看样板文字） | `id` `replace:[[原文,新文],…]` `text:{槽位:文案}` `props` `brand` `wall` |
 
 ## 特效
 `confetti`（彩纸）· `burst`（速度线 + 冲击环）
@@ -75,6 +75,15 @@
 | `fx-play-sprite` | 播放键小精灵（原创吉祥物）：按关键帧路径跑、跳、翻跟斗、滚、点击、踩、放技能（光束 + 火花）、蓄力旋转、挥手、鞠躬；挤压拉伸、落地缓冲、拖影、影子、速度线、点击冲击环都自带。**放在 `globals` 里跨场景常驻**，转场时不跟着画面切走 | `path:[{t,x,y,act,h,dir,target}]` `size` `color` `trail` `shadow` |
 | `fx-horizon-title` | 电影感地平线片头：黑底宽银幕，暗色星体的发光弧边从下方升起推近，微尘漂浮、胶片颗粒，衬线大字字距由松到紧、从虚到实浮现；黑边可在出场前收起 | `title` `sub` `tint: gold/blue/ember` `dur` `from/to` `titleAt` `letterbox` `barH` `barsOut` |
 | `fx-comment-pick` | 评论区挑选：评论区面板，提问置顶，评论逐条滑入，按口播逐条被选中（角上标"示例"，不冒充真实用户） | `title` `question` `comments:[{who,t,at}]` `picks` `pickAt/pickCue` `pickStagger` |
+| `fx-raw-clip` | 口播原片：灰色视频文件卡，声波乱跳，口误气泡冒出；被施法 / 交给 AI 时由灰变彩、流光描边、气泡蒸发成火花 | `name` `meta` `dur` `bubbles:[{t,at,pos}]` `chargeAt` `glowAt` `okText` |
+| `fx-word-tape` | 字卡听写 / 口误剪除：`listen` 声波压成一排带时间码的字卡、播放头扫过；`cut` 口误卡变红 → 碎裂（碎片带重力）→ 两边合拢、弹出剪掉几秒。两段接着用画面连续 | `words:[{t,tc,bad}]` `mode` `pressAt` `stagger` `badAt` `smashAt` `closeAt` `cutText` `maxSize` |
+| `fx-storyboard` | 分镜翻牌：一排字卡，念到哪个词就翻成一格分镜并立刻演出（步骤条 / 数字滚动 / 前后对比 / 清单打勾） | `items:[{key,tc,kind: steps/number/compare/check,at|cue,label,…}]` |
+| `fx-sound-desk` | 音效台：动作排在时间轴上，音效波形掉下来落在接触点、动作亮起；右边响度表指针收敛到 −15 LUFS | `hits:[{t,icon,kind,name,at|cue}]` `meterAt` `target` |
+| `fx-director-scan` | 导演检查扫描：分镜缩略图被扫描线扫过，问题格亮红框标签，随后自动改正变绿勾，建议数降到 0 | `thumbs:[{title,sub,subtitle,issue,fixTitle,fixSub,fixMove}]` `scanAt` `scanDur` `fixAt` `fixStagger` |
+| `fx-aspect-drop` | 三画幅落地：16:9 / 4:3 / 9:16 三块画面按真实比例砸落、挤压回弹扬灰，每块播按各自画幅重排的同一条片子，最后弹出 60 FPS 角标 | `items:[{r,t,sub,at}]` `title` `caption` `badge` |
+| `fx-deliver-fan` | 交付文件发牌：一叠牌里一张张发出成片 / XML / 剪映 / 字幕 / 分轨 / HTML 工程，沿弧线落成扇形，挑起一张打标签 | `items:[{fmt,t,d,c,icon,at}]` `pick` `pickAt` `pickText` |
+| `fx-conveyor` | 流水线传送带（放 globals 常驻）：底部皮带随 push 转场同步滚动，像镜头一路跟拍；下方站点导航亮起当前站。精灵可站在皮带上 | `stations` `pans:[{t,dur,d}]` `steps:[{t,i}]`（绝对时间） |
+| `fx-station-strip` | 全景收束：从最后一站特写拉远露出整条流水线站牌，再全部收拢到中心闪白，下一层（仓库卡、品牌卡）接上 | `stations` `zoomAt` `zoomDur` `from` `collapseAt` |
 
 ## 写新组件
 在 `engine/components-*.js` 或内置动效的 `components.js` 里：

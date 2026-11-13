@@ -58,6 +58,10 @@ def export_project(P: Path, include_frames=False, media_root=None):
         if q.exists(): finals = [q]
     if not finals: finals = sorted(P.parent.glob('*.mp4'), key=lambda p: p.stat().st_mtime)
     if finals: shutil.copy(finals[-1], D / f'{title}_成片.mp4')
+    cov = P / 'cover'   # 封面（dms.py cover / render 时生成）
+    if cov.exists() and any(cov.glob('封面_*.png')):
+        (D / '封面').mkdir(exist_ok=True)
+        for f in list(cov.glob('封面_*.png')) + list(cov.glob('封面_总览.jpg')): shutil.copy(f, D / '封面' / f.name)
     pic = P / 'picture.mp4'
     if pic.exists(): shutil.copy(pic, D / f'{title}_画面_无字幕.mp4')
     for src, dst in [('subtitles.srt', f'{title}_字幕.srt'), ('subtitles.ass', f'{title}_字幕.ass')]:

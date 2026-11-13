@@ -1,0 +1,37 @@
+{
+ "id": "fx-station-strip",
+ "name": "全景收束",
+ "use": "一路讲完几个步骤 / 站点后的总结、全部打包、回到全局：从最后一站特写拉远露出整条流水线的站牌，再全部收拢到中心闪白，下一层（仓库卡、品牌卡）接上",
+ "created": "2026-11-09",
+ "version": "1.0.0",
+ "props": "stations:[{t, icon, bg, fg, end}]（省略 = 听 剪 编 演 声 查 出片）；zoomAt / zoomDur 拉远；from 起始放大倍数；collapseAt 收拢时刻",
+ "ref": "C2 无限画布拉远 + A 闪白收束",
+ "example": {
+  "dur": 3.5,
+  "props": {
+   "zoomAt": 0.1,
+   "zoomDur": 1.0,
+   "collapseAt": 2.2
+  },
+  "box": {
+   "landscape": [
+    0.04,
+    0.16,
+    0.92,
+    0.6
+   ],
+   "portrait": [
+    0.08,
+    0.12,
+    0.84,
+    0.7
+   ]
+  }
+ },
+ "checked": "2026-11-09 18:10",
+ "layouts": [
+  "16:9",
+  "4:3",
+  "9:16"
+ ]
+}
