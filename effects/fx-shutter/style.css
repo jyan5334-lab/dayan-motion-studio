@@ -1,0 +1,6 @@
+.fx-shutter { position: absolute; inset: 0; pointer-events: none; overflow: hidden; container-type: size; }
+.fx-shutter .a, .fx-shutter .b { position: absolute; left: 0; right: 0; height: 50.5%; background: linear-gradient(#08090D, #14161E); }
+.fx-shutter .a { top: 0; box-shadow: 0 1cqh 3cqh rgba(0,0,0,.6); } .fx-shutter .b { bottom: 0; }
+.fx-shutter .ln { position: absolute; left: 0; right: 0; top: 50%; height: .4cqh; margin-top: -.2cqh; background: var(--hl, #FFC24B); box-shadow: 0 0 2cqh var(--hl, #FFC24B); }
+.fx-shutter .lb { position: absolute; left: 50%; top: 50%; transform: translate(-50%, 2cqh); font: 900 min(4cqh, 2.4cqw)/1 var(--f-en); letter-spacing: .4em; color: rgba(255,255,255,.75); }
+.fx-shutter .fl { position: absolute; inset: 0; background: #fff; }

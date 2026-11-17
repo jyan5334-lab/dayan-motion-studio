@@ -1,0 +1,9 @@
+.fx-bg-blueprint { position: absolute; inset: 0; overflow: hidden; --bp: #1A4F9C; --ln: rgba(200,225,255,.55); background: radial-gradient(120% 100% at 50% 40%, color-mix(in srgb, var(--bp) 100%, #fff 6%), color-mix(in srgb, var(--bp) 70%, #000)); }
+.fx-bg-blueprint.t-dark { --bp: #10141C; --ln: rgba(44,224,192,.4); }
+.fx-bg-blueprint .gd { position: absolute; inset: 0; background-image: linear-gradient(var(--ln) 1px, transparent 1px), linear-gradient(90deg, var(--ln) 1px, transparent 1px), linear-gradient(rgba(255,255,255,.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.08) 1px, transparent 1px);
+  background-size: 160px 160px, 160px 160px, 32px 32px, 32px 32px; opacity: .45; }
+.fx-bg-blueprint .sv { position: absolute; inset: 0; } .fx-bg-blueprint svg { width: 100%; height: 100%; }
+.fx-bg-blueprint .ln *, .fx-bg-blueprint .dm * { fill: none; stroke: var(--ln); stroke-width: 1.6; stroke-dasharray: 0 1; }
+.fx-bg-blueprint .dm * { stroke: rgba(255,255,255,.75); }
+.fx-bg-blueprint text { fill: rgba(255,255,255,.8); font: 700 22px var(--f-en); letter-spacing: .1em; }
+.fx-bg-blueprint::after { content: ''; position: absolute; inset: 0; background: radial-gradient(100% 90% at 50% 50%, transparent 50%, rgba(0,0,0,.45)); }

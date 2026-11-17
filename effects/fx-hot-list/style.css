@@ -1,0 +1,18 @@
+.fx-hot-list { position: absolute; inset: 0; container-type: size; pointer-events: none; }
+.fx-hot-list .pn { position: absolute; inset: 0; border-radius: 2.4cqh; background: rgba(250,250,252,.97); padding: 3cqh 2.6cqw; display: flex; flex-direction: column; gap: 1.2cqh; box-shadow: 0 4cqh 9cqh rgba(0,0,0,.5); overflow: hidden; }
+.fx-hot-list .hd { display: flex; align-items: center; gap: 1cqw; padding-bottom: 1.6cqh; border-bottom: 1px solid #E6E6EA; color: #FF3D3D; }
+.fx-hot-list .hd .dms-ico { width: 5cqh; height: 5cqh; }
+.fx-hot-list .hd b { font: 900 min(8cqh, 5cqw)/1 var(--f-title); color: #15171D; }
+.fx-hot-list .hd span { margin-left: auto; font: 700 min(3.8cqh, 2.4cqw)/1 var(--f-sans); color: #999; }
+.fx-hot-list .r { position: relative; display: grid; grid-template-columns: 7cqh 1fr auto auto; align-items: center; gap: 1.4cqw; padding: 2.2cqh 1cqw; border-radius: 1.2cqh;
+  background: color-mix(in srgb, transparent calc(100% - var(--fk, 0) * 100%), #FFF2E8); }
+.fx-hot-list .r em { font: 900 italic min(7cqh, 4.4cqw)/1 var(--f-en); color: #999; text-align: center; }
+.fx-hot-list .r em.k0 { color: #FF2D45; } .fx-hot-list .r em.k1 { color: #FF7A1A; } .fx-hot-list .r em.k2 { color: #F5B400; }
+.fx-hot-list .r span { font: 800 min(7cqh, 4.4cqw)/1.2 var(--f-sans); color: #15171D; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fx-hot-list .r i { padding: .7cqh 1cqw; border-radius: .6cqh; color: #fff; font: 900 min(4.6cqh, 2.8cqw)/1 var(--f-sans); font-style: normal; }
+.fx-hot-list .r b { font: 700 min(5cqh, 3cqw)/1 var(--f-en); color: #888; }
+.fx-hot-list .ex { grid-column: 1 / -1; height: 0; overflow: hidden; border-radius: 1cqh; }
+.fx-hot-list .ex .pic { width: 100%; height: 28cqh; margin-top: 1.4cqh; border-radius: 1cqh; }
+.fx-hot-list .ph { display: grid; place-items: center; background: repeating-linear-gradient(135deg, #2A2E3A 0 1.6cqmin, #232733 1.6cqmin 3.2cqmin); border: 1px dashed rgba(255,255,255,.3); }
+.fx-hot-list .ph span { font: 800 min(4cqh, 2cqw)/1 var(--f-sans); color: rgba(255,255,255,.55); letter-spacing: .1em; }
+.fx-hot-list .im { overflow: hidden; } .fx-hot-list .im img { width: 100%; height: 100%; object-fit: cover; display: block; }

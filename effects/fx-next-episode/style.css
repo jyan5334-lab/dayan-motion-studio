@@ -1,0 +1,15 @@
+.fx-next-episode { position: absolute; inset: 0; container-type: size; pointer-events: none; }
+.fx-next-episode .cd { position: absolute; inset: 0; border-radius: 3cqh; overflow: hidden; display: flex; background: linear-gradient(135deg, #1D2030, #11131B); border: 1px solid rgba(255,255,255,.16); box-shadow: 0 4cqh 9cqh rgba(0,0,0,.5); }
+.fx-next-episode .im, .fx-next-episode .gl { width: 42%; position: relative; }
+.fx-next-episode .im img { width: 100%; height: 100%; object-fit: cover; }
+.fx-next-episode .gl { background: radial-gradient(80% 80% at 30% 30%, var(--accent, #2CE0C0), transparent 70%), radial-gradient(80% 80% at 80% 80%, var(--hl, #FFC24B), transparent 60%), #151824; opacity: .8; }
+.fx-next-episode .tx { flex: 1; padding: 7cqh 4cqw; display: flex; flex-direction: column; justify-content: center; gap: 4cqh; }
+.fx-next-episode small { font: 900 min(6cqh, 2.4cqw)/1 var(--f-en); letter-spacing: .3em; color: var(--hl, #FFC24B); }
+.fx-next-episode .tx b { font: 900 min(15cqh, 5.4cqw)/1.15 var(--f-title); color: #fff; }
+.fx-next-episode .ch { display: flex; gap: 1.4cqw; }
+.fx-next-episode .ch span { display: flex; align-items: center; gap: .6cqw; padding: 1.8cqh 2cqw; border-radius: 99px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18); color: #fff; font: 800 min(6cqh, 2.4cqw)/1 var(--f-sans); }
+.fx-next-episode .ch .dms-ico { width: 1em; height: 1em; }
+.fx-next-episode .cd2 { position: absolute; right: 3cqw; top: 5cqh; width: 18cqh; height: 18cqh; display: grid; place-items: center; }
+.fx-next-episode .cd2 svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+.fx-next-episode .cd2 .t { fill: none; stroke: rgba(255,255,255,.15); stroke-width: 3.4; } .fx-next-episode .cd2 .f { fill: none; stroke: var(--hl, #FFC24B); stroke-width: 3.4; stroke-linecap: round; stroke-dasharray: 0 1; }
+.fx-next-episode .cd2 b { font: 900 8cqh/1 var(--f-en); color: #fff; }

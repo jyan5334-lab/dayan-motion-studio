@@ -1,0 +1,2 @@
+.fx-light-leak { position: absolute; inset: 0; pointer-events: none; overflow: hidden; mix-blend-mode: screen; }
+.fx-light-leak .lk { position: absolute; width: 55%; height: 80%; filter: blur(50px); }

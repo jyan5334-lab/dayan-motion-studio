@@ -1,0 +1,41 @@
+{
+ "id": "fx-browser-shot",
+ "name": "浏览器实拍",
+ "use": "讲到某个网站 / 官网 / 产品页（\"打开它的官网\"\"GitHub 上已经 2 万星\"）：浏览器窗口弹出，网址逐字打出，页面是真实截图，自动往下滚一段，可在某处画框高亮",
+ "props": "url 网址；img 真实网页截图（长图可滚）；scroll 滚动比例 0–1（默认 0.3）；mark [x, y, w, h] 高亮框（0–1，相对窗口可视区，可选）；markLabel 高亮旁标注；tabs:[标签页标题…]",
+ "ref": "C 真实网页截图 + 滚动 + 框选",
+ "cat": "09 界面演示",
+ "created": "2026-11-17",
+ "version": "1.0.0",
+ "example": {
+  "dur": 4.5,
+  "props": {
+   "url": "github.com/jyan5334-lab/dayan-motion-studio",
+   "tabs": [
+    "dayan-motion-studio"
+   ],
+   "scroll": 0.3,
+   "mark": [
+    0.06,
+    0.12,
+    0.42,
+    0.16
+   ],
+   "markLabel": "开源 · MIT"
+  },
+  "box": {
+   "landscape": [
+    0.05,
+    0.08,
+    0.6,
+    0.8
+   ],
+   "portrait": [
+    0.04,
+    0.18,
+    0.92,
+    0.52
+   ]
+  }
+ }
+}

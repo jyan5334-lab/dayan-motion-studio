@@ -1,0 +1,11 @@
+.fx-cycle { position: absolute; inset: 0; container-type: size; pointer-events: none; }
+.fx-cycle .rg { position: absolute; left: 50%; top: 50%; height: min(100cqh, 100cqw); aspect-ratio: 1; translate: -50% -50%; }
+.fx-cycle svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 0 calc(var(--glow, 0) * 10px) var(--hl, #FFC24B)); }
+.fx-cycle .ar { fill: none; stroke: var(--hl, #FFC24B); stroke-width: 1.8; stroke-linecap: round; stroke-dasharray: 0 1; }
+.fx-cycle .ct { position: absolute; left: 50%; top: 50%; display: flex; flex-direction: column; align-items: center; gap: 1.4cqh; }
+.fx-cycle .ct b { font: 900 min(11cqh, 11cqw)/1 var(--f-title); color: #fff; white-space: nowrap; }
+.fx-cycle .ct small { font: 700 min(4.4cqh, 4.4cqw)/1 var(--f-sans); color: rgba(255,255,255,.6); }
+.fx-cycle .nd { position: absolute; display: flex; align-items: center; gap: 1cqmin; padding: 1.6cqmin 2.4cqmin; border-radius: 99px; white-space: nowrap; --on: 0;
+  background: color-mix(in srgb, var(--accent, #2CE0C0) calc(var(--on) * 100%), #1B1E27); border: 1px solid rgba(255,255,255,.2); box-shadow: 0 1cqmin 3cqmin rgba(0,0,0,.45); }
+.fx-cycle .nd i { width: 4.4cqmin; height: 4.4cqmin; border-radius: 50%; background: #fff; color: #06121A; display: grid; place-items: center; font: 900 2.6cqmin/1 var(--f-en); font-style: normal; }
+.fx-cycle .nd span { font: 900 min(5cqh, 5cqw)/1 var(--f-sans); color: #06121A; }

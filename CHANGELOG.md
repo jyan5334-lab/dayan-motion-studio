@@ -1,5 +1,25 @@
 # 更新记录
 
+- **1.12.1**（用户 2026-11-17 要求）：角落抠像（`cutout` bl / br）不再放大裁切——人物框和原片同比例，整幅装进去，拍到全身就显示全身；默认高度约画面 56%（竖屏画布 40%），比之前小一半左右、比圆窗稍大；按脸的位置贴到角落，朝画面内侧那条边做柔和渐隐，避免原片边框切到肩膀时出现竖直硬边；旁边的内容区相应加宽。按「参考博主匿名」规则清理动效说明：质量参照统一写风格代号（参考片 E1），示例文案换成中性内容，不再出现参考片原话、节目名和播放数据。
+- **1.12.0**（用户 2026-11-17 要求；在 1.11.1 基础上合并）：补齐 12 类动效，每类新增 5 个（共 60 个，全部参数化，改 props 即可复用；三画幅检查通过）：
+  - 01 开场·标识：`fx-depth-word` 人物前后巨字、`fx-flap-title` 翻牌标题、`fx-hook-question` 钩子提问、`fx-collab-badge` 联名徽标、`fx-impact-title` 冲击大字。
+  - 02 数据·报表：`fx-line-chart` 折线、`fx-donut` 环形占比、`fx-rank-bars` 排行条、`fx-stat-hero` 大数字、`fx-price-card` 价格卡。
+  - 03 对比·论证：`fx-price-eq` 价格等式、`fx-vs-split` 左右对决、`fx-scale-balance` 天平、`fx-myth-fact` 误区 vs 事实、`fx-spec-table` 参数表。
+  - 04 流程·关系：`fx-analogy-map` 类比映射、`fx-step-pager` 分步翻页、`fx-funnel` 漏斗、`fx-cycle` 循环飞轮、`fx-mind-tree` 思维树。
+  - 05 引用·社媒：`fx-news-card` 新闻卡、`fx-hot-list` 热榜、`fx-social-post` 社媒帖、`fx-phone-comments` 手机评论、`fx-poster-wall` 海报墙。
+  - 06 人物·字幕：`fx-chapter-tag` 章节标签、`fx-name-strip` 名条、`fx-side-caption` 侧边说明、`fx-speaker-quote` 金句引用、`fx-keyword-pop` 关键词弹出。
+  - 07 收尾·CTA：`fx-next-episode` 下期预告、`fx-follow-card` 关注名片、`fx-comment-ask` 评论区互动、`fx-series-list` 系列目录、`fx-end-brand` 品牌落版。
+  - 08 转场（全屏覆盖层，盖住切点）：`fx-glitch-hit` 故障闪切、`fx-zoom-burst` 冲刺变焦、`fx-shutter` 快门开合、`fx-swipe-bands` 彩带横扫、`fx-light-sweep` 光斑过曝。
+  - 09 界面演示：`fx-app-gen` AI 生成面板、`fx-browser-shot` 浏览器实拍、`fx-cursor-tour` 光标导览（放大圈）、`fx-terminal` 终端命令、`fx-settings-toggle` 设置开关。
+  - 10 背景：`fx-bg-aurora` 极光、`fx-bg-dotwave` 点阵波浪、`fx-bg-tilt-words` 斜排关键词墙（实心 / 描边交替）、`fx-bg-spotlight` 舞台追光、`fx-bg-blueprint` 蓝图。
+  - 11 浮窗·画中画：`fx-float-shot` 3D 悬浮截图、`fx-stack-shots` 截图叠放展开、`fx-tag-callout` 条码吊牌、`fx-sticker-pop` 贴纸印章、`fx-magnify` 放大镜。
+  - 12 质感·调色层（放 globals）：`fx-vignette` 暗角、`fx-light-leak` 漏光、`fx-film-grain` 胶片颗粒、`fx-color-grade` 统一调色、`fx-scanlines` 扫描线。
+  - **真实图片规则**：热点新闻、海报、网页、作品配图只能用真实图片并注明来源；带图字段没给真图时显示「待放真实图片」占位，绝不生成假图。
+  - **版面要满 + 动效接力**：box 可写 `zone` / `zone-main` / `zone-aside` / `zone-top` 等内容区，按人物站位和画幅（16:9 / 4:3 / 9:16）自动给尺寸；同区动效自动接力到下一句再退场；`direct` 新增「版面太空」「动效断档」两项检查。
+  - **人物前后层**：图层 `front: true` 放到人物前面；`scene.personFront` 按段让人物压在 MG 前（巨字在人身后）。
+  - **抠像站位改正**：`cutout` 人物直接抠出站在左下 / 右下角（不放进圆里，带投影和细描边），不放大、不裁切，整幅原片按原比例装进去（拍到全身就显示全身），默认高度约画面 56%（竖屏画布 40%），比圆窗稍大；圆形 / 方形头像窗是普通裁切，随机轮换。
+  - **每次调用先检查更新**：开工前先拉取 GitHub 仓库，有新版本就更新后再继续。
+- **1.11.1**：封面修复（做《浏览器控制失效》封面时发现）：工程里没有抽好的人物帧时，先一次性按 4 帧/秒抽小图再选帧（原来逐帧 seek，180 秒竖拍视频选帧会超时）；选帧时脸以下的身体和手在动也扣分（避免手势糊掉的帧）；静止度比较改成隔一帧；截图标签里的英文不再被样式错位吃掉。
 - **1.11.0**：按用户要求把"动画能力"写成硬标准，原卡可以改了直接用（用户 2026-11-13）：
   - **原卡可改**：`dayan` 组件新增 `replace: [[原文, 新文], …]`，把卡里任意样板文字、数字、价格、产品名换成本期口播内容（原卡库 mount 时替换，逐帧动画不受影响）。新增 `dms.py card <卡号> [--replace 表.json]`：出样张（入场 / 落定 / 后段），列出卡里全部可见文字，给出可直接抄的写法。catalog 里每张原卡的写法改成 replace 版。
   - **密度硬指标**（导演检查「画面单调」）：每分钟至少 15 个动效；一段超过 12 秒段内没翻页就提示拆段，要求一两句话换一次画面。

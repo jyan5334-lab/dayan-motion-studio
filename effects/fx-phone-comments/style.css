@@ -1,0 +1,15 @@
+.fx-phone-comments { position: absolute; inset: 0; container-type: size; pointer-events: none; --fk: 0; }
+.fx-phone-comments .ph { position: absolute; left: 50%; top: 0; bottom: 0; aspect-ratio: 9 / 18.5; max-width: 100%; translate: -50% 0; border-radius: 5cqh; background: #0E0F13; padding: 1.4cqh; box-shadow: 0 0 0 .5cqh #3A3D46, 0 4cqh 9cqh rgba(0,0,0,.55); }
+.fx-phone-comments .nt { position: absolute; left: 50%; top: 2.4cqh; width: 26%; height: 2.6cqh; translate: -50% 0; border-radius: 99px; background: #000; z-index: 2; }
+.fx-phone-comments .sc { position: absolute; inset: 1.4cqh; border-radius: 4cqh; background: #1A1C22; padding: 7cqh 2cqh 2cqh; display: flex; flex-direction: column; gap: 1.6cqh; overflow: hidden; }
+.fx-phone-comments .pt { font: 900 min(5.6cqh, 11cqw)/1.25 var(--f-title); color: #fff; }
+.fx-phone-comments .ch { display: flex; align-items: center; gap: 1cqh; font: 800 2.6cqh/1 var(--f-sans); color: rgba(255,255,255,.6); }
+.fx-phone-comments .ch .dms-ico { width: 2.8cqh; height: 2.8cqh; }
+.fx-phone-comments .ls { display: flex; flex-direction: column; gap: 1.2cqh; }
+.fx-phone-comments .cm { display: grid; grid-template-columns: 5.4cqh 1fr auto; gap: 1.4cqh; align-items: start; padding: 2cqh 1.6cqh; border-radius: 1.6cqh; background: rgba(255,255,255,.06); }
+.fx-phone-comments .cm > i { width: 5.4cqh; height: 5.4cqh; border-radius: 50%; display: grid; place-items: center; background: #3A3F55; color: #fff; font: 900 2.2cqh/1 var(--f-sans); font-style: normal; }
+.fx-phone-comments .cm small { display: block; font: 700 2.5cqh/1 var(--f-sans); color: rgba(255,255,255,.5); margin-bottom: .8cqh; }
+.fx-phone-comments .cm span { font: 800 3.4cqh/1.3 var(--f-sans); color: #fff; }
+.fx-phone-comments .cm b { display: flex; flex-direction: column; align-items: center; gap: .4cqh; font: 700 1.8cqh/1 var(--f-en); color: rgba(255,255,255,.5); }
+.fx-phone-comments .cm b .dms-ico { width: 2.4cqh; height: 2.4cqh; }
+.fx-phone-comments .cm.fo { background: color-mix(in srgb, rgba(255,255,255,.06) calc(100% - var(--fk) * 100%), rgba(255,194,75,.2)); box-shadow: 0 0 0 calc(var(--fk) * .4cqh) var(--hl, #FFC24B); transform-origin: 50% 50%; }

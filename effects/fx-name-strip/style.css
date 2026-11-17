@@ -1,0 +1,6 @@
+.fx-name-strip { position: absolute; inset: 0; pointer-events: none; --nc: var(--hl, #FFC24B); }
+.fx-name-strip .bar { position: absolute; left: 0; top: 8%; bottom: 8%; width: .22em; background: var(--nc); transform-origin: 0 50%; border-radius: 99px; box-shadow: 0 0 .5em var(--nc); }
+.fx-name-strip .tx { position: absolute; left: .6em; top: 50%; translate: 0 -50%; display: flex; align-items: center; gap: .5em; }
+.fx-name-strip .tx img { height: 1.6em; width: auto; }
+.fx-name-strip b { display: block; font: 900 1em/1.1 var(--f-title); color: #fff; white-space: nowrap; text-shadow: 0 .06em .3em rgba(0,0,0,.6); }
+.fx-name-strip span { display: block; margin-top: .25em; padding: .2em .6em; width: max-content; border-radius: .2em; background: var(--nc); color: #1A1204; font: 800 .42em/1.2 var(--f-sans); }

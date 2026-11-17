@@ -1,0 +1,2 @@
+.fx-bg-dotwave { position: absolute; inset: 0; overflow: hidden; background: radial-gradient(90% 70% at 50% 100%, #0F1A22, #06070B 70%); }
+.fx-bg-dotwave .cv { position: absolute; inset: 0; width: 100%; height: 100%; }

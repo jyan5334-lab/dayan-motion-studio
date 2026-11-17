@@ -1,0 +1,42 @@
+{
+ "id": "fx-social-post",
+ "name": "社交帖子卡",
+ "use": "引用某条帖子、微博、推文、朋友圈、官方账号发言：帖子卡滑入，头像昵称认证，正文逐行出现，真实配图宫格展开，点赞 / 评论 / 转发数字滚动上涨",
+ "props": "avatar 头像（真实图片）；name 昵称；handle 账号；verified 认证；time；text 正文；hl 高亮词；imgs:[真实配图…]（0–4 张）；likes / comments / shares 数字",
+ "ref": "C 社媒引用 + 真实截图",
+ "cat": "05 引用 · 社媒",
+ "created": "2026-11-17",
+ "version": "1.0.0",
+ "example": {
+  "dur": 4.5,
+  "props": {
+   "name": "大琰DAYAN",
+   "handle": "@dayan_ai",
+   "verified": true,
+   "time": "刚刚",
+   "text": "把剪辑技能开源了：说一句话，口播自动剪好，字幕、音效、转场全带上。",
+   "hl": "开源",
+   "imgs": [
+    "",
+    ""
+   ],
+   "likes": 12800,
+   "comments": 2365,
+   "shares": 980
+  },
+  "box": {
+   "landscape": [
+    0.24,
+    0.06,
+    0.52,
+    0.86
+   ],
+   "portrait": [
+    0.06,
+    0.2,
+    0.88,
+    0.6
+   ]
+  }
+ }
+}

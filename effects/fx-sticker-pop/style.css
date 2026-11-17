@@ -1,0 +1,10 @@
+.fx-sticker-pop { position: absolute; inset: 0; container-type: size; pointer-events: none; }
+.fx-sticker-pop .sk { position: absolute; display: grid; place-items: center; padding: 3.4cqh 4cqh; background: var(--c); border: 1.2cqh solid #fff; border-radius: 99px;
+  box-shadow: 0 calc(var(--sh, 1) * 2.4cqh) calc(var(--sh, 1) * 4cqh) rgba(0,0,0,.45); }
+.fx-sticker-pop .sk::after { content: ''; position: absolute; right: -1.2cqh; bottom: -1.2cqh; width: 5cqh; height: 5cqh; background: linear-gradient(135deg, transparent 50%, #E8E8E8 50%, #fff); border-radius: 0 0 99px 0; }
+.fx-sticker-pop .sk b { font: 900 min(10cqh, 9cqw)/1 var(--f-title); color: #fff; white-space: nowrap; text-shadow: 0 .4cqh 0 rgba(0,0,0,.18); }
+.fx-sticker-pop .sk.tag { border-radius: 2cqh; } .fx-sticker-pop .sk.tag::after { border-radius: 0 0 2cqh 0; }
+.fx-sticker-pop .sk.star { width: 30cqh; height: 30cqh; padding: 0; border: none; border-radius: 0; background: none; box-shadow: none; filter: drop-shadow(0 0 0 #fff) drop-shadow(0 calc(var(--sh, 1) * 2cqh) calc(var(--sh, 1) * 3cqh) rgba(0,0,0,.45)); }
+.fx-sticker-pop .sk.star::before { content: ''; position: absolute; inset: 0; background: #fff; clip-path: polygon(50% 0, 61% 18%, 82% 10%, 80% 32%, 100% 42%, 85% 58%, 94% 79%, 72% 80%, 62% 100%, 50% 86%, 38% 100%, 28% 80%, 6% 79%, 15% 58%, 0 42%, 20% 32%, 18% 10%, 39% 18%); }
+.fx-sticker-pop .sk.star::after { inset: 4cqh; right: auto; bottom: auto; width: calc(100% - 8cqh); height: calc(100% - 8cqh); background: var(--c); border-radius: 0; clip-path: polygon(50% 0, 61% 18%, 82% 10%, 80% 32%, 100% 42%, 85% 58%, 94% 79%, 72% 80%, 62% 100%, 50% 86%, 38% 100%, 28% 80%, 6% 79%, 15% 58%, 0 42%, 20% 32%, 18% 10%, 39% 18%); }
+.fx-sticker-pop .sk.star b { position: relative; z-index: 2; font-size: min(7.5cqh, 7cqw); color: #1A1204; text-shadow: none; }

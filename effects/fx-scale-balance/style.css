@@ -1,0 +1,16 @@
+.fx-scale-balance { position: absolute; inset: 0; container-type: size; pointer-events: none; }
+.fx-scale-balance .st { position: absolute; inset: 0; }
+.fx-scale-balance .pole { position: absolute; left: 50%; top: 14%; bottom: 8%; width: 1.4cqh; margin-left: -.7cqh; background: linear-gradient(90deg, #8A8F9C, #E8EBF1, #8A8F9C); border-radius: 99px; }
+.fx-scale-balance .base { position: absolute; left: 50%; bottom: 4%; width: 26%; height: 5cqh; translate: -50% 0; border-radius: 3cqh 3cqh 1cqh 1cqh; background: linear-gradient(#E8EBF1, #8A8F9C); }
+.fx-scale-balance .beam { position: absolute; left: 12%; right: 12%; top: 14%; height: 1.6cqh; border-radius: 99px; background: linear-gradient(#F3F5F9, #9AA0AD); transform-origin: 50% 50%; box-shadow: 0 1cqh 2cqh rgba(0,0,0,.35); }
+.fx-scale-balance .pv { position: absolute; left: 50%; top: 50%; width: 5cqh; height: 5cqh; margin: -2.5cqh; border-radius: 50%; background: var(--hl, #FFC24B); box-shadow: 0 0 2cqh var(--hl, #FFC24B); }
+.fx-scale-balance .pan { position: absolute; top: 50%; width: 40%; height: 55cqh; transform-origin: 50% 0; }
+.fx-scale-balance .pan.l { left: -20%; } .fx-scale-balance .pan.r { right: -20%; }
+.fx-scale-balance .rope { position: absolute; left: 50%; top: 0; height: 30cqh; border-left: .4cqh solid rgba(255,255,255,.55); }
+.fx-scale-balance .tray { position: absolute; left: 0; right: 0; top: 30cqh; height: 4cqh; border-radius: 0 0 50% 50% / 0 0 100% 100%; background: linear-gradient(#F3F5F9, #9AA0AD); }
+.fx-scale-balance .wt { position: absolute; left: 8%; right: 8%; bottom: calc(100% - 30cqh); padding: 3cqh 2cqw; border-radius: 2cqh; background: rgba(20,22,30,.9); border: 1px solid rgba(255,255,255,.2);
+  display: flex; flex-direction: column; align-items: center; gap: 1.6cqh; box-shadow: 0 2cqh 4cqh rgba(0,0,0,.4); }
+.fx-scale-balance .pan.r .wt { background: var(--accent, #2CE0C0); } .fx-scale-balance .pan.r .wt b, .fx-scale-balance .pan.r .wt small { color: #06121A; }
+.fx-scale-balance .wt b { font: 900 min(9cqh, 4cqw)/1 var(--f-title); color: #fff; white-space: nowrap; }
+.fx-scale-balance .wt small { font: 700 min(5.4cqh, 2.4cqw)/1.2 var(--f-sans); color: rgba(255,255,255,.7); text-align: center; }
+.fx-scale-balance .vd { position: absolute; bottom: 2%; padding: 2cqh 3cqw; border-radius: 99px; background: var(--hl, #FFC24B); color: #1A1204; font: 900 min(8cqh, 3.4cqw)/1 var(--f-title); white-space: nowrap; }

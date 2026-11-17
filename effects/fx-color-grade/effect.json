@@ -1,0 +1,31 @@
+{
+ "id": "fx-color-grade",
+ "name": "统一调色",
+ "use": "把整片（人物素材 + 动效）压成同一个色调：青橙电影感 / 暖调生活 / 冷调科技 / 黑白回忆；也可只在某一段切换风格，用来区分\"过去 / 现在\"",
+ "props": "look teal-orange/warm/cool/mono/fade（默认 teal-orange）；amount 0–1（默认 0.6）；fadeIn 渐入秒数",
+ "ref": "D 调色 LUT 感",
+ "cat": "12 质感 · 调色层",
+ "created": "2026-11-17",
+ "version": "1.0.0",
+ "example": {
+  "dur": 3.0,
+  "props": {
+   "look": "teal-orange",
+   "amount": 0.8
+  },
+  "box": {
+   "landscape": [
+    0,
+    0,
+    1,
+    1
+   ],
+   "portrait": [
+    0,
+    0,
+    1,
+    1
+   ]
+  }
+ }
+}

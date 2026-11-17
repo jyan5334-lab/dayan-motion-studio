@@ -1,0 +1,3 @@
+.fx-light-sweep { position: absolute; inset: 0; pointer-events: none; overflow: hidden; --lc: #FFB86B; --lp: 100% 0%; }
+.fx-light-sweep .a { position: absolute; inset: 0; transform-origin: var(--lp); background: radial-gradient(circle at var(--lp), #fff 0%, var(--lc) 25%, color-mix(in srgb, var(--lc) 40%, transparent) 50%, transparent 72%); mix-blend-mode: screen; }
+.fx-light-sweep .b { position: absolute; inset: 0; background: #FFF6E8; }

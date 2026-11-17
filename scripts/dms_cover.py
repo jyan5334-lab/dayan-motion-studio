@@ -159,6 +159,13 @@ def frame_reader(P, TL, master):
     from PIL import Image
     pr = TL.get('presenter') or {}
     fr = P / (pr.get('frames') or 'talk/%06d.jpg'); fps = float(pr.get('fps') or 0); n = int(pr.get('frameCount') or 0)
+    if not (fps and n and Path(str(fr) % 1).exists()) and master and Path(master).exists():
+        # 工程里没有抽好的人物帧：一次性按 4 帧/秒抽一套小图做选帧（逐帧 seek 长视频太慢）
+        cd = P / '_cover_cand'
+        if not (cd / '000001.jpg').exists():
+            cd.mkdir(parents=True, exist_ok=True)
+            subprocess.run([FF, '-v', 'error', '-y', '-i', str(master), '-vf', 'fps=4,scale=640:640:force_original_aspect_ratio=decrease', '-q:v', '4', str(cd / '%06d.jpg')], check=True)
+        fr, fps, n = cd / '%06d.jpg', 4.0, len(list(cd.glob('*.jpg')))
     def get(t, full=False):
         if fps and n and (fr.parent).exists():
             i = min(n, max(1, int(round(t * fps)) + 1)); f = Path(str(fr) % i)
@@ -191,11 +198,12 @@ def pick_frames(P, TL, master, ranges, want=3, manual=None):
         sharp = float(cv2.Laplacian(g, cv2.CV_64F).var())
         # 静止度：和 0.2 秒后的画面比，脸部变化越小 → 没在眨眼 / 甩头 / 运动模糊
         try:
-            img2, _ = get(t + 0.2); sm2 = cv2.resize(img2, (sm.shape[1], sm.shape[0]), interpolation=cv2.INTER_AREA)
+            img2, _ = get(t + max(0.2, 1.1 / fps if fps else 0.2)); sm2 = cv2.resize(img2, (sm.shape[1], sm.shape[0]), interpolation=cv2.INTER_AREA)
             still = float(np.abs(sm2[y0:y1, x0:x1].astype(np.float32) - sm[y0:y1, x0:x1]).mean())
-        except Exception: still = 8.0
+            body = float(np.abs(sm2[int(y1):].astype(np.float32) - sm[int(y1):]).mean()) if int(y1) < h - 10 else 0.0   # 脸以下（手、身体）在动 = 手势糊、动作没定住
+        except Exception: still, body = 8.0, 4.0
         ex = (f[4] + f[6]) / 2; nose = f[8]; front = 1 - min(1, abs(nose - ex) / (abs(f[6] - f[4]) + 1e-6) * 2)   # 1 = 正脸
-        base = f[14] * np.log1p(sharp) / (1 + still / 6) * (0.75 + 0.25 * front)
+        base = f[14] * np.log1p(sharp) / (1 + still / 6) / (1 + body / 8) * (0.75 + 0.25 * front)
         scored.append({'t': t, 'base': float(base), 'img': sm, 'face': [float(v) for v in f[:4]]})
     if not scored: return []
     scored.sort(key=lambda d: -d['base'])

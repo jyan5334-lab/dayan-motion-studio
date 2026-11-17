@@ -1,0 +1,33 @@
+{
+ "id": "fx-vignette",
+ "name": "暗角聚焦",
+ "use": "整片或某段压暗四角，把视线收到人物和主内容上（几乎每条片子都可以开着）；可以随重点句短暂收紧",
+ "props": "amount 强度 0–1（默认 0.45）；shape round/wide（默认 wide，横屏更自然）；pulse:[时刻…] 这些时刻收紧一下；cx, cy 中心",
+ "ref": "D 电影暗角",
+ "cat": "12 质感 · 调色层",
+ "created": "2026-11-17",
+ "version": "1.0.0",
+ "example": {
+  "dur": 3.0,
+  "props": {
+   "amount": 0.5,
+   "pulse": [
+    1.2
+   ]
+  },
+  "box": {
+   "landscape": [
+    0,
+    0,
+    1,
+    1
+   ],
+   "portrait": [
+    0,
+    0,
+    1,
+    1
+   ]
+  }
+ }
+}

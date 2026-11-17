@@ -1,0 +1,6 @@
+.fx-bg-spotlight { position: absolute; inset: 0; overflow: hidden; background: linear-gradient(#05060A, #0D0F16 70%, #14161F); --lc: #FFE6B8; }
+.fx-bg-spotlight .bm { position: absolute; top: -10%; width: 34%; height: 130%; margin-left: -17%; transform-origin: 50% 0; background: linear-gradient(color-mix(in srgb, var(--lc) 55%, transparent), color-mix(in srgb, var(--lc) 10%, transparent) 75%, transparent);
+  clip-path: polygon(46% 0, 54% 0, 100% 100%, 0 100%); filter: blur(14px); mix-blend-mode: screen; }
+.fx-bg-spotlight .fl { position: absolute; bottom: -6%; width: 70%; height: 30%; margin-left: -35%; border-radius: 50%; background: radial-gradient(50% 50% at 50% 50%, color-mix(in srgb, var(--lc) 45%, transparent), transparent 70%); filter: blur(10px); }
+.fx-bg-spotlight .du { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: #fff; filter: blur(.5px); }
+.fx-bg-spotlight::after { content: ''; position: absolute; inset: 0; background: radial-gradient(110% 90% at 50% 40%, transparent 45%, rgba(0,0,0,.65)); }

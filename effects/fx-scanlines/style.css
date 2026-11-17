@@ -1,0 +1,4 @@
+.fx-scanlines { position: absolute; inset: 0; pointer-events: none; overflow: hidden; --gap: 4px; }
+.fx-scanlines .l { position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgba(0,0,0,.55) 0, rgba(0,0,0,.55) 1px, transparent 1px, transparent var(--gap)); mix-blend-mode: multiply; }
+.fx-scanlines .b { position: absolute; left: 0; right: 0; height: 18%; background: linear-gradient(transparent, rgba(255,255,255,.18), transparent); mix-blend-mode: screen; }
+.fx-scanlines .r { position: absolute; inset: 0; box-shadow: inset 6px 0 18px rgba(255,0,80,.25), inset -6px 0 18px rgba(0,220,255,.25); }

@@ -1,0 +1,10 @@
+.fx-spec-table { position: absolute; inset: 0; container-type: size; pointer-events: none; }
+.fx-spec-table .tb { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 1.4cqh; }
+.fx-spec-table .hr, .fx-spec-table .r { display: grid; grid-template-columns: 22% repeat(var(--nc), 1fr); gap: 1cqw; align-items: stretch; }
+.fx-spec-table .hr b { padding: 3cqh 1cqw; text-align: center; border-radius: 1.6cqh 1.6cqh 0 0; background: rgba(255,255,255,.1); font: 900 min(7cqh, 2.8cqw)/1.1 var(--f-title); color: #fff; }
+.fx-spec-table .hr b.w { background: var(--accent, #2CE0C0); color: #06121A; }
+.fx-spec-table .r { flex: 1; }
+.fx-spec-table .r span { display: flex; align-items: center; font: 800 min(7.4cqh, 2.9cqw)/1.1 var(--f-sans); color: rgba(255,255,255,.7); }
+.fx-spec-table .r i { display: grid; place-items: center; text-align: center; border-radius: 1.2cqh; background: rgba(255,255,255,.05); font: 800 min(7.6cqh, 3cqw)/1.15 var(--f-sans); font-style: normal; color: rgba(255,255,255,.85); padding: 0 .6cqw; }
+.fx-spec-table .r i.win { background: color-mix(in srgb, var(--accent, #2CE0C0) calc(var(--wk, 0) * 30%), rgba(255,255,255,.05)); color: color-mix(in srgb, #fff calc(100% - var(--wk, 0) * 100%), var(--accent, #2CE0C0)); box-shadow: inset 0 0 0 calc(var(--wk, 0) * .4cqh) var(--accent, #2CE0C0); }
+.fx-spec-table .sp { position: absolute; top: -13%; white-space: nowrap; padding: 2cqh 3cqw; border: .7cqh solid #FF3D6E; border-radius: 1.4cqh; color: #FF3D6E; font: 900 min(10cqh, 4cqw)/1 var(--f-title); background: rgba(255,61,110,.08); }

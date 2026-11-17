@@ -1,0 +1,46 @@
+{
+ "id": "fx-depth-word",
+ "name": "巨字在人身后",
+ "use": "开场钩子、情绪词（急 / 卷 / 慌 / 爽）：一个巨字砸进画面，配合 scene.personFront 让人物压在字前面；旁边两行小标题点题",
+ "props": "word 巨字（1–2 字）；color 字色；side:[{t,hl}] 旁边两行；sideAt；pos left/right 巨字在左或右；tilt 倾角",
+ "ref": "C 巨字 + 人物前景（参考片 E1）",
+ "cat": "01 开场 · 标识",
+ "created": "2026-11-17",
+ "version": "1.0.0",
+ "example": {
+  "dur": 3.5,
+  "props": {
+   "word": "急",
+   "side": [
+    {
+     "t": "剪辑比拍摄"
+    },
+    {
+     "t": "还费时",
+     "hl": true
+    }
+   ],
+   "sideAt": 0.7
+  },
+  "box": {
+   "landscape": [
+    0.04,
+    0.06,
+    0.92,
+    0.82
+   ],
+   "portrait": [
+    0.04,
+    0.12,
+    0.92,
+    0.5
+   ]
+  }
+ },
+ "checked": "2026-11-17 17:50",
+ "layouts": [
+  "16:9",
+  "4:3",
+  "9:16"
+ ]
+}

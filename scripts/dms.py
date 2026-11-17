@@ -25,7 +25,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 sys.path.insert(0, str(HERE))
-VERSION = '1.11.0'
+VERSION = '1.11.1'
 CACHE = Path(os.environ.get('DMS_CACHE', Path.home() / '.cache' / 'dayan-motion-studio'))
 CONFIG = Path(os.environ.get('DMS_CONFIG', Path.home() / '.dayan-motion-studio' / 'config.json'))   # 用户自己的品牌（文字墙等），不随技能分发
 
@@ -1049,6 +1049,51 @@ def visual_monotony(T):
     if textish > n * 0.25: out.append(f"{textish}/{n} 段只有文字：超过 1/4 的段落画面只是把字幕换个字号再排一遍")
     return out
 
+
+CONTENT_SKIP = {'bg-wall', 'bg-solid', 'bg-glow', 'bg-grid', 'bg-paper', 'bg-film', 'bg-hud', 'bg-burst', 'bg-thumbs', 'bg-watermark', 'bg-stars', 'subtitle', 'fx-conveyor',
+    'fx-vignette', 'fx-light-leak', 'fx-film-grain', 'fx-color-grade', 'fx-scanlines', 'fx-play-sprite', 'fx-chapter-tag',
+    'fx-bg-aurora', 'fx-bg-dotwave', 'fx-bg-tilt-words', 'fx-bg-spotlight', 'fx-bg-blueprint',
+    'fx-glitch-hit', 'fx-zoom-burst', 'fx-shutter', 'fx-swipe-bands', 'fx-light-sweep'}
+def layout_density(T):
+    """版面太空 / 动效断档：每 0.25s 采样，人物不是全屏时，内容区被动效盒子覆盖多少；有没有超过 0.8s 的空档"""
+    E = {'canvas': T['canvas'], 'presenter': T.get('presenter')}
+    E_HAS_PRES[0] = T.get('presenter') is not None
+    pr = T.get('presenter') or {}; cw, ch = T['canvas']['w'], T['canvas']['h']
+    a = (pr.get('srcW') or 0) / (pr.get('srcH') or 1)
+    E_PILLAR[0] = (ch * a / cw) if a and a / (cw / ch) < 0.75 else 0
+    empty, gaps = [], []
+    for S in T.get('scenes', []):
+        t0, t1 = S['t0'], S['t1']; run = None; low = None
+        t = t0 + 0.6
+        while t < t1 - 0.3:
+            k = presenter_at(E, t); zk = zone_key(k)
+            if zk in ('full', 'full-v') and not S.get('_graphic'): t += 0.25; run = None; low = None; continue
+            z = zone_box(E, t, 'zone')
+            vis = []
+            for L in S.get('layers', []):
+                if L.get('c') in CONTENT_SKIP or not isinstance(L.get('box'), list): continue
+                a = L.get('at', t0); b = L.get('out', t1)
+                if a <= t <= b: vis.append(L['box'])
+            # 覆盖率：内容区 32×18 网格里被盒子盖住的格子比例
+            cov = 0; GX, GY = 32, 18
+            for i in range(GX):
+                for j in range(GY):
+                    px = z[0] + z[2] * (i + 0.5) / GX; py = z[1] + z[3] * (j + 0.5) / GY
+                    if any(bx[0] <= px <= bx[0] + bx[2] and bx[1] <= py <= bx[1] + bx[3] for bx in vis): cov += 1
+            cov /= GX * GY
+            if not vis: run = run if run is not None else t
+            else:
+                if run is not None and t - run > 0.8: gaps.append(f"{run:.1f}–{t:.1f}s 人物不是全屏，画面里没有动效（{t - run:.1f}s）：上一个动效留到下一句再走，或补一个辅助动效")
+                run = None
+            if vis and cov < 0.42: low = low if low is not None else (t, cov)
+            else:
+                if low is not None and t - low[0] > 0.9: empty.append(f"{low[0]:.1f}–{t:.1f}s 内容区只用了约 {low[1] * 100:.0f}%：动效 box 改用 \"zone\" 撑满，或加一个辅助动效（zone-main + zone-aside）")
+                low = None
+            t += 0.25
+        if run is not None and t1 - run > 0.8: gaps.append(f"{run:.1f}–{t1:.1f}s 人物不是全屏，画面里没有动效：上一个动效留到段尾，或补一个辅助动效")
+        if low is not None and t1 - low[0] > 0.9: empty.append(f"{low[0]:.1f}–{t1:.1f}s 内容区只用了约 {low[1] * 100:.0f}%：动效 box 改用 \"zone\" 撑满，或加辅助动效")
+    return empty, gaps
+
 def cmd_direct(ns):
     """读已 build 的工程（timeline.json），按"导演"标准检查语义与画面的对应。只给建议，不改文件。"""
     import difflib
@@ -1063,7 +1108,7 @@ def cmd_direct(ns):
             j = norm(c['t']).find(k)
             if j >= 0: return char_time(c, j)
         return None
-    R = {'照抄字幕': [], '一段两件事': [], '画面静止': [], '口播有画面没有': [], '出现错位': [], '字幕可读性': [], '样式单一': [], '画面单调': []}
+    R = {'照抄字幕': [], '一段两件事': [], '画面静止': [], '口播有画面没有': [], '出现错位': [], '字幕可读性': [], '样式单一': [], '画面单调': [], '版面太空': [], '动效断档': []}
     port = T['canvas']['h'] > T['canvas']['w']; maxc = 12 if port else 16
     for c in cues:
         n = _vlen(norm(c['t'])); d = c['e'] - c['s']
@@ -1136,6 +1181,7 @@ def cmd_direct(ns):
     # 7 样式单一（参考风格 A–D：换章节换底色；人物在全屏 / 方卡 / 圆窗 / 大圆之间切；圆窗每章换角；全屏段隔 8–15s 推近一次）
     R['样式单一'] += style_monotony(T)
     R['画面单调'] += visual_monotony(T)
+    _e, _g = layout_density(T); R['版面太空'] += _e; R['动效断档'] += _g
     n = sum(len(v) for v in R.values())
     print(f"导演检查 · {T.get('title', '')} · {len(scenes)} 段 · {T['duration']:.1f}s")
     for k, v in R.items():
@@ -1191,6 +1237,89 @@ LOOKS = {
     'd-hud':    ('hud-blue',    'D HUD 暗蓝（数据、系统、执行中）', lambda T: [{'c': 'bg-solid', 'props': {'gradient': 'radial-gradient(110% 90% at 50% 20%, #0F2A8A 0%, #061247 75%)'}}, {'c': 'bg-grid', 'props': {'color': '#33D1FF'}}, {'c': 'bg-hud'}]),
 }
 
+
+# ---------------- v1.12 内容区：按人物站位自动划出"动效该放哪、该多大" ----------------
+# 动效的 box 可以写成 "zone" / "zone-top" / "zone-bottom" / "zone-left" / "zone-right" / "zone-main" / "zone-aside"，
+# 构建时按该时刻人物的状态和位置（以及画幅）换算成真实坐标，保证动效撑满人物以外的版面，避开字幕区。
+ZONES = {
+    'wide': {      # 16:9
+        'full': [0.05, 0.1, 0.5, 0.68], 'side-r': [0.045, 0.1, 0.5, 0.7], 'side-l': [0.455, 0.1, 0.5, 0.7],
+        'card-r': [0.045, 0.08, 0.6, 0.74], 'card-l': [0.355, 0.08, 0.6, 0.74], 'story-r': [0.045, 0.08, 0.54, 0.74], 'story-l': [0.415, 0.08, 0.54, 0.74],
+        'corner-r': [0.05, 0.08, 0.68, 0.74], 'corner-l': [0.27, 0.08, 0.68, 0.74], 'cutout-l': [0.25, 0.08, 0.71, 0.74], 'cutout-r': [0.04, 0.08, 0.71, 0.74],
+        'window-l': [0.53, 0.1, 0.43, 0.7], 'window-r': [0.04, 0.1, 0.43, 0.7], 'big-c': [0.05, 0.08, 0.9, 0.12], 'none': [0.06, 0.08, 0.88, 0.74]},
+    'narrow': {    # 4:3：内容区更窄更高
+        'full': [0.05, 0.1, 0.56, 0.7], 'side-r': [0.04, 0.1, 0.56, 0.72], 'side-l': [0.4, 0.1, 0.56, 0.72],
+        'card-r': [0.04, 0.08, 0.56, 0.76], 'card-l': [0.4, 0.08, 0.56, 0.76], 'story-r': [0.04, 0.08, 0.5, 0.76], 'story-l': [0.46, 0.08, 0.5, 0.76],
+        'corner-r': [0.05, 0.08, 0.64, 0.76], 'corner-l': [0.31, 0.08, 0.64, 0.76], 'cutout-l': [0.3, 0.08, 0.66, 0.76], 'cutout-r': [0.04, 0.08, 0.66, 0.76],
+        'window-l': [0.05, 0.62, 0.9, 0.2], 'window-r': [0.05, 0.62, 0.9, 0.2], 'big-c': [0.05, 0.08, 0.9, 0.12], 'none': [0.06, 0.08, 0.88, 0.76]},
+    'portrait': {  # 9:16：人物多在上方，内容在中下部（字幕在 0.78 以下）
+        'full': [0.06, 0.46, 0.88, 0.3], 'side-r': [0.05, 0.4, 0.9, 0.37], 'side-l': [0.05, 0.4, 0.9, 0.37],
+        'card-r': [0.05, 0.47, 0.9, 0.3], 'card-l': [0.05, 0.47, 0.9, 0.3], 'story-r': [0.05, 0.6, 0.9, 0.18], 'story-l': [0.05, 0.6, 0.9, 0.18],
+        'corner-r': [0.05, 0.22, 0.9, 0.54], 'corner-l': [0.05, 0.22, 0.9, 0.54], 'cutout-l': [0.05, 0.1, 0.9, 0.48], 'cutout-r': [0.05, 0.1, 0.9, 0.48],
+        'window-l': [0.05, 0.47, 0.9, 0.3], 'window-r': [0.05, 0.47, 0.9, 0.3], 'big-c': [0.05, 0.06, 0.9, 0.08], 'none': [0.06, 0.12, 0.88, 0.64]},
+}
+def _aspect_kind(w, h): return 'portrait' if h > w else ('narrow' if w / h < 1.5 else 'wide')
+def presenter_at(E, t):
+    keys = sorted(((E.get('presenter') or {}).get('keys') or [{'t': 0, 'state': 'full'}]), key=lambda k: k['t'])
+    cur = keys[0]
+    for k in keys:
+        if k['t'] <= t + 1e-6: cur = k
+    return cur
+def zone_key(k):
+    st = k.get('state', 'full'); pos = k.get('pos') or ''
+    pos = pos if isinstance(pos, str) else ('r' if pos[0] > 0.5 else 'l')
+    right = 'l' not in pos
+    if st == 'hidden' or not E_HAS_PRES[0]: return 'none'
+    if st == 'full': return 'full-v' if E_PILLAR[0] else 'full'
+    if st in ('side', 'card', 'story'): return f"{st}-{'r' if right else 'l'}"
+    if st in ('circle', 'pip'): return 'corner-r' if right else 'corner-l'
+    if st == 'cutout': return 'cutout-r' if pos in ('br', 'r') else 'cutout-l'
+    if st == 'window': return 'window-r' if pos == 'r' else 'window-l'
+    if st == 'circle-big': return 'big-c'
+    return 'none'
+E_HAS_PRES = [True]
+E_PILLAR = [0]   # 人物全屏且原片比画布窄很多（竖拍放横屏，左右留边）时 = 人物那一竖条占画布宽度的比例
+def zone_box(E, t, name):
+    cw, ch = E['canvas']['w'], E['canvas']['h']
+    k = presenter_at(E, t); zk = zone_key(k)
+    if zk == 'full-v':   # 竖拍放在横屏中间：内容放在人物左侧那一条（不压脸）
+        pw = E_PILLAR[0]; z = [0.03, 0.1, max(0.2, 0.5 - pw / 2 - 0.05), 0.68]
+    else: z = ZONES[_aspect_kind(cw, ch)][zk]
+    x, y, w, h = z; port = ch > cw; g = 0.025
+    sub = name.split('-', 1)[1] if '-' in name else ''
+    if sub == 'top': return [x, y, w, h * 0.56 - g / 2]
+    if sub == 'bottom': return [x, y + h * 0.56 + g / 2, w, h * 0.44 - g / 2]
+    if sub == 'left': return [x, y, w / 2 - g / 2, h] if not port else [x, y, w, h / 2 - g / 2]
+    if sub == 'right': return [x + w / 2 + g / 2, y, w / 2 - g / 2, h] if not port else [x, y + h / 2 + g / 2, w, h / 2 - g / 2]
+    if sub == 'main': return [x, y, w * 0.64 - g / 2, h] if not port else [x, y, w, h * 0.66 - g / 2]
+    if sub == 'aside': return [x + w * 0.64 + g / 2, y, w * 0.36 - g / 2, h] if not port else [x, y + h * 0.66 + g / 2, w, h * 0.34 - g / 2]
+    return [x, y, w, h]
+def resolve_zones(E, scenes):
+    E_HAS_PRES[0] = E.get('presenter') is not None
+    a = E.get('_srcAspect'); cw, ch = E['canvas']['w'], E['canvas']['h']
+    E_PILLAR[0] = (ch * a / cw) if a and a / (cw / ch) < 0.75 else 0
+    for S in scenes:
+        for L in S.get('layers', []):
+            b = L.get('box')
+            if isinstance(b, str) and b.startswith('zone'):
+                t = L.get('at', S.get('t0', 0)); t = t if t >= S.get('t0', 0) - 1e-6 else S.get('t0', 0) + t
+                L['box'] = [round(v, 4) for v in zone_box(E, t + 0.01, b)]; L['_zone'] = b; L['_zt'] = t
+        # 动效接力：同一个内容区里后一个动效出现时，前一个才退场（不提前消失，也不和后一个叠在一起）
+        byz = {}
+        for L in S.get('layers', []):
+            if L.get('_zone'): byz.setdefault(L['_zone'], []).append(L)
+        for name, Ls in byz.items():
+            Ls.sort(key=lambda x: x['_zt'])
+            for A, B in zip(Ls, Ls[1:]):
+                if 'out' not in A: A['out'] = round(B['_zt'] + 0.15, 3); A.setdefault('exit', 'fade'); A.setdefault('exitDur', 0.35)
+            # 整块内容区换内容时，半区里的旧动效也让位
+        whole = [L for L in S.get('layers', []) if L.get('_zone') == 'zone']
+        for W_ in whole:
+            for L in S.get('layers', []):
+                if L.get('_zone', '').startswith('zone-') and L['_zt'] < W_['_zt'] and 'out' not in L:
+                    L['out'] = round(W_['_zt'] + 0.15, 3); L.setdefault('exit', 'fade'); L.setdefault('exitDur', 0.35)
+    return scenes
+
 WALL_SKINS = ['pop', 'gold', 'acid', 'song', 'chrome', 'lime', 'obsidian', 'platinum', 'abyss', 'hollow', 'satin', 'lacquer', 'frost', 'porcelain', 'jade', 'mist']
 def apply_look(s, E):
     lk = s.get('look')
@@ -1213,7 +1342,7 @@ def expand_all(E, dry=False):
     for s in E.get('scenes', []):
         if 'template' in s: out.extend(apply_look(x, E) for x in expand_template(s, E))
         else: out.append(apply_look(json.loads(json.dumps(s)), E))
-    return out
+    return resolve_zones(E, out)
 
 def cmd_build(ns):
     ep = Path(ns.edit).resolve(); E = jload(ep); base = ep.parent
@@ -1229,6 +1358,10 @@ def cmd_build(ns):
     if E.get('words') and (base / E['words']).exists(): words = jload(base / E['words'])['words']
     if E.get('presenter') is not None: E['presenter'].setdefault('keys', [{'t': 0, 'state': 'full'}])
     E['_words'] = words
+    try:
+        mp = (base / E['master']).resolve() if E.get('master') else None
+        if mp and mp.exists(): _i = probe(mp); E['_srcAspect'] = _i['w'] / _i['h']
+    except Exception: pass
     scenes = expand_all(E)   # 先展开 内置动效（内置动效可能追加人物关键帧与镜头）
     # 2 母版 → 人物帧 + 人声
     master = (base / E['master']).resolve() if E.get('master') else None
@@ -1258,7 +1391,9 @@ def cmd_build(ns):
             fd = jload(fj); face = fd['track'] or fd['median']
         pres = {'frames': 'talk/%06d.jpg', 'fps': pfps, 'frameCount': nfr, 'srcW': fw, 'srcH': fh, 'face': face, 'keys': pc.get('keys', [{'t': 0, 'state': 'full'}]),
                 'windowTitle': pc.get('windowTitle', (brand_of(E, Path(ns.edit).resolve().parent).get('name') + ' · 口播') if brand_of(E, Path(ns.edit).resolve().parent).get('name') else '口播'), 'fullFit': pc.get('fullFit'), 'scrimColor': pc.get('scrimColor')}
-        if pc.get('matte'):
+        need_matte = pc.get('matte') or pc.get('personFront') or any(k.get('state') in ('cutout',) for k in pc.get('keys', [])) \
+            or any(sc.get('personFront') for sc in E.get('scenes', []))   # 用到抠像站位 / 人物在前就自动抠像
+        if need_matte:
             md = P / 'matte'
             if not md.exists() or not any(md.glob('*.png')):
                 try:

@@ -1,0 +1,9 @@
+.fx-depth-word { position: absolute; inset: 0; container-type: size; pointer-events: none; }
+.fx-depth-word .w { position: absolute; left: 0; top: 50%; translate: 0 -50%; transform-origin: 40% 60%; --wc: #F4F2EE; }
+.fx-depth-word .w b { display: block; font: 900 min(78cqh, 46cqw)/0.9 var(--f-title); color: var(--wc); letter-spacing: -.04em;
+  text-shadow: 0 1.2cqh 3cqh rgba(0,0,0,.35); -webkit-text-stroke: .004em rgba(0,0,0,.2); }
+.fx-depth-word.r .w { left: auto; right: 0; }
+.fx-depth-word .sd { position: absolute; right: 2%; top: 46%; display: flex; flex-direction: column; gap: 1.2cqh; text-align: left; }
+.fx-depth-word.r .sd { right: auto; left: 2%; }
+.fx-depth-word .sd div { font: 900 min(9cqh, 5.4cqw)/1.05 var(--f-title); color: #fff; text-shadow: 0 .4cqh 1.6cqh rgba(0,0,0,.55); white-space: nowrap; }
+.fx-depth-word .sd .hl { color: var(--hl, #FFC24B); }

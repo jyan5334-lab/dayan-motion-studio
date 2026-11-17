@@ -1,0 +1,12 @@
+.fx-settings-toggle { position: absolute; inset: 0; container-type: size; pointer-events: none; }
+.fx-settings-toggle .w { position: absolute; inset: 0; border-radius: 2.6cqh; background: rgba(28,30,38,.94); border: 1px solid rgba(255,255,255,.14); box-shadow: 0 4cqh 10cqh rgba(0,0,0,.5); padding: 4cqh 4cqw; display: flex; flex-direction: column; gap: 2.4cqh; }
+.fx-settings-toggle .ti { display: flex; align-items: center; gap: 1.4cqw; color: #fff; margin-bottom: 1cqh; } .fx-settings-toggle .ti .dms-ico { width: 7cqh; height: 7cqh; color: var(--accent, #2CE0C0); }
+.fx-settings-toggle .ti b { font: 900 min(9.2cqh, 7.0cqw)/1 var(--f-title); }
+.fx-settings-toggle .it { position: relative; flex: 1; display: flex; align-items: center; gap: 2cqw; padding: 0 3cqw; border-radius: 2cqh; background: rgba(255,255,255,.06); --k: 0; --h: 0;
+  box-shadow: 0 0 0 calc(var(--h) * .5cqh) var(--hl, #FFC24B), 0 0 calc(var(--h) * 4cqh) rgba(255,194,75,.4); }
+.fx-settings-toggle .tx { flex: 1; display: flex; flex-direction: column; gap: 1.4cqh; } .fx-settings-toggle .tx b { font: 900 min(7.4cqh, 5.6cqw)/1 var(--f-sans); color: #fff; } .fx-settings-toggle .tx small { font: 700 min(5.1cqh, 3.9cqw)/1 var(--f-sans); color: rgba(255,255,255,.55); }
+.fx-settings-toggle .sw { position: relative; flex: none; width: 15cqh; height: 8.4cqh; border-radius: 99px; padding: .8cqh; box-sizing: border-box; background: color-mix(in srgb, rgba(255,255,255,.2) calc(100% - var(--k) * 100%), #34C759); }
+.fx-settings-toggle .sw u { display: block; width: 6.8cqh; height: 6.8cqh; border-radius: 50%; background: #fff; box-shadow: 0 .6cqh 1.4cqh rgba(0,0,0,.35); }
+.fx-settings-toggle .sw u { transform-origin: 0 0; } .fx-settings-toggle .sw { --track: 6.6cqh; } .fx-settings-toggle .sw u { position: relative; }
+.fx-settings-toggle em { position: absolute; left: 100%; top: 50%; margin: -4.5cqh 0 0 1.4cqw; display: flex; align-items: center; gap: .6cqw; white-space: nowrap; padding: 2cqh 1.8cqw; border-radius: 1.4cqh; background: var(--hl, #FFC24B); color: #1A1204; font: 900 min(6.2cqh, 4.5cqw)/1 var(--f-sans); font-style: normal; }
+.fx-settings-toggle em .dms-ico { width: 1em; height: 1em; transform: rotate(180deg); }

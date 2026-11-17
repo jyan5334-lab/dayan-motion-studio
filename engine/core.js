@@ -83,7 +83,7 @@
 
   /* ---------------- 舞台 ---------------- */
   let TL = null, W = 1920, H = 1080, FPS = 60, ORIENT = 'landscape';
-  let stage, bgLayer, depthLayer, world, presLayer, fgLayer, subsLayer, hudLayer;
+  let stage, bgLayer, depthLayer, world, frontWorld, presLayer, fgLayer, subsLayer, hudLayer;
   const scenes = [];            // {def, root, bg, content, layers:[{def, el, inner, comp}]}
   const globals = [];           // 跨场景的常驻层（导航条、角标）
   let shakeImpulses = [];
@@ -208,7 +208,10 @@
     if (def.theme) root.dataset.theme = def.theme;
     const bg = DMS.el('div', 'dms-scene-bg', null, bgLayer);
     if (def.theme) bg.dataset.theme = def.theme;
-    const S = { def, root, bg, layers: [], bgLayers: [], halos: [] };
+    /* 人物前层：layer.front:true 的元素放在抠像人物前面（人物在前时，其余元素都在人身后） */
+    const front = DMS.el('div', 'dms-scene', null, frontWorld);
+    if (def.theme) front.dataset.theme = def.theme;
+    const S = { def, root, bg, front, layers: [], bgLayers: [], halos: [] };
     // 景深层（可选）：前景文字背后的局部柔焦，默认不开；文字墙本身整面柔焦由 bg-wall 的 blur 负责
     const bgs = (Array.isArray(def.bg) ? def.bg : def.bg ? [def.bg] : []).map(b => typeof b === 'string' ? { c: b } : b);
     const wallBg = bgs.find(b => b.c === 'bg-wall');
@@ -218,7 +221,7 @@
       const bdef = typeof b === 'string' ? { c: b } : b;
       S.bgLayers.push(buildLayer(Object.assign({ box: 'full', enter: 'none' }, bdef), bg, def));
     });
-    (def.layers || []).forEach(l => S.layers.push(buildLayer(l, root, def)));
+    (def.layers || []).forEach(l => S.layers.push(buildLayer(l, l.front ? front : root, def)));
     return S;
   }
 
@@ -237,6 +240,7 @@
     depthLayer = DMS.el('div', 'dms-depth', null, stage);
     world = DMS.el('div', 'dms-world', null, stage);
     presLayer = DMS.el('div', 'dms-presenter-layer', null, stage);
+    frontWorld = DMS.el('div', 'dms-world dms-world-front', null, stage);
     fgLayer = DMS.el('div', 'dms-fg', null, stage);
     subsLayer = DMS.el('div', 'dms-subs', null, stage);
     hudLayer = DMS.el('div', 'dms-hud', null, stage);
@@ -329,18 +333,18 @@
     const x = (st.x || 0) + sx, y = (st.y || 0) + sy, s = st.s == null ? 1 : st.s;
     const tf = `translate(${x}px,${y}px) scale(${s})` + (st.ry ? ` perspective(${(W * 2.4).toFixed(0)}px) rotateY(${st.ry.toFixed(2)}deg)` : '');
     const flt = (st.b ? `blur(${st.b.toFixed(1)}px) ` : '') + (st.br != null && st.br < 0.999 ? `brightness(${st.br.toFixed(3)})` : '');
-    for (const el of [S.root, S.bg]) {
+    for (const el of [S.root, S.bg, S.front]) {
       el.style.display = 'block';
       el.style.transform = tf;
       el.style.transformOrigin = st.org || '';
       el.style.zIndex = st.z != null ? st.z : '';
-      el.style.opacity = (st.o == null ? 1 : st.o) * (el === S.root && st.ro != null ? st.ro : 1);
+      el.style.opacity = (st.o == null ? 1 : st.o) * (el !== S.bg && st.ro != null ? st.ro : 1);
       el.style.filter = flt.trim();
       if (st.iris != null && st.iris < 1) {
         const c = DMS.presenter.center();
         el.style.clipPath = `circle(${(st.iris * Math.hypot(W, H)).toFixed(1)}px at ${c[0]}px ${c[1]}px)`;
-      } else el.style.clipPath = (el === S.root && st.holeClip) || st.clip || '';
-      const hm = el === S.root && st.holeMask;
+      } else el.style.clipPath = (el !== S.bg && st.holeClip) || st.clip || '';
+      const hm = el !== S.bg && st.holeMask;
       el.style.webkitMaskImage = el.style.maskImage = hm ? hm.image : (st.mask || '');
       el.style.webkitMaskSize = el.style.maskSize = hm ? (hm.size || '100% 100%') : st.mask ? (st.maskSize || '100% 100%') : '';
       el.style.webkitMaskPosition = el.style.maskPosition = hm ? (hm.pos || '0 0') : st.mask ? (st.maskPos || '0 0') : '';
@@ -524,13 +528,15 @@
     pending.length = 0;
     const [sx, sy] = shakeAt(t);
     const cam = cameraAt(t);
-    world.style.transform = `translate(${cam.x * W}px,${cam.y * H}px) scale(${cam.zoom})`;
+    world.style.transform = frontWorld.style.transform = `translate(${cam.x * W}px,${cam.y * H}px) scale(${cam.zoom})`;
+    let pfIdx = -1;
     let flash = 0, line = -1;
     prepMorph(t);
     scenes.forEach((S, i) => {
       const st = stateFor(i, t);
-      if (!st) { S.root.style.display = 'none'; S.bg.style.display = 'none'; return; }
+      if (!st) { S.root.style.display = 'none'; S.bg.style.display = 'none'; S.front.style.display = 'none'; return; }
       applyScene(S, st, sx, sy);
+      if (i > pfIdx) pfIdx = i;
       if (st.x || st.y) { const p = stateFor(i, t - 1 / FPS) || {}; const f = motionBlur(S.root, st, p, FPS); if (f) { S.root.style.filter = (f + S.root.style.filter).trim(); S.bg.style.filter = (motionBlur(S.bg, st, p, FPS) + S.bg.style.filter).trim(); } }
       if (st._fx && st._fx.flash != null) flash = Math.max(flash, st._fx.flash);
       if (st._fx && st._fx.line != null) line = st._fx.line;
@@ -538,6 +544,9 @@
       S.layers.forEach(L => updateLayer(L, t, t - S.def.t0));
     });
     globals.forEach(L => updateLayer(L, t, t));
+    /* 人物在前：按当前（转场时取进入的）场景决定，scene.personFront 覆盖 presenter.personFront */
+    const pfd = pfIdx >= 0 ? scenes[pfIdx].def.personFront : undefined;
+    DMS.personFrontNow = pfd === undefined ? null : !!pfd;
     scenes.forEach(S => updateDepth(S));
     DMS.presenter.update(t, sx, sy);
     DMS.subs.update(t);

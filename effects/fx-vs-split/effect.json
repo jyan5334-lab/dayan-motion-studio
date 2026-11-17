@@ -1,0 +1,47 @@
+{
+ "id": "fx-vs-split",
+ "name": "VS 对撞",
+ "use": "两方硬碰硬（工具 A vs 工具 B、国内 vs 海外、老办法 vs 新办法）：左右两块色板从两侧冲进来撞在中线，闪光后 VS 字砸出，两边各列 2–3 个要点",
+ "props": "left / right：{name 名称, img 真实 logo（可选）, color, points:[要点]}；vs 中间字",
+ "ref": "A 对撞冲击 + C 分栏对比",
+ "cat": "03 对比 · 论证",
+ "created": "2026-11-17",
+ "version": "1.0.0",
+ "example": {
+  "dur": 4.0,
+  "props": {
+   "left": {
+    "name": "手动剪辑",
+    "color": "#3A3F55",
+    "points": [
+     "一条 3 小时",
+     "字幕手打",
+     "音效现找"
+    ]
+   },
+   "right": {
+    "name": "AI 剪辑",
+    "color": "#FF6A1A",
+    "points": [
+     "一条 5 分钟",
+     "字幕自动",
+     "音效自带"
+    ]
+   }
+  },
+  "box": {
+   "landscape": [
+    0.04,
+    0.1,
+    0.92,
+    0.76
+   ],
+   "portrait": [
+    0.04,
+    0.2,
+    0.92,
+    0.56
+   ]
+  }
+ }
+}

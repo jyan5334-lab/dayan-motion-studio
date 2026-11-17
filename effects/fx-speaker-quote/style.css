@@ -1,0 +1,8 @@
+.fx-speaker-quote { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: center; gap: .4em; --qc: var(--hl, #FFC24B); }
+.fx-speaker-quote .qm { position: absolute; left: -.08em; top: -.1em; font: 900 3.2em/1 Georgia, serif; color: var(--qc); opacity: .9; transform-origin: 20% 80%; }
+.fx-speaker-quote .tx { position: relative; padding-top: .7em; font: 900 1em/1.38 var(--f-title); color: #fff; text-shadow: 0 .05em .3em rgba(0,0,0,.5); }
+.fx-speaker-quote .tx i { font-style: normal; }
+.fx-speaker-quote .tx i.h { color: color-mix(in srgb, #fff calc(100% - var(--hk, 0) * 100%), var(--qc)); }
+.fx-speaker-quote .by { display: flex; align-items: center; gap: .4em; }
+.fx-speaker-quote .by u { display: block; width: 2.4em; height: .06em; background: var(--qc); transform-origin: 0 50%; }
+.fx-speaker-quote .by span { font: 800 .42em/1 var(--f-sans); color: rgba(255,255,255,.75); }

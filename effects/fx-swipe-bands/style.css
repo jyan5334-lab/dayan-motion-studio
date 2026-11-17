@@ -1,0 +1,4 @@
+.fx-swipe-bands { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.fx-swipe-bands .w { position: absolute; inset: -40% -20%; }
+.fx-swipe-bands .b { position: absolute; left: 0; width: 100%; }
+.fx-swipe-bands .b0 { top: 0; height: 36%; } .fx-swipe-bands .b1 { top: 34%; height: 34%; } .fx-swipe-bands .b2 { top: 66%; height: 34%; }

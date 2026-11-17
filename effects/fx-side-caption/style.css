@@ -1,0 +1,5 @@
+.fx-side-caption { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; --tc: var(--hl, #FFC24B); }
+.fx-side-caption.r { align-items: flex-end; text-align: right; }
+.fx-side-caption .ln { font: 900 1em/1.18 var(--f-title); color: #fff; white-space: nowrap; letter-spacing: -.01em; text-shadow: 0 .05em .3em rgba(0,0,0,.55); }
+.fx-side-caption .ln.hl { color: var(--tc); }
+.fx-side-caption .en { margin-top: .5em; font: 800 .2em/1 var(--f-en); color: #fff; white-space: nowrap; }

@@ -1,0 +1,12 @@
+.fx-chapter-tag { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; align-items: flex-start; gap: .6em; }
+.fx-chapter-tag .hd, .fx-chapter-tag .it { display: flex; align-items: center; gap: .5em; padding: .45em 1.1em .45em .5em; border-radius: 99px;
+  background: rgba(14,16,22,.62); border: 1.5px solid rgba(255,255,255,.28); backdrop-filter: blur(8px); box-shadow: 0 .3em .8em rgba(0,0,0,.35); }
+.fx-chapter-tag .hd { margin-bottom: .5em; }
+.fx-chapter-tag .hd > i { width: .55em; height: .55em; border-radius: 50%; background: var(--hl, #FFC24B); box-shadow: 0 0 .6em var(--hl, #FFC24B); margin-left: .3em; }
+.fx-chapter-tag b { display: block; font: 900 .78em/1.1 var(--f-en); letter-spacing: .14em; color: var(--hl, #FFC24B); white-space: nowrap; }
+.fx-chapter-tag .hd span { display: block; font: 800 .74em/1.2 var(--f-sans); color: #fff; }
+.fx-chapter-tag .it > i { width: 1.5em; height: 1.5em; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.12); color: #fff; }
+.fx-chapter-tag .it > i .dms-ico { width: 58%; height: 58%; }
+.fx-chapter-tag .it b { font: 900 .8em/1.15 var(--f-sans); letter-spacing: .02em; color: #fff; }
+.fx-chapter-tag .it span { display: block; font: 800 .52em/1.2 var(--f-en); letter-spacing: .16em; color: rgba(255,255,255,.55); }
+.fx-chapter-tag .it.on { border-color: var(--hl, #FFC24B); } .fx-chapter-tag .it.on > i { background: var(--hl, #FFC24B); color: #1A1204; } .fx-chapter-tag .it.on span { color: var(--hl, #FFC24B); }

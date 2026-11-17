@@ -1,0 +1,5 @@
+.fx-glitch-hit { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.fx-glitch-hit .sl { position: absolute; left: -10%; right: -10%; background: rgba(255,255,255,.04); mix-blend-mode: normal; }
+.fx-glitch-hit .rgb { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(255,0,80,.18), transparent 30%, transparent 70%, rgba(0,220,255,.18)); mix-blend-mode: screen;
+  backdrop-filter: contrast(1.25) saturate(1.4); -webkit-backdrop-filter: contrast(1.25) saturate(1.4); }
+.fx-glitch-hit .fl { position: absolute; inset: 0; background: #fff; mix-blend-mode: difference; }

@@ -1,0 +1,37 @@
+{
+ "id": "fx-flap-title",
+ "name": "翻牌标题",
+ "use": "开篇钩子、章节名、倒计时式揭晓：每个字像机场翻牌一样翻几轮后停在目标字，正式、有时间感",
+ "props": "text 目标文字；sub 下方小字；flips 每格翻几轮（默认 4）；stagger 错峰；tone 牌面颜色 dark/light",
+ "ref": "B 机场翻牌 + C 卡片落定",
+ "cat": "01 开场 · 标识",
+ "created": "2026-11-17",
+ "version": "1.0.0",
+ "example": {
+  "dur": 3.5,
+  "props": {
+   "text": "AI 剪辑",
+   "sub": "AUTO EDIT · DEPARTURE 2026"
+  },
+  "box": {
+   "landscape": [
+    0.12,
+    0.28,
+    0.76,
+    0.42
+   ],
+   "portrait": [
+    0.06,
+    0.32,
+    0.88,
+    0.24
+   ]
+  }
+ },
+ "checked": "2026-11-17 16:15",
+ "layouts": [
+  "16:9",
+  "4:3",
+  "9:16"
+ ]
+}

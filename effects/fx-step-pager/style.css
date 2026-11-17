@@ -1,0 +1,10 @@
+.fx-step-pager { position: absolute; inset: 0; container-type: size; pointer-events: none; --pc: #4DB8FF; display: flex; flex-direction: column; justify-content: center; gap: .6em;
+  padding: .7em .8em; border-radius: 3cqh; background: rgba(22,24,32,.88); border: 1px solid rgba(255,255,255,.12); box-shadow: 0 3cqh 6cqh rgba(0,0,0,.4); }
+.fx-step-pager .rw { display: flex; gap: .4em; flex: 1.6; }
+.fx-step-pager .st { flex: 1; border-radius: 1.4cqh; display: grid; place-items: center; --on: 0;
+  background: color-mix(in srgb, var(--pc) calc(var(--on) * 100%), rgba(255,255,255,.07)); box-shadow: 0 0 calc(var(--on) * 3cqh) color-mix(in srgb, var(--pc) 60%, transparent); }
+.fx-step-pager .st b { font: 900 1.3em/1 var(--f-en); color: color-mix(in srgb, #06121A calc(var(--on) * 100%), rgba(255,255,255,.75)); }
+.fx-step-pager .tr { display: flex; align-items: center; gap: 2cqw; }
+.fx-step-pager .tr span { font: 900 1.1em/1 var(--f-title); color: #fff; white-space: nowrap; }
+.fx-step-pager .ln { flex: 1; height: .8cqh; border-radius: 99px; background: rgba(255,255,255,.12); overflow: hidden; }
+.fx-step-pager .ln u { display: block; height: 100%; background: var(--pc); transform-origin: 0 50%; }

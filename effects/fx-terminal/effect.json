@@ -1,0 +1,54 @@
+{
+ "id": "fx-terminal",
+ "name": "终端命令",
+ "use": "讲到装技能 / 跑脚本 / 一行命令搞定（\"只要一行命令\"）：深色终端窗口，命令逐字打出，回车后输出一行行刷出，最后一行绿色 ✓ 完成",
+ "props": "title 窗口标题；lines:[{cmd 命令} 或 {out 输出, ok true 时绿色}]；speed 打字速度（字/秒，默认 26）",
+ "ref": "C 终端演示",
+ "cat": "09 界面演示",
+ "created": "2026-11-17",
+ "version": "1.0.0",
+ "example": {
+  "dur": 5.0,
+  "props": {
+   "title": "zsh — dayan",
+   "lines": [
+    {
+     "cmd": "git clone github.com/jyan5334-lab/dayan-motion-studio"
+    },
+    {
+     "out": "Cloning into dayan-motion-studio... done."
+    },
+    {
+     "cmd": "python3 scripts/dms.py build ep1"
+    },
+    {
+     "out": "渲染 1920×1080 · 60 个动效 · 3 种画幅"
+    },
+    {
+     "out": "✓ 成片已导出 ep1.mp4",
+     "ok": true
+    }
+   ]
+  },
+  "box": {
+   "landscape": [
+    0.05,
+    0.12,
+    0.6,
+    0.72
+   ],
+   "portrait": [
+    0.04,
+    0.24,
+    0.92,
+    0.4
+   ]
+  }
+ },
+ "checked": "2026-11-17 16:44",
+ "layouts": [
+  "16:9",
+  "4:3",
+  "9:16"
+ ]
+}

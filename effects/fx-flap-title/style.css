@@ -1,0 +1,16 @@
+.fx-flap-title { position: absolute; inset: 0; container-type: size; pointer-events: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5cqh; }
+.fx-flap-title .row { display: flex; gap: 1.6cqw; perspective: 1200px; }
+.fx-flap-title .cell { position: relative; width: min(calc(88cqw / var(--n)), 62cqh); aspect-ratio: .78; border-radius: 1.4cqw; background: #15171E;
+  box-shadow: 0 2cqh 5cqh rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.12); transform-style: preserve-3d; }
+.fx-flap-title .cell.sp { background: transparent; box-shadow: none; width: min(calc(30cqw / var(--n)), 20cqh); }
+.fx-flap-title .cell i { position: absolute; left: 0; right: 0; display: grid; place-items: center; overflow: hidden; font: 900 min(calc(62cqw / var(--n)), 44cqh)/1 var(--f-title); color: #F4F2EE; font-style: normal; backface-visibility: hidden; }
+.fx-flap-title .cell .t { background: linear-gradient(#20232C, #1A1D25); border-radius: 1.4cqw; }
+.fx-flap-title .cell .t, .fx-flap-title .cell .b, .fx-flap-title .cell .f { height: 100%; top: 0; }
+.fx-flap-title .cell .t { clip-path: inset(0 0 50% 0); }
+.fx-flap-title .cell .b { clip-path: inset(50% 0 0 0); background: #15171E; border-radius: 1.4cqw; }
+.fx-flap-title .cell .f { clip-path: inset(0 0 50% 0); background: linear-gradient(#262A34, #1E212A); transform-origin: 50% 50%; border-radius: 1.4cqw; }
+.fx-flap-title .cell::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: .5cqh; margin-top: -.25cqh; background: #07080B; z-index: 3; }
+.fx-flap-title .cell.land { box-shadow: 0 2cqh 5cqh rgba(0,0,0,.45), 0 0 0 .4cqh var(--hl, #FFC24B); }
+.fx-flap-title .sub { font: 700 min(5.2cqh, 2.4cqw)/1 var(--f-en); color: var(--muted, rgba(255,255,255,.6)); text-transform: uppercase; white-space: nowrap; }
+.fx-flap-title.lt .cell, .fx-flap-title.lt .cell .b { background: #F2EFE8; } .fx-flap-title.lt .cell .t, .fx-flap-title.lt .cell .f { background: linear-gradient(#FFFFFF, #F4F1EA); }
+.fx-flap-title.lt .cell i { color: #15171E; }

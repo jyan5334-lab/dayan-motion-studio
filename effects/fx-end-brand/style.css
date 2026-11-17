@@ -1,0 +1,9 @@
+.fx-end-brand { position: absolute; inset: 0; container-type: size; pointer-events: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4cqh; overflow: hidden; --bc: var(--hl, #FFC24B); }
+.fx-end-brand .mk { width: min(34cqh, 20cqw); aspect-ratio: 1; border-radius: 26%; display: grid; place-items: center; background: linear-gradient(145deg, color-mix(in srgb, var(--bc) 70%, #fff), var(--bc) 50%, color-mix(in srgb, var(--bc) 70%, #000));
+  box-shadow: 0 0 calc(4cqh + var(--g, .5) * 6cqh) color-mix(in srgb, var(--bc) 70%, transparent), inset 0 -1.4cqh 3cqh rgba(0,0,0,.25); }
+.fx-end-brand .mk b { font: 900 min(20cqh, 12cqw)/1 var(--f-title); color: #1A1204; } .fx-end-brand .mk img { width: 70%; }
+.fx-end-brand .nm { display: flex; font: 900 min(18cqh, 8cqw)/1 var(--f-title); color: #fff; letter-spacing: .02em; }
+.fx-end-brand .nm i { font-style: normal; display: inline-block; }
+.fx-end-brand .sl { font: 800 min(7cqh, 3.2cqw)/1 var(--f-en); color: #fff; white-space: nowrap; }
+.fx-end-brand .sw { position: absolute; top: 0; bottom: 0; left: 0; width: 22%; background: linear-gradient(90deg, transparent, rgba(255,255,255,.25), transparent); mix-blend-mode: screen; }
+.fx-end-brand .pt { position: absolute; left: 50%; top: 50%; width: .8cqh; height: .8cqh; border-radius: 50%; background: var(--bc); box-shadow: 0 0 1cqh var(--bc); }

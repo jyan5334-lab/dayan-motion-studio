@@ -1,0 +1,14 @@
+.fx-line-chart { position: absolute; inset: 0; container-type: size; pointer-events: none; --lc: var(--accent, #2CE0C0); }
+.fx-line-chart .pl { position: absolute; inset: 0; }
+.fx-line-chart svg { width: 100%; height: 100%; overflow: visible; }
+.fx-line-chart .gr line { stroke: rgba(255,255,255,.12); stroke-width: .25; vector-effect: non-scaling-stroke; stroke-dasharray: 4 6; }
+.fx-line-chart .ln { fill: none; stroke: var(--lc); stroke-width: 6; stroke-linecap: round; vector-effect: non-scaling-stroke; filter: drop-shadow(0 0 6px var(--lc)); }
+.fx-line-chart .dt { position: absolute; }
+.fx-line-chart .dt i { display: block; width: 2.2cqh; height: 2.2cqh; border-radius: 50%; background: #fff; border: .6cqh solid var(--lc); box-shadow: 0 0 2cqh var(--lc); }
+.fx-line-chart .dt b { position: absolute; left: 50%; bottom: 150%; translate: -50% 0; font: 800 min(5.4cqh, 2.4cqw)/1 var(--f-en); color: #fff; white-space: nowrap; text-shadow: 0 .3cqh 1cqh rgba(0,0,0,.6); }
+.fx-line-chart .xl span { position: absolute; top: 90%; translate: -50% 0; font: 700 min(4.6cqh, 2.1cqw)/1 var(--f-sans); color: rgba(255,255,255,.55); white-space: nowrap; }
+.fx-line-chart .pk { position: absolute; z-index: 3; }
+.fx-line-chart .pk span { position: absolute; left: 0; bottom: 7cqh; translate: -10% 0; display: block; padding: 1.6cqh 2.4cqw; border-radius: 1.6cqh; white-space: nowrap;
+  background: var(--hl, #FFC24B); color: #1A1204; font: 900 min(7cqh, 3cqw)/1 var(--f-title); transform: scale(var(--k, 0)); transform-origin: 10% 120%; box-shadow: 0 1.4cqh 3cqh rgba(0,0,0,.35); }
+.fx-line-chart .pk.l span { translate: -90% 0; transform-origin: 90% 120%; }
+.fx-line-chart .src { position: absolute; right: 0; bottom: -2cqh; font: 700 min(3.4cqh, 1.5cqw)/1 var(--f-en); letter-spacing: .2em; color: rgba(255,255,255,.4); text-transform: uppercase; }

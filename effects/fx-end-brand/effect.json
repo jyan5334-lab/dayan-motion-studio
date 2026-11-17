@@ -1,0 +1,38 @@
+{
+ "id": "fx-end-brand",
+ "name": "品牌落版",
+ "use": "整条片子的最后一个画面：品牌标识在中心亮起，品牌名逐字出现，一句 slogan 跟进，光线扫过，四周粒子慢慢散开，停 1–2 秒",
+ "props": "mark 标识字（或 img 真实 logo）；name 品牌名；slogan；color",
+ "ref": "D 光效落版 + C 品牌",
+ "cat": "07 收尾 · CTA",
+ "created": "2026-11-17",
+ "version": "1.0.0",
+ "example": {
+  "dur": 3.5,
+  "props": {
+   "mark": "琰",
+   "name": "大琰DAYAN-AI",
+   "slogan": "DAYAN · AI STUDIO"
+  },
+  "box": {
+   "landscape": [
+    0.2,
+    0.2,
+    0.6,
+    0.56
+   ],
+   "portrait": [
+    0.06,
+    0.34,
+    0.88,
+    0.3
+   ]
+  }
+ },
+ "checked": "2026-11-17 16:37",
+ "layouts": [
+  "16:9",
+  "4:3",
+  "9:16"
+ ]
+}

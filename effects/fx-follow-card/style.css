@@ -1,0 +1,13 @@
+.fx-follow-card { position: absolute; inset: 0; container-type: size; pointer-events: none; }
+.fx-follow-card .cd { position: absolute; inset: 0; border-radius: 3cqh; background: #fff; display: flex; align-items: center; gap: 3cqw; padding: 0 4cqw; box-shadow: 0 4cqh 9cqh rgba(0,0,0,.5); }
+.fx-follow-card .av { flex: none; width: min(40cqh, 18cqw); height: min(40cqh, 18cqw); border-radius: 50%; object-fit: cover; display: grid; place-items: center; background: linear-gradient(135deg, #FFB25A, #FF6A1A); color: #fff; font: 900 min(20cqh, 9cqw)/1 var(--f-title); font-style: normal; box-shadow: 0 0 0 1cqh #fff, 0 0 0 1.6cqh #FFD8B0; }
+.fx-follow-card .md { flex: 1; display: flex; flex-direction: column; gap: 2.4cqh; min-width: 0; }
+.fx-follow-card .md > b { font: 900 min(15cqh, 5.6cqw)/1 var(--f-title); color: #15171D; white-space: nowrap; }
+.fx-follow-card .md > span { font: 700 min(8cqh, 3cqw)/1.35 var(--f-sans); color: #666; }
+.fx-follow-card .st { display: flex; gap: 3cqw; } .fx-follow-card .st b { font: 900 min(12cqh, 4.4cqw)/1 var(--f-en); color: #15171D; } .fx-follow-card .st small { margin-left: .4em; font: 700 min(7cqh, 2.6cqw)/1 var(--f-sans); color: #888; }
+.fx-follow-card .bt { position: relative; flex: none; width: 26%; height: 28cqh; border-radius: 99px; overflow: hidden; --d: 0; }
+.fx-follow-card .bt span { position: absolute; inset: 0; display: grid; place-items: center; font: 900 min(11cqh, 4cqw)/1 var(--f-sans); }
+.fx-follow-card .bt .a { background: #FE2C55; color: #fff; opacity: calc(1 - var(--d)); }
+.fx-follow-card .bt .d { background: #EEE; color: #888; opacity: var(--d); }
+.fx-follow-card .cur { position: absolute; width: 14cqh; height: 14cqh; z-index: 5; filter: drop-shadow(0 .6cqh 1cqh rgba(0,0,0,.4)); transform-origin: 15% 10%; }
+.fx-follow-card .ht { position: absolute; right: 13%; top: 40%; font: 900 8cqh/1 var(--f-sans); color: #FE2C55; font-style: normal; }

@@ -1,0 +1,30 @@
+{
+ "id": "fx-scanlines",
+ "name": "屏幕扫描线",
+ "use": "\"像在屏幕上看\"的科技 / 复古感：细横向扫描线 + 一条亮带缓慢从上往下扫 + 边缘轻微色差，适合讲 AI、代码、监控、复古游戏",
+ "props": "amount 强度（默认 0.35）；gap 线距 px（默认 4）；band 是否有扫描亮带（默认 true）；rgb 边缘色差（默认 true）；speed",
+ "ref": "D CRT 扫描线",
+ "cat": "12 质感 · 调色层",
+ "created": "2026-11-17",
+ "version": "1.0.0",
+ "example": {
+  "dur": 3.0,
+  "props": {
+   "amount": 0.5
+  },
+  "box": {
+   "landscape": [
+    0,
+    0,
+    1,
+    1
+   ],
+   "portrait": [
+    0,
+    0,
+    1,
+    1
+   ]
+  }
+ }
+}

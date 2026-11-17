@@ -1,0 +1,4 @@
+.fx-bg-aurora { position: absolute; inset: 0; overflow: hidden; background: #07080D; }
+.fx-bg-aurora .b { position: absolute; left: -25%; top: 0; width: 150%; height: 110%; filter: blur(60px); mix-blend-mode: screen; opacity: .55; }
+.fx-bg-aurora .n { position: absolute; inset: 0; opacity: .12; background-image: radial-gradient(rgba(255,255,255,.6) .5px, transparent .6px); background-size: 3px 3px; }
+.fx-bg-aurora .d { position: absolute; inset: 0; background: radial-gradient(120% 90% at 50% 40%, transparent 30%, #000 100%); }

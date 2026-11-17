@@ -1,0 +1,30 @@
+{
+ "id": "fx-light-leak",
+ "name": "漏光",
+ "use": "生活、情绪、回忆段落的胶片味：画面边缘偶尔飘过暖色漏光，像老相机进光，强度很低、慢慢呼吸，不影响阅读",
+ "props": "amount 强度（默认 0.5）；colors 两个漏光色；speed；side 漏光主要出现的边 left/right/both（默认 both）",
+ "ref": "D 胶片漏光",
+ "cat": "12 质感 · 调色层",
+ "created": "2026-11-17",
+ "version": "1.0.0",
+ "example": {
+  "dur": 4.0,
+  "props": {
+   "amount": 0.6
+  },
+  "box": {
+   "landscape": [
+    0,
+    0,
+    1,
+    1
+   ],
+   "portrait": [
+    0,
+    0,
+    1,
+    1
+   ]
+  }
+ }
+}

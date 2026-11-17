@@ -1,0 +1,4 @@
+.fx-film-grain { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.fx-film-grain .g { position: absolute; inset: 0; image-rendering: pixelated; }
+.fx-film-grain .f { position: absolute; inset: 0; background: #fff; }
+.fx-film-grain .ds { position: absolute; width: 1.5px; background: rgba(255,255,255,.8); filter: blur(.4px); }

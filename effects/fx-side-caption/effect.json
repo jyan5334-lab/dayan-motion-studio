@@ -1,0 +1,45 @@
+{
+ "id": "fx-side-caption",
+ "name": "人物旁标题",
+ "use": "人物全屏说话时，在人物空出来的一侧压两行标题点题（\"工具比人 / 还勤快\"），第二行高亮；可配 layer.front 放在人物前面，或不加让它在人物身后",
+ "props": "lines:[{t, hl}]；en 英文小字；align left/right；tone 高亮色",
+ "ref": "C 人物旁两行标题（参考片 E1）",
+ "cat": "06 人物 · 字幕",
+ "created": "2026-11-17",
+ "version": "1.0.0",
+ "example": {
+  "dur": 3.0,
+  "props": {
+   "lines": [
+    {
+     "t": "剪辑比拍摄"
+    },
+    {
+     "t": "还费时",
+     "hl": true
+    }
+   ],
+   "en": "WORKS HARDER THAN YOU"
+  },
+  "box": {
+   "landscape": [
+    0.6,
+    0.36,
+    0.36,
+    0.3
+   ],
+   "portrait": [
+    0.08,
+    0.5,
+    0.84,
+    0.16
+   ]
+  }
+ },
+ "checked": "2026-11-17 17:49",
+ "layouts": [
+  "16:9",
+  "4:3",
+  "9:16"
+ ]
+}

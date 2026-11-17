@@ -1,0 +1,22 @@
+.fx-price-card { position: absolute; inset: 0; container-type: size; pointer-events: none; --cc: #F5CE3E; }
+.fx-price-card .cd { position: absolute; left: 4%; top: 12%; width: 54%; height: 72%; border-radius: 3cqh; overflow: hidden; padding: 6cqh 4cqw; display: flex; flex-direction: column; justify-content: space-between; transform-origin: 50% 80%;
+  background: linear-gradient(150deg, color-mix(in srgb, var(--cc) 80%, #fff) 0%, var(--cc) 45%, color-mix(in srgb, var(--cc) 75%, #000) 100%);
+  box-shadow: 0 1.4cqh 0 color-mix(in srgb, var(--cc) 55%, #000), 0 4cqh 8cqh rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.7); color: #1A1306; }
+.fx-price-card .hd { display: flex; align-items: center; gap: 1cqw; font: 900 min(7.4cqh, 3.2cqw)/1 var(--f-sans); }
+.fx-price-card .hd .dms-ico { width: 1em; height: 1em; color: #2F6BFF; }
+.fx-price-card .v { display: flex; align-items: baseline; gap: 1.4cqw; }
+.fx-price-card .v b { font: 900 min(30cqh, 12cqw)/1 var(--f-en); letter-spacing: -.04em; }
+.fx-price-card .v i { font: 900 min(7cqh, 3cqw)/1 var(--f-sans); font-style: normal; }
+.fx-price-card .ft { display: flex; justify-content: space-between; align-items: baseline; }
+.fx-price-card .ft small { font: 800 min(4.4cqh, 1.8cqw)/1 var(--f-en); letter-spacing: .2em; opacity: .55; }
+.fx-price-card .ft em { font: 900 min(9cqh, 3.8cqw)/1 var(--f-en); font-style: normal; }
+.fx-price-card .gl { position: absolute; top: -20%; bottom: -20%; left: 0; width: 26%; background: linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent); }
+.fx-price-card .tg { position: absolute; left: 56%; top: 20%; width: 40%; height: 70%; }
+.fx-price-card .str { position: absolute; left: 0; top: 4%; width: 40%; height: 16%; overflow: visible; }
+.fx-price-card .str path { fill: none; stroke: rgba(255,255,255,.75); stroke-width: 1.4; vector-effect: non-scaling-stroke; }
+.fx-price-card .tb { position: absolute; left: 36%; top: 6%; width: 58%; aspect-ratio: .62; border-radius: 2cqh 2cqh 1cqh 1cqh; background: #F3EFE6; transform-origin: 18% 8%;
+  box-shadow: 0 2cqh 5cqh rgba(0,0,0,.4); display: flex; flex-direction: column; align-items: center; padding: 3cqh 2cqw; gap: 3cqh; }
+.fx-price-card .tb > i { width: 3cqh; height: 3cqh; border-radius: 50%; background: #222; box-shadow: inset 0 0 0 .6cqh #888; }
+.fx-price-card .bc { flex: 1; width: 100%; display: flex; gap: 2px; align-items: stretch; justify-content: center; }
+.fx-price-card .bc u { display: block; background: #111; }
+.fx-price-card .tb span { font: 900 min(6cqh, 2.6cqw)/1 var(--f-sans); color: #111; }

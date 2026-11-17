@@ -1,0 +1,6 @@
+.fx-funnel { position: absolute; inset: 0; container-type: size; pointer-events: none; display: flex; flex-direction: column; gap: 1.4cqh; --fc: var(--accent, #2CE0C0); }
+.fx-funnel .lv { position: relative; flex: 1; display: flex; align-items: center; justify-content: center; gap: 2cqw; transform-origin: 50% 0; padding-right: 14%; }
+.fx-funnel .sh { position: absolute; left: 0; right: 14%; top: 0; bottom: 0; background: linear-gradient(90deg, color-mix(in srgb, var(--fc) calc(40% + var(--k) * 60%), #1C2030), color-mix(in srgb, var(--fc) calc(60% + var(--k) * 40%), #2A3048)); }
+.fx-funnel .lv span, .fx-funnel .lv b { position: relative; font: 900 min(9cqh, 3.6cqw)/1 var(--f-title); color: #fff; white-space: nowrap; text-shadow: 0 .3cqh 1cqh rgba(0,0,0,.4); }
+.fx-funnel .lv b { font-family: var(--f-en); }
+.fx-funnel .lv em { position: absolute; right: 0; top: -1cqh; font: 900 min(7cqh, 2.8cqw)/1 var(--f-en); font-style: normal; color: var(--hl, #FFC24B); padding: 1.2cqh 1.4cqw; border-radius: 99px; background: rgba(255,194,75,.12); border: 1px solid rgba(255,194,75,.4); }

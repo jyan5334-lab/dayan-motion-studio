@@ -1,0 +1,5 @@
+.fx-keyword-pop { position: absolute; inset: 0; pointer-events: none; display: grid; place-items: center; --kc: var(--hl, #FFD23F); }
+.fx-keyword-pop .w { display: flex; flex-direction: column; align-items: center; padding: .12em .36em .16em; border-radius: .16em; background: var(--kc); border: .05em solid #111; box-shadow: .08em .1em 0 #111; }
+.fx-keyword-pop b { font: 900 1em/1 var(--f-title); color: #111; white-space: nowrap; }
+.fx-keyword-pop small { font: 900 .24em/1 var(--f-en); color: #111; letter-spacing: .3em; margin-top: .2em; }
+.fx-keyword-pop .sp { position: absolute; left: 50%; top: 50%; width: .14em; height: .06em; margin: -.03em -.07em; background: var(--kc); border-radius: 99px; box-shadow: 0 0 .1em rgba(0,0,0,.4); }

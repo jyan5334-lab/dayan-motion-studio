@@ -1,0 +1,9 @@
+.fx-color-grade { position: absolute; inset: 0; pointer-events: none; }
+.fx-color-grade .f, .fx-color-grade .t1, .fx-color-grade .t2 { position: absolute; inset: 0; }
+.fx-color-grade .t1 { } .fx-color-grade .t2 { mix-blend-mode: color; opacity: 0; }
+.fx-color-grade.k-teal-orange .t1 { background: linear-gradient(180deg, #0E6C78, #0B4A63 40%, #C9752E 100%); }
+.fx-color-grade.k-teal-orange .t2 { background: none; }
+.fx-color-grade.k-warm .t1 { background: linear-gradient(#FFB46B, #E8783A); }
+.fx-color-grade.k-cool .t1 { background: linear-gradient(#3A7BD5, #1B3A6B); }
+.fx-color-grade.k-mono .t1 { background: linear-gradient(#777, #333); }
+.fx-color-grade.k-fade .t1 { background: linear-gradient(#6C7A89, #B9A58C); }

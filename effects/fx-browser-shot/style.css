@@ -1,0 +1,18 @@
+.fx-browser-shot { position: absolute; inset: 0; container-type: size; pointer-events: none; }
+.fx-browser-shot .w { position: absolute; inset: 0; border-radius: 2cqh; overflow: hidden; background: #fff; box-shadow: 0 4cqh 10cqh rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.2); display: flex; flex-direction: column; }
+.fx-browser-shot .tb { display: flex; gap: .4cqw; height: 8cqh; padding: 1.6cqh 1.4cqw 0; background: #DEE1E6; }
+.fx-browser-shot .tb span { display: flex; align-items: center; gap: .6cqw; padding: 0 1.6cqw; max-width: 40%; border-radius: 1.2cqh 1.2cqh 0 0; font: 700 min(4.1cqh, 2.5cqw)/1 var(--f-sans); color: #444; white-space: nowrap; overflow: hidden; }
+.fx-browser-shot .tb span.on { background: #fff; color: #111; } .fx-browser-shot .tb .dms-ico { width: 1.1em; height: 1.1em; flex: none; }
+.fx-browser-shot .ad { display: flex; align-items: center; gap: 1.2cqw; height: 8cqh; padding: 0 1.4cqw; border-bottom: 1px solid #E3E3E3; }
+.fx-browser-shot .ad i { font: 400 min(5.8cqh, 3.6cqw)/1 var(--f-sans); color: #888; font-style: normal; }
+.fx-browser-shot .u { flex: 1; display: flex; align-items: center; gap: .8cqw; height: 5.4cqh; padding: 0 1.6cqw; border-radius: 99px; background: #F1F3F4; }
+.fx-browser-shot .u .dms-ico { width: 3cqh; height: 3cqh; color: #5F6368; } .fx-browser-shot .u span { font: 700 min(4.4cqh, 2.8cqw)/1 var(--f-en); color: #202124; white-space: nowrap; }
+.fx-browser-shot .vp { position: relative; flex: 1; overflow: hidden; background: #F6F7F9; }
+.fx-browser-shot .pg { position: absolute; left: 0; right: 0; top: 0; height: 130%; } .fx-browser-shot .pg .pic { width: 100%; height: 100%; }
+.fx-browser-shot .pg .ph { background: repeating-linear-gradient(135deg, #E9ECF1 0 1.6cqmin, #F3F5F8 1.6cqmin 3.2cqmin); border: none; } .fx-browser-shot .pg .ph span { color: #8A93A3; }
+.fx-browser-shot .pg .im img { object-fit: cover; object-position: top; }
+.fx-browser-shot .mk { position: absolute; border: .5cqh solid var(--hl, #FFC24B); border-radius: 1cqh; box-shadow: 0 0 0 100vmax rgba(0,0,0,.28); }
+.fx-browser-shot .mk b { position: absolute; left: 100%; top: -1cqh; margin-left: 1.4cqw; white-space: nowrap; padding: 1.4cqh 1.6cqw; border-radius: 1cqh; background: var(--hl, #FFC24B); color: #1A1204; font: 900 min(5.8cqh, 3.6cqw)/1 var(--f-sans); }
+.fx-browser-shot .ph { display: grid; place-items: center; background: repeating-linear-gradient(135deg, #2A2E3A 0 1.6cqmin, #232733 1.6cqmin 3.2cqmin); border: 1px dashed rgba(255,255,255,.3); }
+.fx-browser-shot .ph span { font: 800 min(4.6cqh, 2.8cqw)/1 var(--f-sans); color: rgba(255,255,255,.55); letter-spacing: .1em; }
+.fx-browser-shot .im { overflow: hidden; } .fx-browser-shot .im img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }

@@ -1,0 +1,14 @@
+.fx-analogy-map { position: absolute; inset: 0; container-type: size; pointer-events: none; }
+.fx-analogy-map .sv { position: absolute; inset: 0; }
+.fx-analogy-map svg { position: absolute; inset: 0; overflow: visible; }
+.fx-analogy-map path { fill: none; stroke: rgba(255,255,255,.75); stroke-width: 3; stroke-linejoin: round; }
+.fx-analogy-map .nd { position: absolute; padding: 2.6cqh 2.4cqw; border-radius: 1.6cqh; background: linear-gradient(#FFFFFF, #ECEDF0); color: #15171D; min-width: 18cqw;
+  box-shadow: 0 .8cqh 0 #B9BCC4, 0 2.4cqh 4cqh rgba(0,0,0,.45); display: flex; flex-direction: column; gap: 1.4cqh; white-space: nowrap; }
+.fx-analogy-map .hd { display: flex; align-items: center; gap: 1.2cqw; }
+.fx-analogy-map .hd i { width: min(11cqh, 4.6cqw); height: min(11cqh, 4.6cqw); border-radius: 1.2cqh; background: #E2E4E9; display: grid; place-items: center; color: #3A3D46; }
+.fx-analogy-map .hd i .dms-ico { width: 60%; height: 60%; }
+.fx-analogy-map .hd b { font: 900 min(11cqh, 4.6cqw)/1 var(--f-title); }
+.fx-analogy-map .big { padding: 4cqh 3cqw; min-width: 24cqw; } .fx-analogy-map .big .hd b { font-size: min(15cqh, 6.4cqw); }
+.fx-analogy-map .sb { font: 900 min(7.6cqh, 3.1cqw)/1 var(--f-sans); color: #555; }
+.fx-analogy-map .sb.bad { color: #E8343C; } .fx-analogy-map .sb.good { color: #13A57A; }
+.fx-analogy-map .bd { position: absolute; margin-left: 13cqw; padding: 1.8cqh 2cqw; border-radius: 99px; background: var(--hl, #FFD84A); color: #1A1204; font: 900 min(7cqh, 3cqw)/1 var(--f-en); box-shadow: 0 1cqh 2cqh rgba(0,0,0,.35); white-space: nowrap; }

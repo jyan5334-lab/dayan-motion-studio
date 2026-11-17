@@ -1,0 +1,7 @@
+.fx-stack-shots { position: absolute; inset: 0; container-type: size; pointer-events: none; }
+.fx-stack-shots .c { position: absolute; left: 30%; top: 12%; width: 40%; height: 70%; border-radius: 2cqh; overflow: hidden; background: #1B1E26; box-shadow: 0 3cqh 8cqh rgba(0,0,0,.55), 0 0 0 .5cqh #fff; transform-origin: 50% 90%; }
+.fx-stack-shots .c .pic { width: 100%; height: 100%; }
+.fx-stack-shots .c b { position: absolute; left: 1.4cqw; bottom: 2cqh; padding: 1.6cqh 1.4cqw; border-radius: 1cqh; background: rgba(0,0,0,.72); color: #fff; font: 900 min(5.4cqh, 3.2cqw)/1 var(--f-sans); }
+.fx-stack-shots .ph { display: grid; place-items: center; background: repeating-linear-gradient(135deg, #2A2E3A 0 1.6cqmin, #232733 1.6cqmin 3.2cqmin); border: 1px dashed rgba(255,255,255,.3); }
+.fx-stack-shots .ph span { font: 800 min(5cqh, 3cqw)/1 var(--f-sans); color: rgba(255,255,255,.55); letter-spacing: .1em; }
+.fx-stack-shots .im { overflow: hidden; } .fx-stack-shots .im img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }

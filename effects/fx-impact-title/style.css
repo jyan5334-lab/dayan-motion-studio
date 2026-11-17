@@ -1,0 +1,9 @@
+.fx-impact-title { position: absolute; inset: 0; container-type: size; pointer-events: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4cqh; --lc: rgba(255,255,255,.85); }
+.fx-impact-title .rays { position: absolute; left: 50%; top: 45%; width: 0; height: 0; }
+.fx-impact-title .rays i { position: absolute; left: 0; top: 0; width: 60cqmax; height: .5cqh; transform-origin: 0 50%; background: linear-gradient(90deg, transparent var(--len, 20cqmax), var(--lc) calc(var(--len, 20cqmax) + 4cqmax), transparent); }
+.fx-impact-title .t { position: relative; font: 900 min(28cqh, 9cqw)/1.05 var(--f-title); color: #fff; text-align: center; letter-spacing: -.02em; white-space: nowrap;
+  text-shadow: 0 1cqh 0 rgba(0,0,0,.3), 0 2cqh 6cqh rgba(0,0,0,.5); }
+.fx-impact-title .t .hl, .fx-impact-title .t em { color: var(--hl, #FFC24B); font-style: normal; }
+.fx-impact-title .sub { font: 800 min(7cqh, 2.6cqw)/1 var(--f-en); color: rgba(255,255,255,.7); white-space: nowrap; }
+.fx-impact-title .bit { position: absolute; left: 50%; top: 45%; width: 1.2cqw; height: .8cqw; background: var(--hl, #FFC24B); border-radius: .2cqw; }
+@container (max-aspect-ratio: 1/1) { .fx-impact-title .t { white-space: normal; text-wrap: balance; font-size: min(14cqh, 19cqw); max-width: 94cqw; line-height: 1.12; } .fx-impact-title .sub { font-size: min(5cqh, 5cqw); } }

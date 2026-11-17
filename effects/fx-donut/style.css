@@ -1,0 +1,14 @@
+.fx-donut { position: absolute; inset: 0; container-type: size; pointer-events: none; }
+.fx-donut .ring { position: absolute; left: 4%; top: 50%; height: 92cqh; aspect-ratio: 1; margin-top: -46cqh; max-width: 50cqw; max-height: 50cqw; }
+.fx-donut svg { width: 100%; height: 100%; transform: rotate(-90deg); overflow: visible; }
+.fx-donut .bgc { fill: none; stroke: rgba(255,255,255,.08); stroke-width: 14; }
+.fx-donut .sg { fill: none; stroke-width: 14; stroke-dasharray: 0 1; filter: drop-shadow(0 0 3px rgba(0,0,0,.3)); }
+.fx-donut .ct { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.6cqh; }
+.fx-donut .ct b { font: 900 min(20cqh, 9cqw)/1 var(--f-en); color: #fff; letter-spacing: -.02em; }
+.fx-donut .ct small { font: 700 min(5cqh, 2.2cqw)/1.2 var(--f-sans); color: rgba(255,255,255,.6); max-width: 60%; text-align: center; }
+.fx-donut .lg { position: absolute; right: 2%; top: 50%; translate: 0 -50%; width: 40%; display: flex; flex-direction: column; gap: 3cqh; }
+.fx-donut .lg div { display: flex; align-items: center; gap: 1.6cqw; padding: 2.2cqh 2cqw; border-radius: 1.6cqh; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); }
+.fx-donut .lg i { width: 2.6cqh; height: 2.6cqh; border-radius: 50%; flex: none; }
+.fx-donut .lg span { font: 800 min(6cqh, 2.6cqw)/1 var(--f-sans); color: #fff; flex: 1; white-space: nowrap; }
+.fx-donut .lg b { font: 900 min(7cqh, 3cqw)/1 var(--f-en); color: #fff; }
+.fx-donut .src { position: absolute; right: 0; bottom: 0; font: 700 min(3.4cqh, 1.5cqw)/1 var(--f-en); letter-spacing: .2em; color: rgba(255,255,255,.4); }

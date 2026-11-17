@@ -1,0 +1,20 @@
+.fx-social-post { position: absolute; inset: 0; container-type: size; pointer-events: none; }
+.fx-social-post .cd { position: absolute; inset: 0; border-radius: 2.4cqh; background: #FFFFFF; padding: 4cqh 3.6cqw; display: flex; flex-direction: column; gap: 2.6cqh; box-shadow: 0 4cqh 9cqh rgba(0,0,0,.5); }
+.fx-social-post .hd { display: flex; align-items: center; gap: 1.4cqw; }
+.fx-social-post .av { width: 10cqh; height: 10cqh; border-radius: 50%; object-fit: cover; display: grid; place-items: center; background: linear-gradient(135deg, #FFB25A, #FF6A1A); color: #fff; font: 900 5cqh/1 var(--f-title); font-style: normal; }
+.fx-social-post .hd b { display: flex; align-items: center; gap: .6cqw; font: 900 min(7cqh, 4.2cqw)/1 var(--f-title); color: #15171D; }
+.fx-social-post .hd b u { text-decoration: none; display: grid; place-items: center; width: 3.6cqh; height: 3.6cqh; border-radius: 50%; background: #2F9BFF; color: #fff; font: 900 2.4cqh/1 var(--f-en); }
+.fx-social-post .hd small { display: block; margin-top: .8cqh; font: 600 min(3.8cqh, 2.4cqw)/1 var(--f-sans); color: #8A8F99; }
+.fx-social-post .tx { font: 700 min(7cqh, 4.2cqw)/1.5 var(--f-sans); color: #222; }
+.fx-social-post .tx .hl, .fx-social-post .tx em { font-style: normal; color: #2F6BFF; font-weight: 900; }
+.fx-social-post .gd { flex: 1; display: grid; gap: .8cqw; min-height: 0; }
+.fx-social-post .gd.n2 { grid-template-columns: 1fr 1fr; } .fx-social-post .gd.n3 { grid-template-columns: 1fr 1fr 1fr; } .fx-social-post .gd.n4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+.fx-social-post .g { border-radius: 1.2cqh; min-height: 0; }
+.fx-social-post .ft { display: flex; gap: 5cqw; padding-top: 2cqh; border-top: 1px solid #EEE; }
+.fx-social-post .ft span { display: flex; align-items: center; gap: .8cqw; color: #666; }
+.fx-social-post .ft span:first-child { color: color-mix(in srgb, #666 calc(100% - var(--hk, 0) * 100%), #FF2D55); }
+.fx-social-post .ft .dms-ico { width: 5.6cqh; height: 5.6cqh; }
+.fx-social-post .ft b { font: 800 min(5.6cqh, 3.4cqw)/1 var(--f-en); }
+.fx-social-post .ph { display: grid; place-items: center; background: repeating-linear-gradient(135deg, #2A2E3A 0 1.6cqmin, #232733 1.6cqmin 3.2cqmin); border: 1px dashed rgba(255,255,255,.3); }
+.fx-social-post .ph span { font: 800 min(4cqh, 2cqw)/1 var(--f-sans); color: rgba(255,255,255,.55); letter-spacing: .1em; }
+.fx-social-post .im { overflow: hidden; } .fx-social-post .im img { width: 100%; height: 100%; object-fit: cover; display: block; }

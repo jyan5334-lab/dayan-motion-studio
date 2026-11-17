@@ -1,0 +1,15 @@
+.fx-tag-callout { position: absolute; inset: 0; container-type: size; pointer-events: none; }
+.fx-tag-callout .dt { position: absolute; width: 3cqh; height: 3cqh; margin: -1.5cqh 0 0 -1.5cqh; border-radius: 50%; background: var(--hl, #FFC24B); box-shadow: 0 0 0 1cqh rgba(255,194,75,.25), 0 0 3cqh var(--hl, #FFC24B); z-index: 2; }
+.fx-tag-callout .str { display: none; }
+.fx-tag-callout .tg { position: absolute; width: min(64cqw, 72cqh); transform-origin: 0 0; }
+.fx-tag-callout .tg::before { content: ''; position: absolute; left: 0; top: 0; width: 13cqh; height: .5cqh; background: rgba(255,255,255,.75); transform-origin: 0 50%; transform: rotate(38deg); }
+.fx-tag-callout .hole { display: none; }
+.fx-tag-callout .bd { position: absolute; left: 9cqh; top: 7cqh; width: 100%; padding: 5cqh 4cqh 4cqh 9cqh; box-sizing: border-box; display: flex; flex-direction: column; gap: 1.8cqh;
+  background: #F7F3EA; border-radius: 1.4cqh; clip-path: polygon(6cqh 0, 100% 0, 100% 100%, 6cqh 100%, 0 calc(100% - 6cqh), 0 6cqh); box-shadow: 0 3cqh 6cqh rgba(0,0,0,.5); transform: rotate(-6deg); transform-origin: 0 0; }
+.fx-tag-callout .bd::before { content: ''; position: absolute; left: 3.6cqh; top: 50%; width: 3cqh; height: 3cqh; margin-top: -1.5cqh; border-radius: 50%; background: #1A1C22; box-shadow: inset 0 0 0 .5cqh #C9C2B2; }
+.fx-tag-callout .bd b { font: 900 min(9cqh, 9cqw)/1.05 var(--f-title); color: #15171D; white-space: nowrap; }
+.fx-tag-callout .bd small { font: 800 min(4.6cqh, 4.6cqw)/1 var(--f-sans); color: #6A645A; }
+.fx-tag-callout .bd em { align-self: flex-start; padding: 1.4cqh 1.6cqh; border-radius: .8cqh; background: #E2402F; color: #fff; font: 900 min(6cqh, 6cqw)/1 var(--f-sans); font-style: normal; }
+.fx-tag-callout .bc { display: flex; height: 9cqh; gap: 0; margin-top: 1cqh; } .fx-tag-callout .bc u { background: #15171D; } .fx-tag-callout .bc s { flex: 1; }
+.fx-tag-callout code { font: 700 min(3.6cqh, 3.6cqw)/1 'JetBrains Mono', Consolas, monospace; color: #3A3630; letter-spacing: .2em; }
+.fx-tag-callout.s-left .tg { transform-origin: 100% 0; } .fx-tag-callout.s-left .bd { left: auto; right: 9cqh; transform: rotate(6deg); transform-origin: 100% 0; }

@@ -1,0 +1,11 @@
+.fx-series-list { position: absolute; inset: 0; container-type: size; pointer-events: none; display: flex; flex-direction: column; gap: 2cqh; }
+.fx-series-list .ti { font: 900 min(9cqh, 7cqw)/1 var(--f-title); color: var(--hl, #FFC24B); margin-bottom: 1cqh; }
+.fx-series-list .ep { flex: 1; display: flex; align-items: center; gap: 2cqw; padding: 0 3cqw; border-radius: 2cqh; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12); transform-origin: 0 50%; }
+.fx-series-list em { font: 900 min(8cqh, 6.4cqw)/1 var(--f-en); font-style: normal; color: rgba(255,255,255,.4); }
+.fx-series-list span { flex: 1; font: 900 min(8cqh, 6.4cqw)/1 var(--f-sans); color: #fff; white-space: nowrap; }
+.fx-series-list i { width: 9cqh; height: 9cqh; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.12); color: #fff; }
+.fx-series-list i .dms-ico { width: 55%; height: 55%; }
+.fx-series-list .done i { background: var(--good, #2CE0C0); color: #06121A; }
+.fx-series-list .lock { opacity: .5; } .fx-series-list .lock span { color: rgba(255,255,255,.55); }
+.fx-series-list .now { background: color-mix(in srgb, rgba(255,255,255,.07) calc(100% - var(--nk) * 100%), var(--hl, #FFC24B)); box-shadow: 0 0 calc(var(--nk) * 4cqh) rgba(255,194,75,.5); }
+.fx-series-list .now span, .fx-series-list .now em { color: color-mix(in srgb, #fff calc(100% - var(--nk) * 100%), #1A1204); } .fx-series-list .now i { background: #1A1204; color: var(--hl, #FFC24B); }
