@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
-"""大琰DAYAN 内置动效：发现、合同校验、绑定与伸缩。
+"""大琰DAYAN Motion 模板：发现、合同校验、绑定与伸缩。
 
-一个内置动效 = 一个目录：
-  templates/<templateId>/
+主技能不再内置模板（用户 2026-11-17：原来 6 个内置模板质量不够，删掉）；模板放在行业包里（见 dms_packs.py、
+references/motion-templates.md），调用写 "<包名>:<模板 id>"。
+
+一个模板 = 一个目录：
+  <包>/templates/<templateId>/
     template.motion.json   合同（schema: dayan-motion/1）：画布、时长、输入槽、场景、动作保护窗、
                            镜头状态、人物状态、对象交接、可伸缩停留点、资源、验收项
     scene.json             实现：场景 + 图层（组件名 / 版位 / 时间 / 属性），字符串里用 {{槽位}} 引用输入
-    components.js（可选）  内置动效私有组件（注册到 DMS.components）
-    style.css（可选）      内置动效私有样式
+    components.js（可选）  模板私有组件（注册到 DMS.components）
+    style.css（可选）      模板私有样式
     example.payload.json   示例输入
     README.md              用途、何时调用、槽位说明
 
-发现路径：技能内 templates/ + 环境变量 DMS_TEMPLATE_PATHS（多个目录用系统路径分隔符）。
+发现路径：已安装的行业包（~/.dayan-motion-studio/packs/*/templates/）+ 环境变量 DMS_TEMPLATE_PATHS（个人调试用的散装模板）。
 """
 from __future__ import annotations
 import json, os, re, copy
@@ -26,22 +29,26 @@ REQUIRED_ACCEPTANCE = {'safe-area', 'cjk-font-render', 'continuous-motion-window
 TIME_KEYS_ABS = ('at', 'out')
 
 def roots():
-    rs = [ROOT / 'templates']
+    """[(目录, 包 id 或 None)]：行业包的 templates/ + DMS_TEMPLATE_PATHS 里的散装模板"""
+    from dms_packs import discover_packs
+    rs = [(p['dir'] / 'templates', p['id']) for p in discover_packs()]
     env = os.environ.get('DMS_TEMPLATE_PATHS')
-    if env: rs += [Path(p).expanduser() for p in env.split(os.pathsep) if p]
+    if env: rs += [(Path(p).expanduser(), None) for p in env.split(os.pathsep) if p]
     return rs
 
 def discover():
     out, seen = [], set()
-    for r in roots():
+    for r, pid in roots():
         if not r.exists(): continue
         for c in sorted(r.rglob('template.motion.json')):
             try:
                 t = _load_dir(c.parent)
-                key = (t['contract'].get('templateId'), t['contract'].get('version'))
-                if key not in seen: seen.add(key); out.append(t)
             except Exception as e:
-                out.append({'dir': c.parent, 'contract': {'templateId': c.parent.name, 'version': '?', 'status': 'INVALID', 'title': str(e)}, 'impl': None})
+                t = {'dir': c.parent, 'contract': {'templateId': c.parent.name, 'version': '?', 'status': 'INVALID', 'title': str(e)}, 'impl': None}
+            tid = t['contract'].get('templateId')
+            t['pack'] = pid; t['ref'] = f'{pid}:{tid}' if pid else tid
+            key = (pid, tid, t['contract'].get('version'))
+            if key not in seen: seen.add(key); out.append(t)
     return out
 
 def _load_dir(d):
@@ -51,10 +58,19 @@ def _load_dir(d):
     return {'dir': d, 'contract': c, 'impl': impl}
 
 def load_template(ref):
-    tid, _, ver = str(ref).partition('@')
-    cands = [t for t in discover() if t['contract'].get('templateId') == tid and t.get('impl') is not None]
+    """ref = "<包名>:<模板 id>[@版本]"（行业包里的模板）或 "<模板 id>[@版本]"（DMS_TEMPLATE_PATHS 里的散装模板）"""
+    name, _, ver = str(ref).partition('@')
+    pid, _, tid = name.rpartition(':')
+    pid = pid or None
+    if pid:
+        from dms_packs import need_pack
+        need_pack(pid)
+    cands = [t for t in discover() if t['contract'].get('templateId') == tid and t.get('pack') == pid and t.get('impl') is not None]
     if ver: cands = [t for t in cands if t['contract'].get('version') == ver or t['contract'].get('version', '').startswith(ver)]
-    if not cands: raise SystemExit(f'✗ 找不到内置动效 {ref}（运行 template list 查看可用内置动效）')
+    if not cands:
+        other = [t['ref'] for t in discover() if t['contract'].get('templateId') == tid]
+        hint = f'（行业包里的模板要写成 包名:模板，例如 {other[0]}）' if other and not pid else '（dms.py template list 查看可用模板）'
+        raise SystemExit(f'✗ 找不到模板 {ref}{hint}')
     def vkey(t): return [int(x) if x.isdigit() else 0 for x in re.split(r'[.\-]', t['contract'].get('version', '0'))]
     return sorted(cands, key=vkey)[-1]
 
@@ -130,7 +146,7 @@ def validate_template(t):
         need(isinstance(h.get('maxFrames'), int) and h['maxFrames'] >= 0, f'holds[{i}].maxFrames 无效')
         for a, b, wid in prot:
             if isinstance(f, int) and a < f < b: E.append(f'holds[{i}] 落在受保护动作窗 {wid}（{a}–{b}）里：伸长会把动作拉断')
-    if not c.get('holds'): Wn.append('没有 holds：内置动效只能按原时长使用，无法适配更长的口播段')
+    if not c.get('holds'): Wn.append('没有 holds：模板只能按原时长使用，无法适配更长的口播段')
     for i, a in enumerate(c.get('anchors') or []):
         need(isinstance(a.get('id'), str) and isinstance(a.get('atFrame'), int) and 0 <= a['atFrame'] <= D, f'anchors[{i}] 需要 id 与有效 atFrame')
         for a0, b0, wid in prot:
@@ -145,16 +161,17 @@ def validate_template(t):
         need(isinstance(h.get('from'), str) and isinstance(h.get('to'), str) and isinstance(h.get('atFrame'), int), f'handoffs[{i}] 需要 from / to / atFrame')
         fs, ts = (h.get('from') or '').split('.')[0], (h.get('to') or '').split('.')[0]
         if fs in sid and ts in sid and abs(order.index(fs) - order.index(ts)) > 1: Wn.append(f'handoffs[{i}] {fs}→{ts} 跨越了不相邻的场景')
-    if len(scenes) > 1 and not c.get('handoffs'): Wn.append('多场景内置动效没有 handoffs：场景之间可能像"清空再开场"')
+    if len(scenes) > 1 and not c.get('handoffs'): Wn.append('多场景模板没有 handoffs：场景之间可能像"清空再开场"')
     # 资源
     for i, a in enumerate(c.get('assets') or []):
         need(isinstance(a.get('path'), str) and isinstance(a.get('type'), str), f'assets[{i}] 需要 path / type')
         if a.get('required') and isinstance(a.get('path'), str) and not (d / a['path']).exists() and not (ROOT / a['path']).exists(): E.append(f'assets[{i}] 缺文件：{a["path"]}')
+    if t.get('pack'): _validate_pack_fields(t, E, Wn)
     acc = set(c.get('acceptance') or [])
     miss = REQUIRED_ACCEPTANCE - acc
     if miss: E.append('acceptance 缺少：' + '、'.join(sorted(miss)))
     # 与实现交叉核对
-    if impl is None: E.append('缺少 scene.json（内置动效实现）')
+    if impl is None: E.append('缺少 scene.json（模板实现）')
     else:
         txt = json.dumps(impl, ensure_ascii=False)
         used = set(re.findall(r'\{\{\s*([\w.]+)\s*\}\}', txt))
@@ -170,10 +187,56 @@ def validate_template(t):
             if isinstance(last, (int, float)) and abs(last * fps - D) > 1: E.append(f'scene.json 结束于 {last}s（{last * fps:.0f} 帧），合同 {D} 帧')
             for s, cs in zip(impl['scenes'], scenes):
                 if abs(s.get('t0', 0) * fps - cs.get('startFrame', 0)) > 1: E.append(f'scene.json {s.get("id")} 起点与合同不一致')
-        known = _engine_components() | set(_template_components(d))
+        known = _engine_components() | set(_template_components(d)) | _effect_ids(t.get('pack'))
         for comp_name in set(re.findall(r'"c"\s*:\s*"([\w-]+)"', txt)):
             if comp_name not in known: E.append(f'scene.json 使用了不存在的组件 {comp_name}')
     return E, Wn
+
+def _effect_ids(pid):
+    """主技能动效库 + 该行业包自带动效的 id（模板可以直接用）"""
+    from dms_packs import pack_effect_dirs
+    ids = {d.name for d in (ROOT / 'effects').iterdir() if (d / 'component.js').exists()} if (ROOT / 'effects').exists() else set()
+    if pid: ids |= {d.name for d in pack_effect_dirs([pid])}
+    return ids
+
+ZONE_BOXES = {'zone', 'zone-main', 'zone-aside', 'zone-top', 'zone-bottom', 'zone-left', 'zone-right',   # 内容区：按人物站位和画幅自动排
+              'full', 'center', 'left', 'right', 'top', 'upper', 'lower', 'wide', 'quote', 'demo'}             # 引擎自带版位
+
+def _validate_pack_fields(t, E, Wn):
+    """行业包模板要多写的字段（用户 2026-11-17 定的 1–4 项）：画幅、人物状态、语义标签、角色、优先级、版位"""
+    from dms_packs import ASPECTS, ROLES, SEMANTIC, PRESENTER_STATES
+    c, impl = t['contract'], t.get('impl') or {}
+    comp = c.get('composition') or {}
+    asp = comp.get('aspects')
+    if not asp: E.append('composition.aspects 必填：写这个模板支持哪些画幅，例如 ["16:9", "4:3", "9:16"]（不支持的画幅调用时会直接报错）')
+    else:
+        bad = [a for a in asp if a not in ASPECTS]
+        if bad: E.append(f'composition.aspects 里有不认识的画幅 {bad}（可选：{list(ASPECTS)}）')
+    if c.get('role') not in ROLES: E.append(f'role 必填，取值 {sorted(ROLES)} 之一（开场、数据、对比、结尾……用来按位置和语义自动挑模板）')
+    trg = c.get('triggers') or {}
+    if not (trg.get('semantic') or trg.get('keywords')): E.append('triggers 至少写 semantic（语义标签）或 keywords（口播关键词）之一，否则剪辑时挑不中它')
+    bad = [k for k in trg.get('semantic') or [] if k not in SEMANTIC]
+    if bad: E.append(f'triggers.semantic 里有不认识的标签 {bad}（可选：{sorted(SEMANTIC)}）')
+    if not isinstance(c.get('priority', 0), int): E.append('priority 要写整数（默认 0，越大越优先）')
+    pc = c.get('presenterCompat')
+    if not pc: E.append('presenterCompat 必填：写这个模板能配合哪些人物状态，例如 ["full", "cutout", "circle", "side"]')
+    elif [s for s in pc if s not in PRESENTER_STATES]: E.append(f'presenterCompat 里有不认识的人物状态（可选：{sorted(PRESENTER_STATES)}）')
+    # 版位：多画幅模板只能用内容区 / full / center，不能写死坐标
+    multi = asp and len(asp) > 1
+    for sc in impl.get('scenes', []):
+        for L in (sc.get('layers') or []) + [b for b in (sc.get('bg') or []) if isinstance(b, dict)]:
+            bx = L.get('box')
+            if bx is None: continue
+            if isinstance(bx, str):
+                if bx not in ZONE_BOXES: E.append(f'scene {sc.get("id")} 图层 {L.get("c")} 的 box "{bx}" 不认识（可用 {sorted(ZONE_BOXES)}）')
+            elif isinstance(bx, dict):
+                miss = [a for a in asp or [] if a not in bx and not ('portrait' in bx and a in ('9:16', '3:4')) and not ('landscape' in bx and a in ('16:9', '4:3', '1:1'))]
+                if miss: E.append(f'scene {sc.get("id")} 图层 {L.get("c")} 的 box 没给画幅 {miss} 的位置')
+            elif multi:
+                E.append(f'scene {sc.get("id")} 图层 {L.get("c")} 写死了坐标 {bx}：支持多种画幅的模板要用内容区（zone / zone-main / zone-aside…）或按画幅分别给位置')
+    for s in c.get('inputSlots') or []:
+        if s.get('type') in ('image', 'video') and 'real' not in s:
+            Wn.append(f'槽位 {s.get("id")} 是图片 / 视频：写 "real": true（必须是真实图片，没有就显示占位）或 false（示意图）')
 
 def _template_components(d):
     f = Path(d) / 'components.js'
@@ -217,7 +280,7 @@ def bind_slots(t, payload):
 
 def time_map(t, target, pins=None):
     """自然时长 → 目标时长：只在 holds 停留点插入（或回收）时间，受保护动作保持原速。
-    pins: [(锚点自然时间, 目标时间)]——把内置动效里的锚点钉到口播关键词上，锚点之间的差额由其间的停留点吸收。"""
+    pins: [(锚点自然时间, 目标时间)]——把模板里的锚点钉到口播关键词上，锚点之间的差额由其间的停留点吸收。"""
     c = t['contract']; fps = c['composition']['fps']; Dn = c['composition']['durationInFrames'] / fps
     holds = [{'t': h['atFrame'] / fps, 'max': h['maxFrames'] / fps, 'min': h.get('minusFrames', 0) / fps, 'd': 0.0} for h in sorted(c.get('holds') or [], key=lambda h: h['atFrame'])]
     notes = []
@@ -246,12 +309,25 @@ def time_map(t, target, pins=None):
 def expand_template(s, E=None):
     t = load_template(s['template']); c = t['contract']
     t0, t1 = float(s['t0']), float(s['t1'])
+    cv = (E or {}).get('canvas') or {}
+    asp = None
+    if cv.get('w') and cv.get('h'):
+        from dms_packs import aspect_tag, template_aspects
+        asp = aspect_tag(cv['w'], cv['h'])
+        if t.get('pack') and asp not in template_aspects(c):
+            raise SystemExit(f"✗ 模板 {t['ref']} 只支持 {template_aspects(c)}，这条片子是 {asp}：换一个支持 {asp} 的模板，或这一段改用组件 / 动效库")
+    if t.get('pack') and E is not None and c.get('presenterCompat'):
+        st = _presenter_state(E, t0 + 0.01)
+        if st and st not in c['presenterCompat'] and not (t['impl'] or {}).get('presenter'):
+            print(f"⚠ 模板 {t['ref']} 设计时配合的人物状态是 {c['presenterCompat']}，这一段人物是 {st}：看一下有没有挡住，必要时在这一段改人物状态")
     vals, errs = bind_slots(t, s.get('slots') or {})
-    if errs: raise SystemExit(f"✗ 内置动效 {s['template']}：" + '；'.join(errs))
+    if E is not None and 'brand' not in vals:   # {{brand.name}} / {{brand.wall.0}}：edit.json 的 brand，没写就用本机保存的品牌
+        import dms as _d; vals['brand'] = _d.brand_of(E)
+    if errs: raise SystemExit(f"✗ 模板 {s['template']}：" + '；'.join(errs))
     fps = c['composition']['fps']; anchors = {a['id']: a['atFrame'] / fps for a in c.get('anchors', [])}
     pins = []
     for aid, target in (s.get('pin') or {}).items():
-        if aid not in anchors: raise SystemExit(f"✗ 内置动效 {c['templateId']} 没有锚点 {aid}（可用：{', '.join(anchors) or '无'}）")
+        if aid not in anchors: raise SystemExit(f"✗ 模板 {c['templateId']} 没有锚点 {aid}（可用：{', '.join(anchors) or '无'}）")
         tt = target.get('at') if isinstance(target, dict) else target
         if isinstance(target, dict) and 'cue' in target and E is not None and E.get('_words'):
             import dms
@@ -259,32 +335,42 @@ def expand_template(s, E=None):
             if ts: tt = ts[0] + float(target.get('lead', -0.15))
         if tt is not None: pins.append((anchors[aid], float(tt) - t0))
     f, Dn, extra, ins, notes = time_map(t, t1 - t0, pins)
-    for n in notes: print(f"⚠ 内置动效 {c['templateId']}：{n}")
+    for n in notes: print(f"⚠ 模板 {c['templateId']}：{n}")
     if extra < -0.05 and not pins and sum(d for _, d in ins) > extra + 0.05:
-        print(f"⚠ 内置动效 {c['templateId']} 自然时长 {Dn:.2f}s，口播段只有 {t1 - t0:.2f}s：受保护动作不压缩，片段会在下一段转场时被接管")
+        print(f"⚠ 模板 {c['templateId']} 自然时长 {Dn:.2f}s，口播段只有 {t1 - t0:.2f}s：受保护动作不压缩，片段会在下一段转场时被接管")
     impl = _subst(copy.deepcopy(t['impl']), vals)
     out = []
     for k, sc in enumerate(impl.get('scenes', [])):
         sc = copy.deepcopy(sc)
         sc['t0'] = t0 + (0 if k == 0 else f(sc['t0'])); sc['t1'] = t1 if k == len(impl['scenes']) - 1 else t0 + f(sc['t1'])
         sc['id'] = f"{s.get('id', c['templateId'])}·{sc.get('id')}"
-        sc['_template'] = f"{c['templateId']}@{c['version']}"
+        sc['_template'] = f"{t['ref']}@{c['version']}"
         for key in ('energy', 'theme', 'transition'):
             if key in s and k == 0 and key == 'transition': sc['transition'] = s['transition']
             elif key in s and key != 'transition': sc[key] = s[key]
         for L in sc.get('layers', []) + [b for b in (sc.get('bg') or []) if isinstance(b, dict)]:
+            if isinstance(L.get('box'), dict):   # 按画幅分别给位置：{"16:9": …, "9:16": …} 或 {"landscape": …, "portrait": …}
+                bx = L['box']; port = bool(cv.get('h') and cv.get('w') and cv['h'] > cv['w'])
+                L['box'] = bx.get(asp) or bx.get('portrait' if port else 'landscape') or next(iter(bx.values()))
             if 'at' in L:
                 a_rel = float(L['at']); L['at'] = round(t0 + f(a_rel), 3)
                 _remap_nested(L.get('props'), a_rel, f)
             if 'out' in L: L['out'] = round(t0 + f(float(L['out'])), 3)
         out.append(sc)
     if out:
-        extra_files = [a['path'] for a in c.get('assets', []) if a.get('type') in ('script', 'style')]
-        rel = os.path.relpath(t['dir'], ROOT).replace('\\', '/')
-        out[0]['_assets_js'] = [f'{rel}/{Path(p).name}' if not p.startswith('templates/') else p for p in extra_files if p.endswith('.js')]
-        out[0]['_assets_css'] = [f'{rel}/{Path(p).name}' if not p.startswith('templates/') else p for p in extra_files if p.endswith('.css')]
+        # 模板私有脚本 / 样式：工程里放到 tpl/<包>/<模板>/ 下，build 时从模板目录拷过去
+        files = [a['path'] for a in c.get('assets', []) if a.get('type') in ('script', 'style')]
+        for fn in ('components.js', 'style.css'):
+            if (Path(t['dir']) / fn).exists() and fn not in [Path(x).name for x in files]: files.append(fn)
+        base = f"tpl/{t.get('pack') or '_local'}/{c['templateId']}"
+        def asset(pth):
+            src = Path(t['dir']) / Path(pth).name
+            return {'rel': f'{base}/{Path(pth).name}', 'src': str(src)}
+        out[0]['_assets_js'] = [asset(p) for p in files if p.endswith('.js')]
+        out[0]['_assets_css'] = [asset(p) for p in files if p.endswith('.css')]
     if E is not None and s.get('presenter', True) is not False and impl.get('presenter'):
         pk = E.setdefault('presenter', {}).setdefault('keys', [{'t': 0, 'state': 'full'}])
+        pk[:] = [k for k in pk if not (t0 - 0.01 <= float(k.get('t', 0)) < t1 - 0.01)]   # 模板自己控制这一段的人物站位：去掉这一段原有的关键帧，避免同一时刻切两次
         for k in impl['presenter']:
             k = dict(k); k['t'] = round(t0 + f(float(k['t'])), 3); pk.append(k)
     if E is not None and impl.get('camera'):
@@ -292,6 +378,13 @@ def expand_template(s, E=None):
         for k in impl['camera']:
             k = dict(k); k['t'] = round(t0 + f(float(k['t'])), 3); cam.append(k)
     return out
+
+def _presenter_state(E, t):
+    ks = sorted(((E.get('presenter') or {}).get('keys') or []), key=lambda k: float(k.get('t', 0)))
+    st = None
+    for k in ks:
+        if float(k.get('t', 0)) <= t: st = k.get('state', st)
+    return st
 
 def _remap_nested(o, base, f):
     """嵌套在 props 里的相对时间（items[].at、winnerAt、strikeAt…）同样只在 hold 处伸缩"""

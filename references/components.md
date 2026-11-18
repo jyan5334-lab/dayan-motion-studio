@@ -202,7 +202,7 @@
 | `fx-vignette` 暗角聚焦 | 整片或某段压暗四角，把视线收到人物和主内容上（几乎每条片子都可以开着）；可以随重点句短暂收紧 | amount 强度 0–1（默认 0.45）；shape round/wide（默认 wide，横屏更自然）；pulse:[时刻…] 这些时刻收紧一下；cx, cy 中心 |
 
 ## 写新组件
-在 `engine/components-*.js` 或内置动效的 `components.js` 里：
+在 `engine/components-*.js`、动效库 `effects/<id>/component.js` 或行业包模板的 `components.js` 里：
 ```js
 DMS.components['my-thing'] = {
   enter: 'rise',                       // 外层入场：rise/settle/pop/drop/slide-l/slide-r/zoom/slam/fade/wipe/none

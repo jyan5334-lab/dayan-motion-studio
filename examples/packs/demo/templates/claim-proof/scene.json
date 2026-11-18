@@ -1,0 +1,60 @@
+{
+ "scenes": [
+  {
+   "id": "claim",
+   "t0": 0,
+   "t1": 2.0,
+   "bg": [
+    {
+     "c": "fx-bg-dotwave"
+    }
+   ],
+   "layers": [
+    {
+     "c": "fx-impact-title",
+     "at": 0.1,
+     "box": "zone",
+     "props": {
+      "text": "{{claim}}",
+      "hl": "{{highlight}}",
+      "sub": "{{en}}"
+     }
+    }
+   ]
+  },
+  {
+   "id": "proof",
+   "t0": 2.0,
+   "t1": 5.0,
+   "bg": [
+    {
+     "c": "fx-bg-dotwave"
+    }
+   ],
+   "layers": [
+    {
+     "c": "fx-stat-hero",
+     "at": 2.1,
+     "box": "zone-top",
+     "props": {
+      "stats": [
+       {
+        "v": "{{number}}",
+        "unit": "{{unit}}",
+        "label": "{{label}}"
+       }
+      ]
+     }
+    },
+    {
+     "c": "fx-demo-pill",
+     "at": 2.6,
+     "box": "zone-bottom",
+     "props": {
+      "text": "{{tag}}"
+     }
+    }
+   ]
+  }
+ ]
+}

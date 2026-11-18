@@ -1,0 +1,4 @@
+.fx-demo-pill { position: absolute; inset: 0; container-type: size; pointer-events: none; display: grid; place-items: center; --pc: var(--accent, #2CE0C0); }
+.fx-demo-pill .pl { display: flex; align-items: center; gap: 0.5em; padding: 0.55em 1.1em; border-radius: 99px; font: 900 min(34cqh, 9cqw)/1 var(--f-sans);
+  color: #fff; background: color-mix(in srgb, var(--pc) 18%, rgba(10, 12, 18, .85)); border: 2px solid color-mix(in srgb, var(--pc) 70%, transparent); white-space: nowrap; }
+.fx-demo-pill .pl i { width: 0.5em; height: 0.5em; border-radius: 50%; background: var(--pc); flex: none; }

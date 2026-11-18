@@ -21,11 +21,11 @@
 |---|---|---|
 | 01 开场（A 组、title、poster、chapbig、radial、stacktxt、badge、icon） | 翻牌开场、巨字遮罩、铬字大标题、印章盖题、放射章节、Let's Go 文字流 | `title`（slam/mask/chars/3d）、`stamp`、`echo`、`chapter`、`logo`、`sticker` + `bg-burst` / `bg-wall` |
 | 02 数据（B 组、num、count3d、money、gauge、cal、matrix、txt3d、splitflap） | 平台大数字、价格砸入、表盘、日程、立体大数字 | `number`、`gauge`、`bars`、`timeline`、`grid`、`logo`(metal) |
-| 03 对比（C 组、bar、splitcol、pricecard） | 左右分屏 VS、三栏对比、价格差距条、三档套餐 | `compare`、`bars`、内置动效 `compare-verdict` |
-| 04 流程关系（D 组、node、step、check、listin、flowcon） | 步骤条、中心辐射、决策流、勾选清单 | `flow`、`nodes`、`checklist`、`timeline`、`stacks`、内置动效 `term-explainer` |
+| 03 对比（C 组、bar、splitcol、pricecard） | 左右分屏 VS、三栏对比、价格差距条、三档套餐 | `compare`、`bars`、`fx-vs-split`、`fx-myth-fact` |
+| 04 流程关系（D 组、node、step、check、listin、flowcon） | 步骤条、中心辐射、决策流、勾选清单 | `flow`、`nodes`、`checklist`、`timeline`、`stacks`、`fx-mind-tree` |
 | 05 引用社媒（E 组、chat、paper） | 评论卡、推文卡、指令对话、批注便签 | `quote`、`chat`、`bubble`、`doc`、`type` |
 | 06 人物字幕（F 组、tick、subbar、lower3） | 圆形人物窗、章节导航、人名条、跑马灯 | 人物窗系统（presenter keys）、`nav`、`namecard`、字幕样式 clean/pill/bold |
-| 07 收尾 CTA（G 组、spec、stamp） | 关注引导、三连卡、下期预告、印章 | 内置动效 `cta-outro`、`chips`(sticker)、`stamp` |
+| 07 收尾 CTA（G 组、spec、stamp） | 关注引导、三连卡、下期预告、印章 | `fx-follow-card`、`fx-next-episode`、`chips`(sticker)、`stamp` |
 | 08 转场（trans、speedln、tiled、gridtr） | 放大转场门、甩入、倒计时门、速度线 | 场景 `transition`：zoom-in / whip / push-left / line / iris / flash，`burst` |
 | 09 界面录屏（phone、mocks） | 聊天屏、图文流、商品详情 | `phone`、`window`（`sim: true` 标"界面示意"） |
 | 10 文字墙（16 套皮肤） | pop、gold、acid、song、chrome、lime、obsidian、platinum、abyss、hollow、satin、lacquer、frost、porcelain、jade、mist | `bg-wall`：沿用库里的文字墙版式，两行字用使用者自己的品牌（edit.json 的 `brand.wall`）|

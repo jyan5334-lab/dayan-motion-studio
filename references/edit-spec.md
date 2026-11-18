@@ -9,6 +9,7 @@
   "canvas": {"w": 1920, "h": 1080, "fps": 60},        // 横屏 1920x1080；竖屏 1080x1920；4:3 用 1440x1080
   "theme": "film-warm",                                 // 全片主题，单个场景可用 scene.theme 覆盖
   "brand": {"name": "小明说AI", "wall": ["小明说AI", "XIAOMING · AI LAB"], "mark": "明"},   // 使用者自己的品牌（开工第 4 题）：文字墙两行、角标、名牌都用它
+  "packs": ["demo"],                                     // 可选：启用的行业 Motion 模板包（先 pack install）；scaffold / catalog 优先匹配包里的模板，build 自动带上包里的动效
   "signature": {"enabled": false, "name": "小明说AI", "pos": "tl"},   // 角标署名，默认关闭；要时 enabled 改 true，位置 tl/tr/bl/br
   "master": "work/master.mp4",                          // 剪好的口播母版（人物画面 + 人声）
   "words": "work/words.json",                           // 字级时间码（asr / cut 生成），用于 cue 对齐
@@ -74,10 +75,10 @@
         }
       ]
     },
-    {"id": "s08-outro", "template": "cta-outro", "t0": 75.1, "t1": 81.55,   // 调用 内置动效
-     "presenter": false,                                // 不改动人物窗
-     "pin": {"bye": {"cue": "下期再见", "lead": -0.35}}, // 把内置动效锚点钉到口播关键词
-     "slots": {"ask": "大家敬请期待！", "bye": "我们下期再见", "next": "下期：自动剪辑口播"}}
+    {"id": "s08-outro", "template": "demo:follow-outro", "t0": 88.5, "t1": 92.0,   // 调用行业包里的模板：<包名>:<模板 id>（要先装包，edit 顶层写 "packs"）
+     "presenter": false,                                // 不让模板改动人物窗
+     "pin": {"ask": {"cue": "关注", "lead": -0.2}},      // 把模板锚点钉到口播关键词
+     "slots": {"bio": "每周一个 AI 实测", "btn": "+ 关注"}}
   ]
 }
 ```

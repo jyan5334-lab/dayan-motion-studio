@@ -1,0 +1,192 @@
+{
+ "schema": "dayan-motion/1",
+ "templateId": "claim-proof",
+ "version": "1.0.0",
+ "status": "candidate",
+ "engine": "dayan-html",
+ "title": "结论 + 证据数字",
+ "use": "先甩一句结论（冲击大字），再用一个数字证明，旁边挂一个标签胶囊",
+ "role": "claim",
+ "priority": 1,
+ "triggers": {
+  "semantic": [
+   "number",
+   "emotion"
+  ],
+  "keywords": [
+   "结论",
+   "其实",
+   "实测",
+   "提升",
+   "节省"
+  ]
+ },
+ "presenterCompat": [
+  "full",
+  "cutout",
+  "circle",
+  "side",
+  "pip"
+ ],
+ "theme": "dark-tech",
+ "author": "dayan-motion-studio",
+ "composition": {
+  "id": "claim-proof",
+  "width": 1920,
+  "height": 1080,
+  "fps": 30,
+  "durationInFrames": 150,
+  "layout": "landscape",
+  "aspects": [
+   "16:9",
+   "4:3",
+   "9:16"
+  ]
+ },
+ "inputSlots": [
+  {
+   "id": "claim",
+   "type": "text",
+   "required": true,
+   "maxLen": 12,
+   "desc": "结论，≤12 字"
+  },
+  {
+   "id": "highlight",
+   "type": "text",
+   "required": false,
+   "maxLen": 6,
+   "desc": "结论里要高亮的词"
+  },
+  {
+   "id": "en",
+   "type": "text",
+   "required": false,
+   "maxLen": 32,
+   "default": "",
+   "desc": "英文副标题"
+  },
+  {
+   "id": "number",
+   "type": "number",
+   "required": true,
+   "desc": "证据数字"
+  },
+  {
+   "id": "unit",
+   "type": "text",
+   "required": false,
+   "maxLen": 4,
+   "default": "",
+   "desc": "单位"
+  },
+  {
+   "id": "label",
+   "type": "text",
+   "required": true,
+   "maxLen": 10,
+   "desc": "数字说明"
+  },
+  {
+   "id": "tag",
+   "type": "text",
+   "required": false,
+   "maxLen": 8,
+   "default": "实测数据",
+   "desc": "旁边标签"
+  }
+ ],
+ "layers": [
+  {
+   "id": "world",
+   "role": "background",
+   "z": 0
+  },
+  {
+   "id": "presenter",
+   "role": "presenter",
+   "z": 1
+  },
+  {
+   "id": "content",
+   "role": "content",
+   "z": 2
+  }
+ ],
+ "scenes": [
+  {
+   "id": "claim",
+   "role": "claim",
+   "startFrame": 0,
+   "endFrame": 60,
+   "entryState": "presenter",
+   "exitState": "title-settled",
+   "maxHoldFrames": 60
+  },
+  {
+   "id": "proof",
+   "role": "evidence",
+   "startFrame": 60,
+   "endFrame": 150,
+   "entryState": "title-settled",
+   "exitState": "number-settled",
+   "maxHoldFrames": 150
+  }
+ ],
+ "motionWindows": [
+  {
+   "id": "title-in",
+   "sceneId": "claim",
+   "startFrame": 3,
+   "endFrame": 30,
+   "kind": "impact",
+   "protected": true
+  },
+  {
+   "id": "count",
+   "sceneId": "proof",
+   "startFrame": 63,
+   "endFrame": 105,
+   "kind": "count",
+   "protected": true
+  }
+ ],
+ "holds": [
+  {
+   "atFrame": 45,
+   "maxFrames": 90,
+   "minusFrames": 10
+  },
+  {
+   "atFrame": 120,
+   "maxFrames": 240,
+   "minusFrames": 20
+  }
+ ],
+ "anchors": [
+  {
+   "id": "claim",
+   "atFrame": 3
+  },
+  {
+   "id": "proof",
+   "atFrame": 60
+  }
+ ],
+ "handoffs": [
+  {
+   "from": "claim.title",
+   "to": "proof.number",
+   "atFrame": 60
+  }
+ ],
+ "assets": [],
+ "acceptance": [
+  "safe-area",
+  "cjk-font-render",
+  "continuous-motion-windows",
+  "handoff-continuity",
+  "full-mp4-decode",
+  "audio-and-caption-review"
+ ]
+}

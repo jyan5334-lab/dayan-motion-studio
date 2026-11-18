@@ -1,0 +1,127 @@
+{
+ "schema": "dayan-motion/1",
+ "templateId": "follow-outro",
+ "version": "1.0.0",
+ "status": "candidate",
+ "engine": "dayan-html",
+ "title": "结尾关注",
+ "use": "片尾引导关注：名片卡弹出，光标点关注，冒爱心",
+ "role": "outro",
+ "priority": 0,
+ "triggers": {
+  "semantic": [
+   "cta"
+  ],
+  "keywords": [
+   "关注",
+   "下期",
+   "再见"
+  ]
+ },
+ "presenterCompat": [
+  "full",
+  "cutout",
+  "circle",
+  "side"
+ ],
+ "theme": "dark-tech",
+ "author": "dayan-motion-studio",
+ "composition": {
+  "id": "follow-outro",
+  "width": 1920,
+  "height": 1080,
+  "fps": 30,
+  "durationInFrames": 105,
+  "layout": "landscape",
+  "aspects": [
+   "16:9",
+   "4:3",
+   "9:16"
+  ]
+ },
+ "inputSlots": [
+  {
+   "id": "bio",
+   "type": "text",
+   "required": true,
+   "maxLen": 20,
+   "desc": "一句介绍"
+  },
+  {
+   "id": "btn",
+   "type": "text",
+   "required": false,
+   "maxLen": 6,
+   "default": "+ 关注",
+   "desc": "按钮文字"
+  }
+ ],
+ "layers": [
+  {
+   "id": "world",
+   "role": "background",
+   "z": 0
+  },
+  {
+   "id": "content",
+   "role": "content",
+   "z": 2
+  }
+ ],
+ "scenes": [
+  {
+   "id": "follow",
+   "role": "cta",
+   "startFrame": 0,
+   "endFrame": 105,
+   "entryState": "presenter",
+   "exitState": "followed",
+   "maxHoldFrames": 300
+  }
+ ],
+ "motionWindows": [
+  {
+   "id": "card-in",
+   "sceneId": "follow",
+   "startFrame": 3,
+   "endFrame": 24,
+   "kind": "enter",
+   "protected": true
+  },
+  {
+   "id": "click",
+   "sceneId": "follow",
+   "startFrame": 42,
+   "endFrame": 66,
+   "kind": "act",
+   "protected": true
+  }
+ ],
+ "holds": [
+  {
+   "atFrame": 36,
+   "maxFrames": 120,
+   "minusFrames": 6
+  },
+  {
+   "atFrame": 90,
+   "maxFrames": 300,
+   "minusFrames": 10
+  }
+ ],
+ "anchors": [
+  {
+   "id": "ask",
+   "atFrame": 3
+  }
+ ],
+ "assets": [],
+ "acceptance": [
+  "safe-area",
+  "cjk-font-render",
+  "continuous-motion-windows",
+  "handoff-continuity",
+  "full-mp4-decode",
+  "audio-and-caption-review"
+ ]
+}

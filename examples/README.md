@@ -11,7 +11,7 @@ python ../../scripts/dms.py audio proj
 python ../../scripts/dms.py render proj 成片.mp4
 python ../../scripts/dms.py export proj
 ```
-看 edit.json 可以学到：关键词 cue 对齐、人物窗从全屏 → 侧卡 → 圆窗 → 隐藏、母版自身作为录屏 B-roll（clock: master）、一个窗口跨 30 秒连续承接、内置动效 cta-outro 的锚点钉到"下期再见"。
+看 edit.json 可以学到：关键词 cue 对齐、人物窗从全屏 → 侧卡 → 圆窗 → 隐藏、母版自身作为录屏 B-roll（clock: master）、一个窗口跨 30 秒连续承接、片尾下期预告和道别分别用 cue 钉到"下期再见"。
 
 
 # 范例 2：Claude vs Codex 动画实测（289 秒纯录屏口播 → 277 秒 1080p60 横屏 · 28 段）

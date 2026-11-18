@@ -953,30 +953,61 @@
   },
   {
    "id": "s08-outro",
-   "template": "cta-outro",
    "t0": 75.1,
    "t1": 81.55,
-   "presenter": false,
    "energy": 1,
    "transition": {
     "type": "iris",
     "dur": 0.7
    },
-   "pin": {
-    "bye": {
-     "cue": "下期再见",
-     "lead": -0.35
-    },
-    "next": {
-     "cue": "下期我给大家",
-     "lead": -0.1
+   "bg": [
+    {
+     "c": "bg-glow",
+     "props": {
+      "colors": [
+       "#FF7A1A",
+       "#8E7CFF",
+       "#2CE0C0"
+      ]
+     }
     }
-   },
-   "slots": {
-    "ask": "大家敬请期待！",
-    "bye": "我们下期再见",
-    "next": "下期：自动剪辑口播"
-   }
+   ],
+   "layers": [
+    {
+     "c": "fx-next-episode",
+     "cue": "下期我给大家",
+     "lead": -0.1,
+     "box": [
+      0.12,
+      0.12,
+      0.76,
+      0.52
+     ],
+     "props": {
+      "label": "NEXT EPISODE",
+      "title": "自动剪辑口播",
+      "date": "敬请期待",
+      "count": 3
+     }
+    },
+    {
+     "c": "title",
+     "cue": "下期再见",
+     "lead": -0.35,
+     "box": [
+      0.1,
+      0.72,
+      0.8,
+      0.16
+     ],
+     "props": {
+      "text": "我们下期再见",
+      "hl": "下期再见",
+      "size": 76,
+      "align": "center"
+     }
+    }
+   ]
   }
  ],
  "motionBlur": true,

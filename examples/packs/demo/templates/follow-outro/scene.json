@@ -1,0 +1,36 @@
+{
+ "scenes": [
+  {
+   "id": "follow",
+   "t0": 0,
+   "t1": 3.5,
+   "bg": [
+    {
+     "c": "fx-bg-aurora"
+    }
+   ],
+   "layers": [
+    {
+     "c": "fx-follow-card",
+     "at": 0.1,
+     "box": "zone",
+     "props": {
+      "name": "{{brand.name}}",
+      "bio": "{{bio}}",
+      "btn": "{{btn}}",
+      "done": "已关注",
+      "clickAt": 1.5
+     }
+    }
+   ]
+  }
+ ],
+ "presenter": [
+  {
+   "t": 0,
+   "state": "circle",
+   "pos": "br",
+   "dur": 0.5
+  }
+ ]
+}

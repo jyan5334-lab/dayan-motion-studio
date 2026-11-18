@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""大琰DAYAN Motion Studio — 口播自动剪辑 + 内置动效 命令行入口
+"""大琰DAYAN Motion Studio — 口播自动剪辑 + 动效 命令行入口
 
   python dms.py doctor                                   检查环境
   python dms.py asr      原片.mp4 工作目录                 逐字转写（字级时间码）→ words.json / raw.srt
@@ -15,8 +15,9 @@
   python dms.py render   工程目录 成片.mp4 [--workers 2]     逐帧渲染 + 字幕 + 混音 → MP4
   python dms.py check    成片.mp4                           帧数、时长、完整解码、响度
   python dms.py export   工程目录                           打包工程：分轨、SRT、Premiere/达芬奇 XML、HTML 工程
-  python dms.py template list|validate|show [id]          内置动效：列出 / 校验合同 / 查看槽位
-  python dms.py template render 内置动效ID payload.json 输出目录  单独渲染一个 内置动效片段
+  python dms.py pack list|install|update|new|check [包]   行业 Motion 模板包：列出 / 安装 / 更新 / 新建 / 自检
+  python dms.py template list|validate|show [包名:模板]   行业包里的模板：列出 / 校验合同 / 查看槽位
+  python dms.py template render 包名:模板 payload.json 输出目录  单独渲染一个模板片段
 """
 from __future__ import annotations
 import argparse, math, hashlib, json, math, os, re, shutil, subprocess, sys, tempfile, time
@@ -25,7 +26,10 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 sys.path.insert(0, str(HERE))
-VERSION = '1.11.1'
+def _read_version():
+    try: return json.loads((ROOT / 'package.json').read_text(encoding='utf-8')).get('version') or '0.0.0'
+    except Exception: return '0.0.0'
+VERSION = _read_version()   # 唯一来源：package.json（行业包的 requires.dms 按它判断）
 CACHE = Path(os.environ.get('DMS_CACHE', Path.home() / '.cache' / 'dayan-motion-studio'))
 CONFIG = Path(os.environ.get('DMS_CONFIG', Path.home() / '.dayan-motion-studio' / 'config.json'))   # 用户自己的品牌（文字墙等），不随技能分发
 
@@ -33,13 +37,31 @@ CONFIG = Path(os.environ.get('DMS_CONFIG', Path.home() / '.dayan-motion-studio' 
 NEUTRAL_BRAND = {'name': '', 'wall': ['MOTION · STUDIO', 'CREATE · WITH · AI'], 'mark': '', '_placeholder': True}
 EXAMPLE_BRAND = {'name': '品牌名', 'wall': ['品牌名-AI', 'BRAND · AI STUDIO'], 'mark': '品'}   # 动效样张里用的示例
 # =================================================================== 动效库（剪辑时现做、自动沉淀的新动效）
-def effect_dirs():
-    """技能自带 effects/ + 环境变量 DMS_EFFECT_PATHS 里的目录；每个动效一个文件夹（effect.json + component.js [+ style.css]）"""
+def effect_dirs(packs=()):
+    """技能自带 effects/ + 环境变量 DMS_EFFECT_PATHS 里的目录 + 指定行业包的 effects/（packs=None 表示全部已安装的包）；
+    每个动效一个文件夹（effect.json + component.js [+ style.css]）"""
     roots = [ROOT / 'effects'] + [Path(p) for p in os.environ.get('DMS_EFFECT_PATHS', '').split(os.pathsep) if p]
     out = []
     for r in roots:
         if r.exists(): out += [d for d in sorted(r.iterdir()) if (d / 'component.js').exists() and (d / 'effect.json').exists()]
+    if packs is None or packs:
+        from dms_packs import pack_effect_dirs
+        out += pack_effect_dirs(None if packs is None else list(packs))
     return out
+
+def active_packs(E, scenes=()):
+    """这条片子要带上的行业包：edit.json 的 packs + 用到的包模板 + 用到的包动效（fx-<包名>-…）"""
+    from dms_packs import discover_packs, need_pack
+    ids = set(E.get('packs') or [])
+    for s in scenes:
+        ref = s.get('_template') or s.get('template') or ''
+        if ':' in ref.split('@')[0]: ids.add(ref.split('@')[0].rsplit(':', 1)[0])
+    installed = [p['id'] for p in discover_packs()]
+    txt = json.dumps([s.get('layers') for s in scenes] + [E.get('globals')], ensure_ascii=False)
+    for pid in installed:
+        if f'"fx-{pid}-' in txt: ids.add(pid)
+    for pid in ids: need_pack(pid)
+    return sorted(ids)
 BUILTIN_COMPONENTS = None
 def builtin_components():
     global BUILTIN_COMPONENTS
@@ -440,7 +462,7 @@ SEM = [
     ('product', r'([A-Za-z][A-Za-z0-9\.\- ]{1,20}|小红书|抖音|飞书|剪映|豆包|即梦|微信|视频号|B站)', 'Logo 卡 logo / 软件窗口 window（有录屏优先用真录屏）'),
     ('quote', r'(他说|她说|它说|我说|网友|评论|有人问|私信)', '对话 chat / 引用 quote / 气泡 bubble'),
     ('question', r'(吗|呢|为什么|怎么|如何|是不是|对不对|什么)$', '问题卡 bubble / 巨字提问 title；人物回到全屏或大圆窗'),
-    ('cta', r'(关注|点赞|收藏|评论区|转发|下期|再见|拜拜|敬请期待|三连)', '结尾 CTA 内置动效 cta-outro；人物大圆窗居中'),
+    ('cta', r'(关注|点赞|收藏|评论区|转发|下期|再见|拜拜|敬请期待|三连)', '结尾 CTA：fx-follow-card / fx-next-episode / fx-end-brand；人物大圆窗居中'),
     ('time', r'(以前|现在|未来|昨天|今天|明天|每天|每晚|周|月|年|\d+点)', '时间线 timeline / 时钟卡；前后对比'),
 ]
 
@@ -540,6 +562,25 @@ def cmd_scaffold(ns):
             t0 = t1; cur = []
     if scenes: scenes[0]['energy'] = 1; scenes[-1]['energy'] = 1
     draft_layers(scenes, words, cw >= ch)
+    packs = [x for x in re.split(r'[,，\s]+', getattr(ns, 'packs', None) or '') if x]
+    if packs:   # 行业包：按语义 + 位置给每段挑模板；匹配明确（≥4 分）的直接放模板草稿，其余写提示
+        from dms_packs import need_pack, suggest_templates
+        for pid in packs: need_pack(pid)
+        used = {}; cap = max(1, round(len(scenes) * 0.35))   # 同一模板：开场 / 章节 / 结尾类一条片子一次，其余不超过 35% 的段落（不能千篇一律）
+        order = sorted(range(len(scenes)), key=lambda i: 0 if i in (0, len(scenes) - 1) else 1)   # 先给开头结尾挑
+        for i in order:
+            sc = scenes[i]
+            pos = 'first' if i == 0 else 'last' if i == len(scenes) - 1 else None
+            sug = suggest_templates(sc['say'], sc['hints'], packs, (cw, ch), pos)
+            if not sug: continue
+            sc['packHints'] = [f'{ref}  {title}（{why}；{sc_:d} 分）' for sc_, ref, title, why in sug]
+            ok = [x for x in sug if x[0] >= 4 and used.get(x[1], 0) < (1 if load_template(x[1])['contract'].get('role') in ('hook', 'chapter', 'cta', 'outro') else cap)]
+            if ok:
+                used[ok[0][1]] = used.get(ok[0][1], 0) + 1
+                t = load_template(ok[0][1]); c = t['contract']
+                sc['template'] = ok[0][1]; sc['draftTemplate'] = True
+                sc['slots'] = {x['id']: (x['default'] if 'default' in x else f"（填：{x.get('desc', x['id'])}）") for x in c.get('inputSlots', []) if x.get('required') or 'default' in x}
+                sc['layers'] = []
     keys = layout_plan(scenes, cw, ch, info.get('w') or 1080, info.get('h') or 1920)
     BR = ({'name': ns.brand_name or re.split(r'[-·\s]', ns.wall_main)[0], 'wall': [ns.wall_main, ns.wall_sub or ns.wall_main], 'mark': (ns.brand_name or ns.wall_main)[:1]}
           if getattr(ns, 'wall_main', None) else (load_brand(Path(ns.out).resolve().parent) or dict(NEUTRAL_BRAND)))
@@ -552,11 +593,14 @@ def cmd_scaffold(ns):
         'music': {'mode': 'none'},   # 默认不加背景音乐（用户 2026-11-07）；要配乐时改 generate
         'media': {}, 'camera': [], 'sfx': [], 'scenes': scenes,
     }
+    if packs: edit['packs'] = packs
     Path(ns.out).parent.mkdir(parents=True, exist_ok=True); jsave(ns.out, edit)
     log(f'分镜草稿 {len(scenes)} 段 → {ns.out}')
     for s in scenes:
         hs = '、'.join(f"{h['kind']}:{h['word']}" for h in s['hints'][:6])
         print(f"  {s['id']} {s['t0']:6.2f}–{s['t1']:6.2f}  {s['say'][:34]}{'…' if len(s['say']) > 34 else ''}\n      提示：{hs}")
+        if s.get('template'): print(f"      行业包模板（草稿，已放上）：{s['template']}  槽位待填：{', '.join(s.get('slots') or {})}")
+        elif s.get('packHints'): print(f"      行业包可选：{s['packHints'][0]}")
 
 # =================================================================== subs（人工润色字幕 → 自动对齐时间）
 def align_lines(words, lines):
@@ -617,20 +661,23 @@ def cmd_words(ns):
     for k in ns.keys:
         ts = find_word_times(W['words'], k); print(f'  {k}: {ts if ts else "未找到（检查识别错字，或用 asr-fixes 纠正）"}')
 
-# =================================================================== 内置动效（内置动效合同）
+# =================================================================== Motion 模板（放在行业包里，见 dms_packs.py）
 from dms_templates import discover, load_template, validate_template, expand_template  # noqa: E402
 
 def cmd_template(ns):
     if ns.action == 'list':
-        for t in discover():
+        from dms_packs import template_aspects
+        ts = discover()
+        if not ts: print('还没有可用的模板：主技能不内置模板，装了行业包（dms.py pack install …）后这里会列出包里的模板'); return
+        for t in ts:
             c = t['contract']; comp = c.get('composition', {})
-            print(f"  {c['templateId']}@{c['version']:8s} {c.get('status',''):12s} {comp.get('width')}x{comp.get('height')} {comp.get('durationInFrames', 0) / max(1, comp.get('fps', 60)):.1f}s  {c.get('title', '')}")
+            print(f"  {t['ref'] + '@' + c['version']:34s} {c.get('status',''):11s} {c.get('role', '-'):9s} {'/'.join(template_aspects(c)):18s} {comp.get('durationInFrames', 0) / max(1, comp.get('fps', 60)):.1f}s  {c.get('title', '')}")
     elif ns.action == 'validate':
         bad = 0
         for t in discover():
-            if ns.id and t['contract']['templateId'] != ns.id: continue
+            if ns.id and ns.id not in (t['ref'], t['contract']['templateId'], t.get('pack')): continue
             errs, warns = validate_template(t)
-            print(('  ✓ ' if not errs else '  ✗ ') + t['contract']['templateId'] + ('' if not errs else '\n     ' + '\n     '.join(errs)) + ('' if not warns else '\n     ⚠ ' + '\n     ⚠ '.join(warns)))
+            print(('  ✓ ' if not errs else '  ✗ ') + t['ref'] + ('' if not errs else '\n     ' + '\n     '.join(errs)) + ('' if not warns else '\n     ⚠ ' + '\n     ⚠ '.join(warns)))
             bad += bool(errs)
         sys.exit(1 if bad else 0)
     elif ns.action == 'show':
@@ -645,7 +692,7 @@ def cmd_template(ns):
         dur = payload.pop('_duration', None) or comp['durationInFrames'] / fps
         edit = {'schema': 'dayan-edit/1', 'title': t['contract']['templateId'], 'canvas': {'w': comp['width'], 'h': comp['height'], 'fps': fps}, 'theme': payload.pop('_theme', t['contract'].get('theme', 'dark-tech')),
                 'duration': dur, 'brand': EXAMPLE_BRAND, 'signature': {'enabled': False, 'name': EXAMPLE_BRAND['name'], 'pos': 'tl'}, 'subtitles': {'enabled': False}, 'music': {'mode': payload.pop('_music', 'none')},
-                'scenes': [{'template': f"{t['contract']['templateId']}@{t['contract']['version']}", 't0': 0, 't1': dur, 'slots': payload}]}
+                'scenes': [{'template': f"{t['ref']}@{t['contract']['version']}", 't0': 0, 't1': dur, 'slots': payload}]}
         if payload.get('presenter'): edit['master'] = payload['presenter']
         ep = out / 'edit.json'; jsave(ep, edit)
         cmd_build(argparse.Namespace(edit=str(ep), project=str(out / 'project')))
@@ -661,78 +708,189 @@ def _font(sz, bold=True):
         except Exception: pass
     return ImageFont.load_default()
 
-ORDER = ['hook-opener', 'chapter-card', 'compare-verdict', 'term-explainer', 'cta-outro', 'side-explainer']   # 按一期片子的顺序排；其余按名称
+def _demo_presenter(d, w, h, dur):
+    """样张用的示意人物（剪影，不放真人）：静帧循环成视频"""
+    from PIL import Image, ImageDraw
+    demo = d / f'demo_presenter_{w}x{h}.mp4'
+    if demo.exists(): return demo
+    img = Image.new('RGB', (w, h)); px = ImageDraw.Draw(img)
+    for y in range(h):
+        k = y / h; px.line([(0, y), (w, y)], fill=(int(44 + 30 * k), int(26 + 14 * k), int(70 + 26 * (1 - k))))
+    cx, u = w * 0.5, min(w, h)
+    px.ellipse([cx - u * 0.11, h * 0.2, cx + u * 0.11, h * 0.2 + u * 0.3], fill=(176, 150, 140))
+    px.rounded_rectangle([cx - u * 0.3, h * 0.2 + u * 0.33, cx + u * 0.3, h * 1.1], int(u * 0.15), fill=(22, 20, 28))
+    px.text((cx, h * 0.2 + u * 0.15), '人物画面（示意）', fill=(70, 50, 50), font=_font(int(u * 0.028)), anchor='mm')
+    img.save(d / 'demo.png')
+    run([FF, '-v', 'error', '-y', '-loop', '1', '-i', str(d / 'demo.png'), '-f', 'lavfi', '-i', 'anullsrc=r=48000:cl=stereo', '-t', str(dur + 0.5), '-r', '30',
+         '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-shortest', str(demo)])
+    return demo
 
-def _ordered(ts):
-    return sorted(ts, key=lambda t: (ORDER.index(t['contract']['templateId']) if t['contract']['templateId'] in ORDER else 99, t['contract']['templateId']))
+ASPECT_CANVAS = {'16:9': (1920, 1080), '4:3': (1440, 1080), '1:1': (1080, 1080), '3:4': (1080, 1440), '9:16': (1080, 1920)}
 
 def template_gallery(ns):
-    """每个内置动效出一张"动效样张"：从头到尾均匀截 12 帧（4×3），标时间点，顶部写名称、用途、横竖屏。不编号。
-    产物：templates/<动效>/style_sheet.png、preview.png（代表帧）、templates/_sheets/<名称>.png（全部样张一处）、templates/_gallery.png（单帧索引）。"""
+    """模板样张：每个模板按它支持的每种画幅各渲染 4 帧（配示意人物），拼成一张 sheet.png 放在模板文件夹里；页面报错直接失败。
+    ns.id 可以是模板（包名:模板）或包名；不写就是全部已安装模板。"""
     from PIL import Image, ImageDraw
-    ts = _ordered([t for t in discover() if t.get('impl')])
-    work = Path(ns.out or (ROOT / 'templates' / '_gallery_work')); work.mkdir(parents=True, exist_ok=True)
-    sheets_dir = ROOT / 'templates' / '_sheets'; sheets_dir.mkdir(exist_ok=True)
-    for old in sheets_dir.glob('*.png'): old.unlink()
-    N, cols = 12, 4
-    shots = []
+    from dms_packs import template_aspects
+    ts = [t for t in discover() if t.get('impl')]
+    if ns.id: ts = [t for t in ts if ns.id in (t['ref'], t.get('pack'), t['contract']['templateId'])]
+    if not ts: raise SystemExit(f'✗ 没有找到模板 {ns.id or ""}（dms.py template list）')
+    bad = []
     for t in ts:
-        c = t['contract']; tid = c['templateId']; comp = c['composition']; fps = comp.get('fps', 60)
-        pl = t['dir'] / 'example.payload.json'; payload = jload(pl) if pl.exists() else {}
-        dur = payload.pop('_duration', None) or comp['durationInFrames'] / fps
-        times = [round(dur * (0.04 + 0.92 * i / (N - 1)), 2) for i in range(N)]
-        key = float(c.get('previewAt') or round(dur * 0.8, 2))
-        edit = {'schema': 'dayan-edit/1', 'title': tid, 'canvas': {'w': comp['width'], 'h': comp['height'], 'fps': fps}, 'theme': payload.pop('_theme', c.get('theme', 'dark-tech')),
-                'duration': dur, 'signature': {'enabled': False}, 'subtitles': {'enabled': False}, 'music': {'mode': 'none'},
-                'scenes': [{'template': f"{tid}@{c['version']}", 't0': 0, 't1': dur, 'slots': payload}]}
-        d = work / tid; d.mkdir(exist_ok=True)
-        if payload.pop('_demoPresenter', False):   # 样张用示意人物（剪影），不放真人
-            demo = d / 'demo_presenter.mp4'
-            if not demo.exists():
-                img = Image.new('RGB', (comp['width'], comp['height'])); px = ImageDraw.Draw(img); Wd, Hd = img.size
-                for y in range(Hd):
-                    k = y / Hd; px.line([(0, y), (Wd, y)], fill=(int(44 + 30 * k), int(26 + 14 * k), int(70 + 26 * (1 - k))))
-                for i in range(9): px.rectangle([Wd * 0.06 + i * 70, Hd * 0.05, Wd * 0.06 + i * 70 + 26, Hd], fill=(64, 40, 104))
-                px.rectangle([Wd * 0.66, Hd * 0.42, Wd * 0.95, Hd * 0.62], fill=(30, 22, 44)); px.ellipse([Wd * 0.74, Hd * 0.12, Wd * 0.8, Hd * 0.22], outline=(255, 90, 200), width=6)
-                cx = Wd * 0.5; px.ellipse([cx - 120, Hd * 0.2, cx + 120, Hd * 0.52], fill=(176, 150, 140)); px.rounded_rectangle([cx - 330, Hd * 0.55, cx + 330, Hd * 1.1], 160, fill=(22, 20, 28))
-                px.rectangle([cx - 70, Hd * 0.48, cx + 70, Hd * 0.58], fill=(160, 134, 126))
-                fnt = _font(30); px.text((cx, Hd * 0.36), '人物画面（示意）', fill=(70, 50, 50), font=fnt, anchor='mm')
-                img.save(d / 'demo.png')
-                run([FF, '-v', 'error', '-y', '-loop', '1', '-i', str(d / 'demo.png'), '-f', 'lavfi', '-i', 'anullsrc=r=48000:cl=stereo', '-t', str(dur + 0.5), '-r', '30', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-shortest', str(demo)])
-            edit['master'] = str(demo); edit['presenter'] = {'face': {'cx': 0.5, 'cy': 0.34, 'h': 0.3}}
-        jsave(d / 'edit.json', edit)
-        cmd_build(argparse.Namespace(edit=str(d / 'edit.json'), project=str(d / 'project')))
-        _node_render(d / 'project', ['--stills', ','.join(str(x) for x in times + [key]), '--outdir', str(d)])
-        shutil.copy(d / f't{key:.2f}.png', t['dir'] / 'preview.png')
-        # 动效样张
-        tw, th, gap, head = 480, int(480 * comp['height'] / comp['width']), 16, 150
-        rows = (N + cols - 1) // cols
-        S = Image.new('RGB', (cols * tw + (cols + 1) * gap, head + rows * (th + 40) + rows * gap), '#0E1014'); dr = ImageDraw.Draw(S)
-        title = c.get('title', tid); name = title.split('：')[0]
-        lay = {'landscape': '仅横屏', 'portrait': '仅竖屏', 'any': '横竖通用'}.get(comp.get('layout', 'landscape'), '')
-        dr.text((gap, 22), title, fill='#E9EEF4', font=_font(36))
-        use = re.sub(r'（[^）]*）|\([^)]*\)', '', c.get('use', '')).strip('。 ')
-        use = use if len(use) <= 70 else use[:69] + '…'
-        dr.text((gap, 92), f"{tid} · {dur:.1f} 秒 · {comp['width']}×{comp['height']} {lay} · 用途：{use}", fill='#8A93A0', font=_font(20, False))
-        for i, tt in enumerate(times):
-            x = gap + (i % cols) * (tw + gap); y = head + (i // cols) * (th + 40 + gap)
-            S.paste(Image.open(d / f't{tt:.2f}.png').convert('RGB').resize((tw, th)), (x, y))
-            dr.text((x + 2, y + th + 6), f'{i + 1:02d}   {tt:.2f}s', fill='#C9D1DB', font=_font(20, False))
-        sp = t['dir'] / 'style_sheet.png'; S.save(sp); shutil.copy(sp, sheets_dir / f"{name}.png")
-        shots.append((name, tid, t['dir'] / 'preview.png'))
-        log('动效样张', name, tid, '→', sp)
-    # 单帧总览索引
-    tw, th, cap, gap, cols2 = 640, 360, 84, 24, 3
-    rows = (len(shots) + cols2 - 1) // cols2
-    G = Image.new('RGB', (cols2 * tw + (cols2 + 1) * gap, rows * (th + cap) + (rows + 1) * gap + 80), '#0E1014'); dr = ImageDraw.Draw(G)
-    dr.text((gap, 22), '内置动效索引 · 每个内置动效的完整样张见 templates/_sheets/', fill='#E9EEF4', font=_font(30))
-    for i, (title, tid, pth) in enumerate(shots):
-        x = gap + (i % cols2) * (tw + gap); y = 80 + gap + (i // cols2) * (th + cap + gap)
-        G.paste(Image.open(pth).convert('RGB').resize((tw, th)), (x, y))
-        dr.text((x + 2, y + th + 14), title, fill='#E9EEF4', font=_font(28))
-        dr.text((x + 2, y + th + 52), tid, fill='#8A93A0', font=_font(18, False))
-    G.save(ROOT / 'templates' / '_gallery.png'); log('内置动效索引 →', ROOT / 'templates' / '_gallery.png')
-    if not ns.out: shutil.rmtree(work, ignore_errors=True)
+        c = t['contract']; comp = c['composition']; fps = comp.get('fps', 60)
+        pl = t['dir'] / 'example.payload.json'; payload0 = jload(pl) if pl.exists() else {}
+        work = Path(ns.out or (t['dir'] / '_check')); shutil.rmtree(work, ignore_errors=True); work.mkdir(parents=True)
+        rows = []
+        pref = [s for s in ('full', 'side', 'circle', 'pip', 'card', 'circle-big', 'window', 'story', 'hidden') if s in (c.get('presenterCompat') or ['full'])] or ['full']
+        for asp in template_aspects(c):
+            w, h = ASPECT_CANVAS[asp]; payload = dict(payload0)
+            dur = payload.pop('_duration', None) or comp['durationInFrames'] / fps
+            edit = {'schema': 'dayan-edit/1', 'title': t['ref'], 'canvas': {'w': w, 'h': h, 'fps': 30}, 'theme': payload.pop('_theme', c.get('theme', 'dark-tech')),
+                    'duration': dur, 'brand': EXAMPLE_BRAND, 'signature': {'enabled': False}, 'subtitles': {'enabled': False}, 'music': {'mode': 'none'},
+                    'scenes': [{'template': f"{t['ref']}@{c['version']}", 't0': 0, 't1': dur, 'slots': payload}]}
+            sub_ = work / asp.replace(':', 'x'); sub_.mkdir()
+            edit['master'] = str(_demo_presenter(work, w, h, dur))
+            edit['presenter'] = {'face': {'cx': 0.5, 'cy': 0.3, 'h': 0.28}, 'keys': [{'t': 0, 'state': pref[0], **({'pos': 'r'} if pref[0] in ('side', 'card') else {'pos': 'br'} if pref[0] in ('circle', 'pip') else {})}]}
+            jsave(sub_ / 'edit.json', edit)
+            cmd_build(argparse.Namespace(edit=str(sub_ / 'edit.json'), project=str(sub_ / 'p')))
+            times = [round(dur * f, 2) for f in (0.15, 0.4, 0.7, 0.95)]
+            r = subprocess.run([NODE, str(HERE / 'render.mjs'), str(sub_ / 'p'), '--stills', ','.join(map(str, times))], cwd=str(ROOT), capture_output=True, text=True)
+            errs = [l for l in (r.stdout + r.stderr).splitlines() if re.search(r'\[page\]|\[console\]|TypeError|ReferenceError|SyntaxError', l)]
+            if r.returncode or errs: bad.append(f"{t['ref']} {asp}：" + ' / '.join(errs[:4] or [r.stderr[-300:]])); continue
+            rows.append((asp, w, h, [sub_ / 'p' / 'stills' / f't{x:.2f}.png' for x in times], times))
+        if not rows: continue
+        th = 300; gap = 14; head = 110
+        widths = [int(th * w / h) for _, w, h, _, _ in rows]; tw = max(widths) * 4 + gap * 5
+        S = Image.new('RGB', (tw, head + len(rows) * (th + 44)), '#0E1014'); dr = ImageDraw.Draw(S)
+        dr.text((gap, 18), f"{c.get('title', t['ref'])}", fill='#E9EEF4', font=_font(34))
+        dr.text((gap, 66), f"{t['ref']} · {c.get('role', '')} · 人物 {pref[0]} · {'/'.join(template_aspects(c))}", fill='#8A93A0', font=_font(20, False))
+        for i, (asp, w, h, fs, times) in enumerate(rows):
+            y = head + i * (th + 44); cw_ = int(th * w / h)
+            for j, f in enumerate(fs):
+                x = gap + j * (cw_ + gap)
+                if f.exists(): S.paste(Image.open(f).convert('RGB').resize((cw_, th)), (x, y))
+                dr.text((x, y + th + 8), f'{asp}  {times[j]:.2f}s', fill='#C9D1DB', font=_font(18, False))
+        S.save(t['dir'] / 'sheet.png'); shutil.copy(rows[0][3][-2], t['dir'] / 'preview.png') if rows[0][3][-2].exists() else None
+        if not ns.out: shutil.rmtree(work, ignore_errors=True)
+        log('模板样张', t['ref'], '→', t['dir'] / 'sheet.png')
+    if bad: raise SystemExit('✗ 渲染出错：\n  ' + '\n  '.join(bad))
+
+# =================================================================== 行业模板包（Motion 模板包）
+PACK_README = """# {name}
+
+行业：{industry}
+
+{desc}
+
+## 包里有什么
+- templates/：Motion 模板（每个一个文件夹，规范见主技能 references/motion-templates.md）
+- effects/：这个行业专用的动效（id 以 fx-{id}- 开头）
+
+## 怎么用
+1. 安装：`python scripts/dms.py pack install <这个包的仓库地址 / zip / 文件夹>`
+2. 剪辑时：edit.json 写 `"packs": ["{id}"]`（或 scaffold 加 `--packs {id}`），分镜会优先匹配包里的模板
+3. 自检：`python scripts/dms.py pack check {id} --render`
+"""
+
+def _copy_pack(src, dst):
+    if dst.exists(): shutil.rmtree(dst)
+    shutil.copytree(src, dst, ignore=shutil.ignore_patterns('_check', '__pycache__'))
+
+def _fetch_pack(src, tmp):
+    """把 git 地址 / zip / 文件夹 取到临时目录，返回包的根目录（里面有 pack.json）"""
+    s = str(src)
+    if re.match(r'^(https?://|git@)', s) or s.endswith('.git'):
+        r = subprocess.run(['git', 'clone', '--depth', '1', s, str(tmp / 'repo')], capture_output=True, text=True)
+        if r.returncode: raise SystemExit(f'✗ 克隆失败：{r.stderr.strip()[-300:]}')
+        base = tmp / 'repo'
+    elif s.lower().endswith('.zip'):
+        import zipfile
+        with zipfile.ZipFile(s) as z: z.extractall(tmp / 'zip')
+        base = tmp / 'zip'
+    else:
+        base = Path(s).expanduser().resolve()
+        if not base.exists(): raise SystemExit(f'✗ 找不到 {s}')
+    if (base / 'pack.json').exists(): return base
+    hits = [p.parent for p in base.rglob('pack.json') if len(p.relative_to(base).parts) <= 3]
+    if len(hits) != 1: raise SystemExit(f'✗ {s} 里{"没有" if not hits else "有多个"} pack.json（一个行业包的根目录要有且只有一个 pack.json）')
+    return hits[0]
+
+def cmd_pack(ns):
+    """行业模板包：list 列出 / install 安装 / update 更新 / new 新建骨架 / check 自检（--render 出样张）"""
+    import dms_packs as PK
+    act = ns.action
+    if act == 'list':
+        ps = PK.discover_packs()
+        if not ps: print(f'还没有安装行业包（安装位置 {PK.pack_home()}）：dms.py pack install <仓库地址 / zip / 文件夹>'); return
+        for p in ps:
+            m = p['meta']; nt = len(list((p['dir'] / 'templates').glob('*/template.motion.json'))) if (p['dir'] / 'templates').exists() else 0
+            nf = len(PK.pack_effect_dirs([p['id']]))
+            print(f"  {p['id']:16s} v{m.get('version', '?'):8s} {m.get('industry', ''):10s} 模板 {nt} · 动效 {nf}  要求主技能 {(m.get('requires') or {}).get('dms', '-')}  {'✓' if p['ok'] else '✗ ' + p['why']}\n      {m.get('name', '')}：{m.get('desc', '')}  ({p['dir']})")
+        return
+    if act == 'install':
+        if not ns.target: raise SystemExit('✗ 要给包的来源：git 仓库地址、zip 文件或文件夹')
+        with tempfile.TemporaryDirectory() as td:
+            base = _fetch_pack(ns.target, Path(td)); m = jload(base / 'pack.json'); pid = m.get('id', '')
+            if not PK.PACK_ID.match(pid): raise SystemExit(f'✗ pack.json 的 id "{pid}" 不合规（小写字母、数字、连字符）')
+            dst = PK.pack_home() / pid
+            if dst.exists() and not ns.force: raise SystemExit(f'✗ 已经装了 {pid}（{dst}）：更新用 dms.py pack update {pid}，要覆盖加 --force')
+            dst.parent.mkdir(parents=True, exist_ok=True); _copy_pack(base, dst)
+        PK.discover_packs(refresh=True); p = PK.get_pack(pid)
+        E_, W_ = PK.validate_pack(p, {d.name for d in (ROOT / 'effects').iterdir()})
+        print(f"✓ 已安装 {pid} v{m.get('version')} → {dst}" + ('' if p['ok'] else f"\n✗ 但{p['why']}：先更新主技能才能用"))
+        for x in E_: print('  ✗ ' + x)
+        for x in W_: print('  ⚠ ' + x)
+        if E_: print('  这个包没通过自检，调用时可能出错：联系包作者，或 dms.py pack check ' + pid)
+        return
+    if act == 'update':
+        ps = [PK.get_pack(ns.target)] if ns.target else PK.discover_packs()
+        if ns.target and not ps[0]: raise SystemExit(f'✗ 没有安装 {ns.target}')
+        for p in ps:
+            d, old = p['dir'], p['meta'].get('version')
+            if (d / '.git').exists():
+                r = subprocess.run(['git', '-C', str(d), 'pull', '--ff-only'], capture_output=True, text=True)
+                if r.returncode: print(f"  ✗ {p['id']} 拉取失败：{r.stderr.strip()[-200:]}"); continue
+            elif p['meta'].get('repo'):
+                with tempfile.TemporaryDirectory() as td:
+                    try: base = _fetch_pack(p['meta']['repo'], Path(td))
+                    except SystemExit as e: print(f"  ✗ {p['id']} {e}"); continue
+                    new = jload(base / 'pack.json').get('version')
+                    if PK.vtuple(new) > PK.vtuple(old): _copy_pack(base, d)
+            else: print(f"  - {p['id']}：不是从 git 安装、pack.json 也没写 repo，没法自动更新"); continue
+            now = jload(d / 'pack.json').get('version')
+            print(f"  ✓ {p['id']}：{old} → {now}" if now != old else f"  ✓ {p['id']}：已是最新 {now}")
+        PK.discover_packs(refresh=True)
+        return
+    if act == 'new':
+        pid = ns.target or ''
+        if not PK.PACK_ID.match(pid): raise SystemExit('✗ 包名只能用小写字母、数字和连字符（字母开头，2–31 位），例如 ai-tech')
+        dst = Path(ns.dir).expanduser().resolve() / pid if ns.dir else PK.pack_home() / pid
+        if dst.exists(): raise SystemExit(f'✗ {dst} 已存在')
+        (dst / 'templates').mkdir(parents=True); (dst / 'effects').mkdir()
+        meta = {'schema': PK.PACK_SCHEMA, 'id': pid, 'name': ns.name or pid, 'version': '0.1.0', 'industry': ns.industry or '（行业，例如 AI 科技）',
+                'desc': '（一句话：这个包适合什么口播、整体风格是什么）', 'requires': {'dms': f'>={VERSION}'}, 'repo': '', 'author': '', 'license': 'MIT'}
+        jsave(dst / 'pack.json', meta)
+        (dst / 'README.md').write_text(PACK_README.format(**meta), encoding='utf-8')
+        print(f'✓ 行业包骨架 → {dst}\n  照着 {ROOT / "examples" / "packs" / "demo-pack"} 的写法加模板和动效；规范见 references/motion-templates.md；写完 dms.py pack check {pid} --render')
+        return
+    if act == 'check':
+        tgt = ns.target or ''
+        pth = Path(tgt).expanduser()
+        if tgt and pth.is_dir() and (pth / 'pack.json').exists():   # 还没安装的包（开发中的文件夹）
+            os.environ['DMS_PACK_PATHS'] = os.pathsep.join([str(pth.resolve())] + [x for x in os.environ.get('DMS_PACK_PATHS', '').split(os.pathsep) if x])
+            PK.discover_packs(refresh=True); tgt = jload(pth / 'pack.json').get('id', '')
+        p = PK.get_pack(tgt)
+        if not p: raise SystemExit(f'✗ 没有找到行业包 {ns.target}（写包名，或包所在的文件夹）')
+        E_, W_ = PK.validate_pack(p, {d.name for d in (ROOT / 'effects').iterdir()})
+        print(f"行业包 {p['id']} v{p['meta'].get('version')}（{p['dir']}）" + ('' if p['ok'] else f"  ✗ {p['why']}"))
+        for x in E_: print('  ✗ ' + x)
+        for x in W_: print('  ⚠ ' + x)
+        if E_ or not p['ok']: raise SystemExit(1)
+        if ns.render:
+            if any(t.get('pack') == p['id'] for t in discover()): template_gallery(argparse.Namespace(id=p['id'], out=None))
+            for d in PK.pack_effect_dirs([p['id']]): cmd_effect(argparse.Namespace(action='check', id=d.name, name=None, use=None, pack=p['id'], force=False))
+        print('✓ 自检通过' + ('（样张已出：每个模板文件夹里的 sheet.png、每个动效文件夹里的 sheet.png，必须打开看）' if ns.render else '（加 --render 再按画幅出样张）'))
+        return
 
 FX_JS = """/* {name}（{id}）—— 剪辑时现做的新动效，已沉淀进动效库
    什么时候用：{use}
@@ -766,20 +924,51 @@ FX_JS = """/* {name}（{id}）—— 剪辑时现做的新动效，已沉淀进�
 FX_CSS = """.{id} {{ position: absolute; inset: 0; container-type: size; display: flex; flex-direction: column; justify-content: center; gap: 3cqh; }}
 .{id} .it {{ font: 800 min(6cqw, 11cqh)/1.2 var(--title-font); color: var(--fg); }}
 """
+def _similar_effects(name, use, limit=3):
+    """新建动效前查重：和动效库 + 已装行业包里的动效、引擎组件比"名称 + 用途"——新动效的描述有多少（二字片段）已经被某个现有动效覆盖"""
+    import dms_catalog as K
+    def grams(t):
+        t = re.sub(r'[\s，。、“”"（）()：:；;/·\-]', '', str(t).lower()); return {t[i:i + 2] for i in range(len(t) - 1)}
+    q = grams(f'{name}{use}')
+    if not q: return []
+    out = []
+    for it in K.components() + K.effects(with_packs=True):
+        g = grams(f"{it.get('name', '')}{it.get('use', '')}")
+        if g: out.append((len(q & g) / len(q), it['src'], it['id'], it.get('name', '')))
+    return [x for x in sorted(out, reverse=True)[:limit] if x[0] >= 0.1]
+
 def cmd_effect(ns):
-    """动效库：new 新建骨架 / check 三种画幅出样张 / list 列出。剪辑时现做的新动效都走这里沉淀。"""
+    """动效库：new 新建骨架 / check 三种画幅出样张 / list 列出。剪辑时现做的新动效都走这里沉淀。
+    存档分流（用户 2026-11-17）：通用的存主技能 effects/；只有某个行业才用的加 --pack <包名> 存进那个行业包（id 要 fx-<包名>- 开头）。"""
     lib = ROOT / 'effects'; lib.mkdir(exist_ok=True)
+    pid = getattr(ns, 'pack', None)
+    if pid:
+        from dms_packs import need_pack
+        lib = need_pack(pid)['dir'] / 'effects'; lib.mkdir(exist_ok=True)
     if ns.action == 'list':
-        ds = effect_dirs()
+        ds = effect_dirs(None)
         if not ds: print('动效库还是空的（剪辑时现做的新动效会自动存进 effects/）'); return
         for d in ds:
-            m = jload(d / 'effect.json'); print(f"  {m['id']:<22} {m.get('name', '')}  ·  {m.get('use', '')}")
+            m = jload(d / 'effect.json'); tag = '' if d.parent == ROOT / 'effects' else f'[{d.parent.parent.name}] '
+            print(f"  {tag}{m['id']:<22} {m.get('name', '')}  ·  {m.get('use', '')}")
         return
     if not ns.id: raise SystemExit('✗ 要给动效 id（英文小写和连字符，如 fx-before-after）')
     fid = ns.id; d = lib / fid
+    if ns.action != 'new' and not d.exists():
+        d = next((x for x in effect_dirs(None) if x.name == fid), d)
     if ns.action == 'new':
         if fid in builtin_components(): raise SystemExit(f'✗ {fid} 和引擎自带组件重名，换一个（建议 fx- 开头）')
-        if d.exists(): raise SystemExit(f'✗ 动效库里已经有 {fid}：直接改 {d}')
+        if pid and not fid.startswith(f'fx-{pid}-'): raise SystemExit(f'✗ 存进行业包 {pid} 的动效 id 要以 fx-{pid}- 开头（例如 fx-{pid}-{fid.removeprefix("fx-")}）')
+        if not pid:
+            from dms_packs import discover_packs
+            if any(fid.startswith(f"fx-{p['id']}-") for p in discover_packs()): raise SystemExit(f'✗ {fid} 用了行业包的前缀：通用动效换个名字，行业专属的加 --pack')
+        dup = next((x for x in effect_dirs(None) if x.name == fid), None)
+        if dup: raise SystemExit(f'✗ 已经有 {fid}：直接改 {dup}')
+        sim = _similar_effects(ns.name or fid, ns.use or '')
+        if sim:
+            print('⚠ 先查重：这些已有的动效和你要做的有点像，能直接用或改进就不要新建（改进旧的比新建一个相似的更好）：')
+            for sc, src, xid, nm in sim: print(f'   {sc:.2f}  [{src}] {xid}  {nm}')
+            if sim[0][0] >= 0.3 and not getattr(ns, 'force', False): raise SystemExit(f'✗ 和 {sim[0][2]} 太像了（{sim[0][0]:.2f}）：确实要新建就加 --force')
         d.mkdir(parents=True)
         meta = {'id': fid, 'name': ns.name or fid, 'use': ns.use or '（说到什么时用：写清楚语义）', 'created': time.strftime('%Y-%m-%d'), 'version': '1.0.0',
                 'props': '（主要参数说明）', 'ref': '（参考了哪种风格的哪种做法，只写代号，如 C2 无限画布横移）', 'example': {'dur': 4.0, 'props': {'items': ['第一条', '第二条', '第三条']}, 'box': {'landscape': 'center', 'portrait': 'center'}}}
@@ -790,7 +979,7 @@ def cmd_effect(ns):
         return
     if ns.action == 'check':
         """三种画幅（16:9 1920×1080 / 4:3 1440×1080 / 9:16 1080×1920）各渲染 4 帧，拼成 sheet.png；页面报错直接失败"""
-        if not d.exists(): raise SystemExit(f'✗ 动效库里没有 {fid}')
+        if not d.exists(): raise SystemExit(f'✗ 动效库和已装行业包里都没有 {fid}')
         from PIL import Image, ImageDraw
         m = jload(d / 'effect.json'); ex = m.get('example') or {}; dur = float(ex.get('dur', 4))
         work = d / '_check'; shutil.rmtree(work, ignore_errors=True); work.mkdir()
@@ -848,11 +1037,11 @@ def cmd_kickoff(ns):
     if fx:
         print('（不用问用户）动效库里剪辑时沉淀的新动效，按 id 当组件用：')
         for d in fx: m = jload(d / 'effect.json'); print(f"   {m['id']}  {m.get('name', '')}：{m.get('use', '')}")
-    ts = [t['contract'] for t in _ordered([t for t in discover() if t.get('impl')])]
-    print('（不用问用户）内置动效，剪辑时按语义决定是否调用；用户问起时发 templates/_sheets/ 的动效样张：')
-    for c in ts:
-        lay = c.get('composition', {}).get('layout', 'landscape')
-        print(f"   {c['templateId']}  {c.get('title', c['templateId'])}  [{'仅横屏' if lay == 'landscape' else '横竖通用' if lay == 'any' else '仅竖屏'}]")
+    from dms_packs import discover_packs
+    pk = discover_packs()
+    if pk:
+        print('（不用问用户）本机已安装的行业模板包：选题属于这个行业时，edit.json 写 "packs": ["包名"]（scaffold 加 --packs），分镜会优先匹配包里的模板：')
+        for p in pk: print(f"   {p['id']}  {p['meta'].get('name', '')} v{p['meta'].get('version', '?')} · {p['meta'].get('industry', '')}{'' if p['ok'] else '  ✗ ' + p['why']}")
 
 # =================================================================== lint
 def cmd_lint(ns):
@@ -886,6 +1075,16 @@ def cmd_lint(ns):
     keys = sorted([k for k in ((E.get('presenter') or {}).get('keys') or []) if 't' in k], key=lambda k: k['t'])
     for a, b in zip(keys, keys[1:]):
         if b['t'] - a['t'] < 0.8: warns.append(f"人物窗 {a['t']:.2f}→{b['t']:.2f} 变化太快（<0.8s），观众会晕")
+    from dms_packs import get_pack
+    for pid in E.get('packs') or []:
+        p = get_pack(pid)
+        if not p: probs.append(f'packs 里的行业包 {pid} 没有安装（dms.py pack install …）')
+        elif not p['ok']: probs.append(f'行业包 {pid} {p["why"]}')
+    for s in E.get('scenes', []):
+        if s.get('template'):
+            left = [k for k, v in (s.get('slots') or {}).items() if isinstance(v, str) and ('（填' in v or v.startswith('（'))]
+            if left: probs.append(f"{s.get('id')}: 模板 {s['template']} 的槽位还是草稿占位：{', '.join(left)}（填成本期口播内容）")
+            if s.get('draftTemplate'): warns.append(f"{s.get('id')}: 模板 {s['template']} 是分镜自动挑的（draftTemplate）：确认合适后删掉这个标记")
     print(('✓ 无硬错误' if not probs else '✗ 错误：\n  ' + '\n  '.join(probs)))
     # 文字墙标准（2026-11-07 定稿）：偏离默认值就提醒
     WALL_STD = {'layout': 'tight', 'blur': 5, 'k': 1.55, 'lh': 1.32, 'gap': 1.6, 'tilt': 0, 'mainStyle': None, 'mainOp': 0.2, 'subFade': 1.35}
@@ -1061,6 +1260,10 @@ def layout_density(T):
     pr = T.get('presenter') or {}; cw, ch = T['canvas']['w'], T['canvas']['h']
     a = (pr.get('srcW') or 0) / (pr.get('srcH') or 1)
     E_PILLAR[0] = (ch * a / cw) if a and a / (cw / ch) < 0.75 else 0
+    fc = pr.get('face')
+    if isinstance(fc, list) and fc:
+        import statistics as _st; fc = {k: _st.median(x[k] for x in fc) for k in ('cx', 'cy', 'h')}
+    E_FACE[0] = fc if isinstance(fc, dict) else None
     empty, gaps = [], []
     for S in T.get('scenes', []):
         t0, t1 = S['t0'], S['t1']; run = None; low = None
@@ -1198,7 +1401,7 @@ def resolve_cues(obj, words, base_at=None, window=None):
         for x in obj: resolve_cues(x, words, base_at, window)
         return
     if not isinstance(obj, dict): return
-    if 'cue' in obj and not obj['cue']: obj.pop('cue')          # 内置动效里没填的 cue 槽位：用自然时间
+    if 'cue' in obj and not obj['cue']: obj.pop('cue')          # 模板里没填的 cue 槽位：用自然时间
     if 'cue' in obj and words is not None:
         a, b = window or (None, None)
         ts = find_word_times(words, obj['cue'], after=(obj.get('after', a)), before=b)
@@ -1255,7 +1458,7 @@ ZONES = {
     'portrait': {  # 9:16：人物多在上方，内容在中下部（字幕在 0.78 以下）
         'full': [0.06, 0.46, 0.88, 0.3], 'side-r': [0.05, 0.4, 0.9, 0.37], 'side-l': [0.05, 0.4, 0.9, 0.37],
         'card-r': [0.05, 0.47, 0.9, 0.3], 'card-l': [0.05, 0.47, 0.9, 0.3], 'story-r': [0.05, 0.6, 0.9, 0.18], 'story-l': [0.05, 0.6, 0.9, 0.18],
-        'corner-r': [0.05, 0.22, 0.9, 0.54], 'corner-l': [0.05, 0.22, 0.9, 0.54], 'cutout-l': [0.05, 0.1, 0.9, 0.48], 'cutout-r': [0.05, 0.1, 0.9, 0.48],
+        'corner-r': [0.05, 0.1, 0.9, 0.44], 'corner-l': [0.05, 0.1, 0.9, 0.44], 'cutout-l': [0.05, 0.1, 0.9, 0.48], 'cutout-r': [0.05, 0.1, 0.9, 0.48],
         'window-l': [0.05, 0.47, 0.9, 0.3], 'window-r': [0.05, 0.47, 0.9, 0.3], 'big-c': [0.05, 0.06, 0.9, 0.08], 'none': [0.06, 0.12, 0.88, 0.64]},
 }
 def _aspect_kind(w, h): return 'portrait' if h > w else ('narrow' if w / h < 1.5 else 'wide')
@@ -1279,11 +1482,25 @@ def zone_key(k):
     return 'none'
 E_HAS_PRES = [True]
 E_PILLAR = [0]   # 人物全屏且原片比画布窄很多（竖拍放横屏，左右留边）时 = 人物那一竖条占画布宽度的比例
+E_FACE = [None]  # 人物全屏时脸的位置 {cx, cy, h}（原片坐标比例）：内容区避开脸
+
+def _full_zone_by_face(cw, ch):
+    """横屏、人物全屏：内容区放在脸的一侧（默认左侧），右边界停在脸左边留一点空；脸偏左就放右侧"""
+    f = E_FACE[0]
+    if not f or ch > cw or f.get('cx') is None: return None
+    cx, fh = float(f['cx']), float(f.get('h') or 0.3)
+    fw = fh * 0.8 * ch / cw            # 脸宽（画布宽度比例），按全屏铺满估算
+    x1 = cx - fw / 2 - 0.05            # 左侧内容区的右边界
+    if x1 >= 0.3: return [0.04, 0.1, min(0.52, x1 - 0.04), 0.68]
+    x0 = cx + fw / 2 + 0.05
+    if x0 <= 0.7: return [x0, 0.1, min(0.52, 0.96 - x0), 0.68]
+    return [0.04, 0.1, 0.26, 0.68]
 def zone_box(E, t, name):
     cw, ch = E['canvas']['w'], E['canvas']['h']
     k = presenter_at(E, t); zk = zone_key(k)
     if zk == 'full-v':   # 竖拍放在横屏中间：内容放在人物左侧那一条（不压脸）
         pw = E_PILLAR[0]; z = [0.03, 0.1, max(0.2, 0.5 - pw / 2 - 0.05), 0.68]
+    elif zk == 'full' and _full_zone_by_face(cw, ch): z = _full_zone_by_face(cw, ch)
     else: z = ZONES[_aspect_kind(cw, ch)][zk]
     x, y, w, h = z; port = ch > cw; g = 0.025
     sub = name.split('-', 1)[1] if '-' in name else ''
@@ -1296,6 +1513,7 @@ def zone_box(E, t, name):
     return [x, y, w, h]
 def resolve_zones(E, scenes):
     E_HAS_PRES[0] = E.get('presenter') is not None
+    E_FACE[0] = E.get('_face') if isinstance(E.get('_face'), dict) else None
     a = E.get('_srcAspect'); cw, ch = E['canvas']['w'], E['canvas']['h']
     E_PILLAR[0] = (ch * a / cw) if a and a / (cw / ch) < 0.75 else 0
     for S in scenes:
@@ -1360,9 +1578,18 @@ def cmd_build(ns):
     E['_words'] = words
     try:
         mp = (base / E['master']).resolve() if E.get('master') else None
-        if mp and mp.exists(): _i = probe(mp); E['_srcAspect'] = _i['w'] / _i['h']
-    except Exception: pass
-    scenes = expand_all(E)   # 先展开 内置动效（内置动效可能追加人物关键帧与镜头）
+        if mp and mp.exists():
+            _i = probe(mp); E['_srcAspect'] = _i['w'] / _i['h']
+            # 脸的位置提前算好（有缓存）：人物全屏时内容区要避开脸
+            fc = (E.get('presenter') or {}).get('face', 'auto') if E.get('presenter') is not None else None
+            if isinstance(fc, dict): E['_face'] = fc
+            elif fc in ('auto', None) and E.get('presenter') is not None:
+                fj = P / 'face.json'; pf0 = min(_i['fps'], FPS, float((E.get('presenter') or {}).get('fps') or 999)); st0 = f"{sha(mp)}-{pf0:.3f}"
+                if not fj.exists() or jload(fj).get('_src') != st0:
+                    fd = face_track(mp, fj); fd['_src'] = st0; jsave(fj, fd)
+                E['_face'] = jload(fj).get('median')
+    except Exception as e: log('（提前读取原片信息失败，内容区按默认排：', e, '）')
+    scenes = expand_all(E)   # 先展开模板（模板可能追加人物关键帧与镜头）
     # 2 母版 → 人物帧 + 人声
     master = (base / E['master']).resolve() if E.get('master') else None
     D = float(E.get('duration') or 0)
@@ -1423,9 +1650,12 @@ def cmd_build(ns):
             media[mid] = {'seq': {'path': f'media/{mid}/%05d.jpg', 'fps': fps, 'count': len(list(d.glob('*.jpg')))}, 'clock': m.get('clock'), 'from': float(m.get('from') or 0)}
     # 4 场景：关键词对齐 → 媒体引用
     extra_js, extra_css = [], []
+    asset_src = {}
     for s in scenes:
-        for f in s.pop('_assets_js', []): extra_js.append(f)
-        for f in s.pop('_assets_css', []): extra_css.append(f)
+        for key, lst in (('_assets_js', extra_js), ('_assets_css', extra_css)):
+            for f in s.pop(key, []):
+                if isinstance(f, dict): asset_src[f['rel']] = f['src']; f = f['rel']
+                lst.append(f)
     missing = []
     for s in scenes:
         win = (s['t0'] - 1.0, s['t1'] + 0.5)
@@ -1482,7 +1712,9 @@ def cmd_build(ns):
     html = html.replace('{{TITLE}}', E.get('title', 'Motion Studio')).replace('{{EXTRA_JS}}', '\n'.join(f'<script src="{j}"></script>' for j in dict.fromkeys(extra_js))).replace('{{EXTRA_CSS}}', '\n'.join(f'<link rel="stylesheet" href="{c}">' for c in dict.fromkeys(extra_css)))
     # 动效库里的新动效：全部带进工程（体积很小），剪辑时按名字直接用
     fx_tags = []
-    for d in effect_dirs():
+    packs_used = active_packs(E, scenes)
+    if packs_used: log('行业包：' + '、'.join(packs_used))
+    for d in effect_dirs(packs_used):
         dst = P / 'effects' / d.name
         if dst.exists(): shutil.rmtree(dst)
         shutil.copytree(d, dst, ignore=shutil.ignore_patterns('*.png', '_check'))
@@ -1491,7 +1723,7 @@ def cmd_build(ns):
     html = html.replace('<script src="timeline.js"></script>', '\n'.join(fx_tags) + '\n<script src="timeline.js"></script>', 1) if fx_tags else html
     (P / 'index.html').write_text(html, encoding='utf-8')
     for f in dict.fromkeys(extra_js + extra_css):
-        src = ROOT / f
+        src = Path(asset_src[f]) if f in asset_src else ROOT / f
         if src.exists(): (P / f).parent.mkdir(parents=True, exist_ok=True); shutil.copy(src, P / f)
     shutil.copy(ep, P / 'edit.json')
     jsave(P / 'project.json', {'tool': 'dayan-motion-studio', 'version': VERSION, 'built': time.strftime('%Y-%m-%d %H:%M:%S'), 'edit': str(ep), 'master': str(master) if master else None, 'canvas': TL['canvas'], 'duration': TL['duration'], 'scenes': len(scenes)})
@@ -1609,7 +1841,7 @@ def cmd_audio(ns):
         if not src.exists(): src = Path(jload(P / 'project.json')['edit']).parent / mus['path']
         bgm = str(P / 'bgm.wav'); run([FF, '-v', 'error', '-y', '-ss', str(mus.get('offset', 0)), '-i', str(src), '-t', str(D + 1), '-af', f'afade=t=out:st={max(0, D - 2.2)}:d=2.2', '-ar', '48000', '-ac', '2', bgm])
     voice = P / 'voice.wav'
-    if not voice.exists():  # 无口播（纯内置动效片段）：生成静音人声轨
+    if not voice.exists():  # 无口播（单独渲染的模板片段）：生成静音人声轨
         run([FF, '-v', 'error', '-y', '-f', 'lavfi', '-i', 'anullsrc=r=48000:cl=stereo', '-t', str(D), str(voice)])
     vol = ns.music_volume if getattr(ns, 'music_volume', None) is not None else float(mus.get('volume', 0.30))
     A.mix(str(voice), str(P / 'mix.wav'), bgm=bgm, sfx=str(P / 'sfx.wav'), music_vol=vol, sfx_vol=float(E.get('sfxVolume', 0.85)), duration=D, denoise=bool(E.get('denoise')))
@@ -1650,12 +1882,12 @@ def cmd_render(ns):
         except Exception as e: log('封面没出成（不影响成片），可单独运行 dms.py cover：', e)
 
 def cmd_catalog(ns):
-    """动效目录：无参数 → 生成 references/catalog.md；带关键词 → 搜索组件 / 动效库 / 内置动效 / 原卡库并给出写法"""
+    """动效目录：无参数 → 生成 references/catalog.md；带关键词 → 搜索组件 / 动效库 / 原卡库 / 已装行业包并给出写法"""
     import dms_catalog as K
     if ns.keys: K.search(ns.keys, ns.limit)
     else:
         n, p = K.write_md(ns.out)
-        log(f"动效目录 → {p}（组件 {n['组件']} · 动效库 {n['动效库']} · 内置动效 {n['内置动效']} · 原卡 {n['原卡库']}）")
+        log(f"动效目录 → {p}（组件 {n['组件']} · 动效库 {n['动效库']} · 原卡 {n['原卡库']}）")
 
 def cmd_card(ns):
     """看一张原卡：截 3 帧拼图 + 列出卡里全部可见文字（都是样板，按口播换掉），给出可直接写进 edit.json 的写法"""
@@ -1742,16 +1974,17 @@ def cmd_export(ns):
 
 # =================================================================== main
 def main():
-    ap = argparse.ArgumentParser(prog='dms', description='大琰DAYAN Motion Studio — 口播自动剪辑 + 内置动效')
+    ap = argparse.ArgumentParser(prog='dms', description='大琰DAYAN Motion Studio — 口播自动剪辑 + 动效 + 行业模板包')
     sp = ap.add_subparsers(dest='cmd')
     sp.add_parser('doctor')
     sp.add_parser('kickoff', help='新作品开工前要问用户的问题（画幅 / 分辨率 / 帧率 / 文字墙品牌）')
     a = sp.add_parser('effect', help='动效库：new 新建 / check 三画幅样张 / list'); a.add_argument('action', choices=['new', 'check', 'list']); a.add_argument('id', nargs='?'); a.add_argument('--name'); a.add_argument('--use')
+    a.add_argument('--pack', help='行业专属动效：存进这个行业包（id 要 fx-<包名>- 开头）；通用动效不加，存主技能动效库'); a.add_argument('--force', action='store_true', help='查重发现很像时仍然新建')
     a = sp.add_parser('brand', help='查看 / 保存本机品牌（文字墙两行等）'); a.add_argument('action', choices=['show', 'set']); a.add_argument('--main'); a.add_argument('--sub'); a.add_argument('--name'); a.add_argument('--mark')
     a = sp.add_parser('asr'); a.add_argument('video'); a.add_argument('workdir'); a.add_argument('--engine'); a.add_argument('--fix', help='识别纠错表 json')
     a = sp.add_parser('cut'); a.add_argument('video'); a.add_argument('spec'); a.add_argument('workdir')
     a = sp.add_parser('face'); a.add_argument('video'); a.add_argument('workdir'); a.add_argument('--step', default='0.25')
-    a = sp.add_parser('scaffold'); a.add_argument('workdir'); a.add_argument('out'); a.add_argument('--canvas', default='1920x1080'); a.add_argument('--fps', default='60'); a.add_argument('--theme', default='dark-tech'); a.add_argument('--title'); a.add_argument('--wall-main', dest='wall_main', help='文字墙主行（品牌名）'); a.add_argument('--wall-sub', dest='wall_sub', help='文字墙副行（英文名/口号）'); a.add_argument('--brand-name', dest='brand_name')
+    a = sp.add_parser('scaffold'); a.add_argument('workdir'); a.add_argument('out'); a.add_argument('--canvas', default='1920x1080'); a.add_argument('--fps', default='60'); a.add_argument('--theme', default='dark-tech'); a.add_argument('--title'); a.add_argument('--wall-main', dest='wall_main', help='文字墙主行（品牌名）'); a.add_argument('--wall-sub', dest='wall_sub', help='文字墙副行（英文名/口号）'); a.add_argument('--brand-name', dest='brand_name'); a.add_argument('--packs', help='启用的行业包（逗号分隔），分镜时优先匹配包里的模板')
     a = sp.add_parser('words'); a.add_argument('workdir'); a.add_argument('keys', nargs='+')
     a = sp.add_parser('subs'); a.add_argument('workdir'); a.add_argument('lines', help='每行一条润色后的字幕')
     a = sp.add_parser('direct', help='导演检查：大字照抄字幕 / 一段两件事 / 画面静止 / 口播有画面没有 / 出现错位'); a.add_argument('project'); a.set_defaults(fn=cmd_direct)
@@ -1768,6 +2001,8 @@ def main():
     a = sp.add_parser('overlay', help='导出透明动效层（.mov ProRes 4444 / .webm VP9）'); a.add_argument('project'); a.add_argument('out', nargs='?'); a.add_argument('--workers', type=int)
     a = sp.add_parser('check'); a.add_argument('video')
     a = sp.add_parser('export'); a.add_argument('project'); a.add_argument('--frames', action='store_true', help='连人物帧一起打包（体积大）'); a.add_argument('--media-root', dest='media_root', help='交付文件夹在用户电脑上的路径，XML 里的媒体路径按它写')
+    a = sp.add_parser('pack', help='行业模板包：list / install / update / new / check'); a.add_argument('action', choices=['list', 'install', 'update', 'new', 'check']); a.add_argument('target', nargs='?', help='包名、仓库地址、zip 或文件夹')
+    a.add_argument('--force', action='store_true'); a.add_argument('--render', action='store_true', help='check 时按画幅出样张'); a.add_argument('--name'); a.add_argument('--industry'); a.add_argument('--dir', help='new：建在这个文件夹下（默认直接建在安装位置）')
     a = sp.add_parser('template'); a.add_argument('action', choices=['list', 'validate', 'show', 'render', 'gallery']); a.add_argument('id', nargs='?'); a.add_argument('payload', nargs='?'); a.add_argument('out', nargs='?')
     ns = ap.parse_args()
     fn = globals().get('cmd_' + (ns.cmd or ''))

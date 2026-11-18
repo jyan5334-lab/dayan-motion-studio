@@ -6,7 +6,7 @@
 
 1. `SKILL.md`：完整流程、开工要问的 4 个问题、必须遵守的规则。
 2. `references/orchestration.md`：**编排手册**，先写编排单再写 edit.json，以及怎么选动效、怎么现做动效。
-3. `references/catalog.md`：所有可调用的组件、动效库、内置动效、原卡，按语义分组。也可以用 `python scripts/dms.py catalog 关键词` 搜。
+3. `references/catalog.md`：所有可调用的组件、动效库、原卡，以及已安装行业包里的模板，按语义分组。也可以用 `python scripts/dms.py catalog 关键词` 搜。
 4. 需要时再查：`references/playbook.md`（剪辑语法）、`references/edit-spec.md`（edit.json 字段）、`references/components.md`（组件参数）、`references/quality.md`（动效质量标准）、`references/cover.md`（封面）。
 
 ## 硬规则
@@ -14,6 +14,7 @@
 - **画面要证明口播，不能只有文字。** 每段都要有一个非文字的主画面：数字、对比、流程、界面、录屏放大、对话、物件动效等。
 - **不能千篇一律。** 同一个组件不超过 35% 的段落；自己做的动效一条片子最多用 3 段；画面组件种类至少 5 种，且不少于段数的 1/3。
 - **先找现成的**（catalog），找不到再现做；现做的动效要画"这一句话里的那个东西"，不要做通用面板。
+- **行业模板包**：`dms.py pack list` 看本机装了哪些包；选题属于那个行业就在 edit.json 写 `"packs": ["包名"]`（scaffold 加 `--packs`），模板写 `"template": "<包名>:<模板 id>"`。新动效通用的存主库，行业专属的 `effect new --pack <包名>`。规范见 `references/motion-templates.md`。
 - **328 张原卡（`dayan` 组件）都能改来用**：卡里的文字是样板，`dms.py card <卡号>` 列出全部可见文字，用 `replace` 换成本期口播内容，换完再看样张。
 - **密度**：每分钟至少 15–20 个动效；一两句话（4–10 秒）换一次画面；每分钟 2–3 种背景，文字墙换皮肤（`look: "wall-jade"` 等 16 套）。
 - **必须看图**：`stills` 出接触表后逐张看；`plan` 看编排单；`direct` 导演检查做到 0 条建议；`sweep` 0 报错，然后才能 `render`。

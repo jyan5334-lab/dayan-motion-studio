@@ -1,0 +1,14 @@
+{
+ "schema": "dayan-pack/1",
+ "id": "demo",
+ "name": "示例包",
+ "version": "1.0.0",
+ "industry": "通用示例",
+ "desc": "演示行业包怎么写：两个模板（结论 + 证据数字、结尾关注）和一个包专属动效，位置全部用内容区，支持 16:9 / 4:3 / 9:16",
+ "requires": {
+  "dms": ">=1.13.0"
+ },
+ "repo": "",
+ "author": "dayan-motion-studio",
+ "license": "MIT"
+}
