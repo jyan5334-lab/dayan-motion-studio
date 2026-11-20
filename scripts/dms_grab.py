@@ -77,7 +77,7 @@ def shot(url, to='素材', name=None, full=False, selector=None, scroll=0, w=144
     need_consent()
     d = Path(to); d.mkdir(parents=True, exist_ok=True)
     f = d / f'{name or _slug(url)}.png'
-    args = [node, str(HERE / 'grab.mjs'), url, str(f), '--w', str(w), '--h', str(h)] + (['--full'] if full else []) + (['--dark'] if dark else []) \
+    args = [node, str(HERE / 'grab.mjs'), url, str(f.resolve()), '--w', str(w), '--h', str(h)] + (['--full'] if full else []) + (['--dark'] if dark else []) \
         + (['--selector', selector] if selector else []) + (['--scroll', str(scroll)] if scroll else [])
     r = subprocess.run(args, cwd=str(ROOT), capture_output=True, text=True)
     try: res = json.loads(r.stdout.strip().splitlines()[-1])
@@ -91,6 +91,61 @@ def shot(url, to='素材', name=None, full=False, selector=None, scroll=0, w=144
     add_log(d, {'file': f.name, 'kind': 'screenshot', 'url': url, 'title': res.get('title', ''), 'time': time.strftime('%Y-%m-%d %H:%M'), 'status': 'ok'})
     print(f'✓ 网页截图 → {f}（{res.get("title", "")}）')
     return f
+
+
+def images(url, to='素材', name=None, n=4, node='node'):
+    """取网页配图（新闻配图、文章封面图、产品图）：og:image + 正文里够大的图，下载后转成 jpg/png 原样保存"""
+    need_consent()
+    d = Path(to); d.mkdir(parents=True, exist_ok=True)
+    tmp = d / f'.img_{int(time.time())}'; tmp.mkdir()
+    r = subprocess.run([node, str(HERE / 'grab.mjs'), url, str(tmp.resolve()), '--images', '--n', str(n)], cwd=str(ROOT), capture_output=True, text=True)
+    try: res = json.loads(r.stdout.strip().splitlines()[-1])
+    except Exception: shutil.rmtree(tmp, ignore_errors=True); raise SystemExit('✗ 取图失败：' + (r.stderr or r.stdout)[-300:])
+    out = []
+    for i, x in enumerate(res.get('files') or [], 1):
+        src = Path(x['file']); f = d / f"{name or _slug(url, 30)}_{i}{src.suffix}"; shutil.move(str(src), f)
+        add_log(d, {'file': f.name, 'kind': 'image', 'url': url, 'image': x['src'], 'note': x.get('why', ''), 'title': res.get('title', ''), 'time': time.strftime('%Y-%m-%d %H:%M'), 'status': 'ok'})
+        out.append(f); print(f"✓ 配图 → {f}（{x.get('why', '')}）")
+    shutil.rmtree(tmp, ignore_errors=True)
+    if not out: raise SystemExit(f"✗ {url} 没取到够大的配图（{res.get('error') or '页面里没有 og:image，也没有宽 ≥800 的图'}）：改用 grab shot 截网页，或换一个来源")
+    return out
+
+
+AGENTS = {
+    'claude': ('Claude（Claude Code / Claude 桌面版 / 网页版）', '安装 Claude in Chrome 扩展：https://claude.ai/chrome → 添加到 Chrome → 用同一个 claude.ai 账号登录（多个组织时选和当前对话同一个）'),
+    'codex': ('Codex', '在 Codex 应用的「插件」里找到 Chrome，按提示从 Chrome 应用商店安装 Codex 扩展 → 同意 Chrome 的权限 → 在 Chrome 里确认扩展显示已连接；网站第一次访问时选「始终允许」'),
+    'workbuddy': ('WorkBuddy', '不需要装扩展：技能自带的无头浏览器（grab shot / grab image）和 yt-dlp（grab clip）就在你电脑上跑。想让 WorkBuddy 自己也能点网页，可在 WorkBuddy「+ → 技能」里搜索安装「浏览器自动化」技能'),
+    'doubao': ('豆包', '不需要装扩展：用技能自带的 grab shot / grab image / grab clip。第一次使用时豆包「工作任务」会请求操作电脑的授权，请允许'),
+}
+
+PITCH = '为了能更好地获取网上优质素材，从而提升视频质量'
+
+
+def check(agent=None, node='node'):
+    """检查连接情况：联网取材授权、本机无头浏览器能不能截真网页、yt-dlp、以及这个 Agent 该装什么"""
+    print('联网取材 · 检查连接情况')
+    v = config().get('webGrab'); print('  授权：' + {'allow': '✓ 已允许联网取材', 'deny': '✗ 用户选了不联网取材'}.get(v, '· 还没问过用户（先问一次：dms.py grab allow / deny）'))
+    d = home() / '_check'; d.mkdir(parents=True, exist_ok=True); f = d / 'check.png'
+    r = subprocess.run([node, str(HERE / 'grab.mjs'), 'https://github.com/', str(f), '--wait', '800'], cwd=str(ROOT), capture_output=True, text=True)
+    try: res = json.loads(r.stdout.strip().splitlines()[-1])
+    except Exception: res = {'ok': False, 'error': (r.stderr or r.stdout)[-200:]}
+    local_ok = bool(res.get('ok'))
+    print('  本机无头浏览器：' + ('✓ 能截真网页（github.com 样式完整）' if local_ok else '✗ 截不了真网页：' + (res.get('error') or '样式没加载全，多半是工作环境的网络限制')))
+    y = shutil.which('yt-dlp') or (__import__('importlib').util.find_spec('yt_dlp') and 'python -m yt_dlp')
+    print('  视频片段（yt-dlp）：' + (f'✓ {y}' if y else '· 还没装（第一次 grab clip 时自动装）'))
+    a = (agent or '').lower()
+    if a in ('claude', 'codex'):
+        name, how = AGENTS[a]
+        print(f'\n  {name}：必须装浏览器扩展（用户 2026-11-20 定）。还没装 / 没连上时对用户说：')
+        print(f'    「{PITCH}，请安装浏览器扩展：{how}。装好后回到这里发一句"检查连接情况"。」')
+        print('  装好后由 Agent 自己验证：用扩展打开 https://github.com/ 截一张图（能存成文件、页面是英文原样、没有被自动翻译）才算连上；连上了就按用户的要求开始剪。')
+    elif a in AGENTS:
+        name, how = AGENTS[a]
+        print(f'\n  {name}：{how}')
+        if not local_ok: print('  本机无头浏览器现在截不了真网页：检查网络 / 代理后再发"检查连接情况"；仍不行就把要截的网址列给用户。')
+    else:
+        print('\n  其他 Agent：本机无头浏览器能截就用 grab；截不了时用 Agent 自己的浏览器工具截图存文件，再不行请用户截。')
+    return local_ok
 
 
 def _ytdlp():
@@ -166,6 +221,8 @@ def cli(ns, node='node', ff='ffmpeg'):
     if a == 'allow': c = config(); c['webGrab'] = 'allow'; save_config(c); return print('✓ 已记住：允许联网取材（以后不再问）')
     if a == 'deny': c = config(); c['webGrab'] = 'deny'; save_config(c); return print('✓ 已记住：不联网取材（缺素材时列清单给用户）')
     if a == 'status': return print({'allow': '允许联网取材', 'deny': '不联网取材'}.get(config().get('webGrab'), '还没问过用户'))
+    if a == 'check': return check(getattr(ns, 'agent', None), node)
+    if a == 'image': return images(ns.target, ns.to, ns.name, getattr(ns, 'n', 4), node)
     if a == 'shot': return shot(ns.target, ns.to, ns.name, ns.full, ns.selector, ns.scroll, ns.w, ns.h, ns.dark, node)
     if a == 'clip':
         if ns.start is None: raise SystemExit('✗ clip 要写 --start（例如 1:23）')

@@ -18,6 +18,44 @@ const opt = k => { const i = a.indexOf('--' + k); return i < 0 ? null : (a[i + 1
 const W = +(opt('w') || 1440), H = +(opt('h') || 900), wait = +(opt('wait') || 1500);
 
 const browser = await chromium.launch();
+// --images：不截图，取页面里的配图（og:image / twitter:image / 正文大图），下载到 out 目录，打印 JSON 列表
+if (opt('images')) {
+  const outDir = out, n = +(opt('n') || 4), minW = +(opt('min') || 800);
+  const res = { ok: false, url, files: [] };
+  try {
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN', userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36' });
+    const page = await ctx.newPage();
+    const isImg = /\.(jpe?g|png|webp|gif|avif)(\?|$)/i.test(url);
+    let cands = [];
+    if (isImg) cands = [{ src: url, w: 0, why: '图片地址' }];
+    else {
+      await page.goto(url, { waitUntil: 'networkidle', timeout: 45000 });
+      await page.waitForTimeout(1200);
+      res.title = await page.title();
+      cands = await page.evaluate((minW) => {
+        const out = [], seen = new Set(), add = (src, w, why) => { if (!src || src.startsWith('data:')) return; const u = new URL(src, location.href).href; if (seen.has(u)) return; seen.add(u); out.push({ src: u, w, why }); };
+        const meta = n => document.querySelector(`meta[property="${n}"],meta[name="${n}"]`);
+        if (meta('og:image')) add(meta('og:image').content, 0, '页面封面图 og:image');
+        if (meta('twitter:image')) add(meta('twitter:image').content, 0, '页面封面图 twitter:image');
+        [...document.images].filter(i => i.naturalWidth >= minW).sort((a, b) => b.naturalWidth * b.naturalHeight - a.naturalWidth * a.naturalHeight)
+          .forEach(i => add(i.currentSrc || i.src, i.naturalWidth, `正文图 ${i.naturalWidth}×${i.naturalHeight}` + (i.alt ? ' · ' + i.alt.slice(0, 30) : '')));
+        return out;
+      }, minW);
+    }
+    const fs = await import('node:fs');
+    for (const c of cands.slice(0, n)) {
+      try {
+        const r = await page.request.get(c.src, { headers: { Referer: url } });
+        if (!r.ok()) continue;
+        const ct = r.headers()['content-type'] || '', ext = ct.includes('png') ? 'png' : ct.includes('webp') ? 'webp' : ct.includes('gif') ? 'gif' : 'jpg';
+        const f = path.join(outDir, `img_${res.files.length + 1}.${ext}`); fs.writeFileSync(f, await r.body());
+        res.files.push({ file: f, src: c.src, why: c.why });
+      } catch (e) { }
+    }
+    res.ok = res.files.length > 0;
+  } catch (e) { res.error = String(e.message || e).slice(0, 200); }
+  await browser.close(); console.log(JSON.stringify(res)); process.exit(0);
+}
 const failed = [];
 let res = { ok: false, file: out, url };
 try {
