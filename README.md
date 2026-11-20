@@ -2,7 +2,7 @@
 
 把一条口播原片交给 AI 助手，说一句"帮我剪辑好"，它会把口误剪掉，配字幕、音效、转场和 MG 动画，交出 60 帧成片和一份能继续改的工程（剪映 / Premiere / 达芬奇）。
 
-这是一个 **Agent Skill**：放进 Claude Code、Codex、WorkBuddy / CodeBuddy 等能读写文件、能运行命令的 AI 助手里使用。动画是代码实时生成的（HTML 时间轴引擎逐帧渲染），不是视频模型生成的。
+这是一个 **Agent Skill**：放进 Claude、Codex、WorkBuddy、豆包这四个 AI 助手里使用。动画是代码实时生成的（HTML 时间轴引擎逐帧渲染），不是视频模型生成的。
 
 ![12 类动效](assets/effects-overview.jpg)
 
@@ -39,7 +39,10 @@ Windows 可以用 `winget install Gyan.FFmpeg` 和 `winget install OpenJS.NodeJS
 |---|---|
 | Claude Code | `~/.claude/skills/dayan-motion-studio/` |
 | Codex | `~/.codex/skills/dayan-motion-studio/`（Windows：`C:\Users\<你>\.codex\skills\`） |
-| WorkBuddy / CodeBuddy | 对应的 skills 目录，或在对话里说"读取 <路径>/SKILL.md" |
+| WorkBuddy | WorkBuddy 的技能目录，或在对话里说"读取 <路径>/SKILL.md" |
+| 豆包 | 在对话里说"读取 <路径>/SKILL.md"（「工作任务」模式，允许它操作电脑） |
+
+联网取材：Claude 和 Codex 要装 Chrome 扩展，WorkBuddy 和豆包用技能自带的取材命令，详见 `references/sourcing.md`。
 
 ## 怎么用
 

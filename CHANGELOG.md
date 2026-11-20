@@ -1,5 +1,7 @@
 # 更新记录
 
+- **1.14.4**（用户 2026-11-20 定）：技能只面向四个 Agent——Claude、Codex、WorkBuddy、豆包；DeepSeek 从支持列表和取材规则里去掉（口播内容里讲到 DeepSeek 时照常用它的 logo 和对话界面）。README 安装表补上豆包。
+
 - **1.14.3**（用户 2026-11-20 定：取材要稳定，规则要细）：
   - 新文件 `references/sourcing.md`：第一次使用怎么打通取材（Claude / Codex 必须装 Chrome 扩展，提示语「为了能更好地获取网上优质素材，从而提升视频质量」；WorkBuddy / 豆包用技能自带的 grab；DeepSeek 官方应用跑不了本技能）；按口播配素材的对照表（新闻、产品、仓库、博主、数据、评论、教程、实测、对话、观点各找什么、去哪找、怎么取、用什么承载）；截图 / 配图 / 视频片段的合格标准；取不到时的换路顺序。
   - 新命令 `dms.py grab check --agent <claude|codex|workbuddy|doubao>`（"检查连接情况"）：查授权、本机无头浏览器能不能截真网页、yt-dlp，并给出这个 Agent 该装什么、对用户怎么说。

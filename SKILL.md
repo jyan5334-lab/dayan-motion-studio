@@ -2,7 +2,7 @@
 name: dayan-motion-studio
 description: 大琰DAYAN 口播自动剪辑 + 动效技能。把口播原片剪成带包装动效、人物窗连续迁移、关键词同步画面、转场音效和字幕的 60fps 成片，并交付可编辑工程（HTML 动画工程、分轨、SRT、Premiere/达芬奇 XML）和一套封面（A 手账贴纸 / B 科技海报 / C 电影海报 × 竖屏 3:4 + 横屏 4:3）；可以安装、调用和制作行业 Motion 模板包。用于"剪口播""自动剪辑""做包装动效""加转场音效""做/装/调用 Motion 模板包""做封面"等请求。
 metadata:
-  version: "1.14.3"
+  version: "1.14.4"
   author: "大琰DAYAN"
 ---
 
@@ -10,7 +10,7 @@ metadata:
 
 **每次调用先检查更新（用户 2026-11-17 要求）**：每次调用本技能、开始干活之前，先拉取代码仓库 <https://github.com/jyan5334-lab/dayan-motion-studio> 看有没有新版本：`SKILL_DIR` 是 git 仓库就 `git -C SKILL_DIR pull --ff-only`；不是 git 仓库（装的是 zip）就把仓库 `main` 分支的 `SKILL.md` 里 `version` 和本文件比，新了就克隆到临时目录、覆盖 `SKILL_DIR` 后再继续（本机配置 `~/.dayan-motion-studio/` 和用户自己的作品不动）。有更新时用一句话告诉用户"已从 x 更新到 y"；网络不通或拉取失败时说明一句、用本地版本继续，不要卡住。
 
-> **给所有助手（Claude / Codex / 豆包 / WorkBuddy / CodeBuddy）的硬规则**，用户 2026-11-13 定：
+> **给所有助手（Claude / Codex / WorkBuddy / 豆包，本技能面向这四个）的硬规则**，用户 2026-11-13 定：
 > - 编排前先读 [orchestration.md](references/orchestration.md)，**先写编排单再写 edit.json**。
 > - 每段都要有一个非文字的主画面（数字、对比、流程、界面、录屏放大、对话、物件动效…）。**只有字幕和大字的片子 = 失败。**
 > - **每分钟至少 15–20 个动效**；**一两句话换一次画面**（4–10 秒一屏）；**每分钟 2–3 种背景**，文字墙换皮肤换颜色（wall-gold / wall-jade / wall-acid … 16 套）。

@@ -4,7 +4,7 @@
 
 ## 一、第一次使用：先把取材的路打通（每个 Agent 只做一次）
 
-开工前跑 `dms.py grab check --agent <claude|codex|workbuddy|doubao>`（用户说"检查连接情况"时也跑它），按结果走：
+本技能面向四个 Agent：**Claude、Codex、WorkBuddy、豆包**（用户 2026-11-20 定）。开工前跑 `dms.py grab check --agent <claude|codex|workbuddy|doubao>`（用户说"检查连接情况"时也跑它），按结果走：
 
 | Agent | 要求 | 第一次怎么做 |
 |---|---|---|
@@ -12,7 +12,6 @@
 | **Codex** | **必须装 Chrome 扩展**（Codex 插件） | 同上的提示语；安装：Codex 应用「插件」→ Chrome → Chrome 应用商店安装 → 同意权限 → Chrome 里确认已连接；网站第一次访问选「始终允许」。用户回来说"检查连接情况"，同样截一张 GitHub 验证。 |
 | **WorkBuddy** | 不装扩展，用技能自带的取材命令 | 技能的 `grab shot / grab image / grab clip` 在用户电脑上直接跑（无头浏览器 + yt-dlp），`grab check` 显示"能截真网页"就行。想让 WorkBuddy 自己也能点网页，可在「+ → 技能」里装「浏览器自动化」技能。 |
 | **豆包** | 不装扩展，用技能自带的取材命令 | 同 WorkBuddy；豆包「工作任务」第一次操作电脑时会请求授权，请用户允许。 |
-| DeepSeek 官方网页版 / App | 跑不了本技能（不能在电脑上执行命令） | 可以把 DeepSeek 当模型接进 WorkBuddy 等 Agent 使用。 |
 
 同时问一次用户是否允许联网取材（`grab allow / deny`，记在本机，以后不再问）。
 
