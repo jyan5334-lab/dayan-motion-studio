@@ -137,6 +137,8 @@ def cmd_doctor(ns):
     chk('ffprobe', lambda: subprocess.run([FP, '-version'], capture_output=True, text=True).stdout.split('\n')[0][:40])
     chk('node', lambda: subprocess.run([NODE, '-v'], capture_output=True, text=True).stdout.strip())
     chk('numpy / scipy', lambda: __import__('numpy').__version__ + ' / ' + __import__('scipy').__version__)
+    chk('联网取材', lambda: __import__('dms_grab').config().get('webGrab') or '还没问过用户（第一次需要真实素材时问一次，dms.py grab allow）')
+    chk('yt-dlp（视频片段）', lambda: (shutil.which('yt-dlp') or __import__('yt_dlp').version.__version__) if (shutil.which('yt-dlp') or __import__('importlib').util.find_spec('yt_dlp')) else (_ for _ in ()).throw(Exception('未安装：第一次 grab clip 时自动装，或 pip install yt-dlp')))
     chk('playwright', lambda: subprocess.run([NODE, '-e', "try{require('playwright');console.log('playwright')}catch(e){require('playwright-core');console.log('playwright-core')}"], capture_output=True, text=True, cwd=ROOT).stdout.strip() or (_ for _ in ()).throw(Exception('未安装：在技能目录运行 npm install')))
     chk('浏览器', lambda: subprocess.run([NODE, '-e', "const fs=require('fs');const c=[process.env.DMS_CHROME,'C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe','/Applications/Google Chrome.app/Contents/MacOS/Google Chrome','/usr/bin/google-chrome','/usr/bin/chromium'].filter(Boolean).find(p=>fs.existsSync(p));console.log(c||'用 Playwright 自带 Chromium')"], capture_output=True, text=True).stdout.strip())
     chk('语音识别', lambda: ('sherpa-onnx ' + __import__('sherpa_onnx').__version__) if _has('sherpa_onnx') else ('faster-whisper' if _has('faster_whisper') else (_ for _ in ()).throw(Exception('pip install sherpa-onnx soundfile'))))
@@ -937,6 +939,9 @@ def _similar_effects(name, use, limit=3):
         if g: out.append((len(q & g) / len(q), it['src'], it['id'], it.get('name', '')))
     return [x for x in sorted(out, reverse=True)[:limit] if x[0] >= 0.1]
 
+def cmd_grab(ns):
+    import dms_grab; dms_grab.cli(ns, NODE, FF)
+
 def cmd_library(ns):
     """动效库体检（只给建议，从不删除）：查重、闲置、缺样张 / 缺触发词，以及按使用情况升降成熟度"""
     import dms_catalog as K
@@ -1089,6 +1094,9 @@ def cmd_lint(ns):
     words = jload(base / E['words'])['words'] if E.get('words') and (base / E['words']).exists() else None
     E['_words'] = words
     scenes = expand_all(E, dry=True)
+    try:
+        import dms_grab; probs += dms_grab.lint_media(ns.edit, E)   # 联网取来的视频片段：用户确认能用才放进片子
+    except Exception as e: warns.append(f'素材来源检查没跑成：{e}')
     for s in scenes:
         for L in s.get('layers', []):
             resolve_cues(L, words, None, (s['t0'] - 1.0, s['t1'] + 0.5))
@@ -2058,6 +2066,12 @@ def main():
     a = sp.add_parser('audio'); a.add_argument('project'); a.add_argument('--music-volume', dest='music_volume', type=float)
     a = sp.add_parser('sweep', help='逐帧试跑查页面报错（渲染前跑）'); a.add_argument('project'); a.add_argument('--step', type=float, default=1 / 30); a.add_argument('--from', dest='start', type=float); a.add_argument('--to', dest='end', type=float); a.set_defaults(fn=cmd_sweep)
     a = sp.add_parser('render'); a.add_argument('project'); a.add_argument('out'); a.add_argument('--workers', type=int); a.add_argument('--preset', default='medium'); a.add_argument('--crf', type=int, default=16); a.add_argument('--reuse', action='store_true', help='画面没改时复用已渲染的 picture.mp4，只重做字幕和声音'); a.add_argument('--no-cover', dest='no_cover', action='store_true', help='不顺带出封面')
+    a = sp.add_parser('grab', help='联网取材：allow/deny（首次问一次）、shot 网页截图、clip 视频截几秒（待用户确认）、ok/no 确认、list')
+    a.add_argument('action', choices=['allow', 'deny', 'status', 'shot', 'clip', 'ok', 'no', 'list']); a.add_argument('target', nargs='?', help='网址或文件')
+    a.add_argument('--to', default='素材', help='存到哪个文件夹（默认 ./素材，来源记在里面的 素材来源.json）'); a.add_argument('--name')
+    a.add_argument('--full', action='store_true', help='整页长图'); a.add_argument('--selector', help='只截页面里这个元素（CSS 选择器）'); a.add_argument('--scroll', type=int, default=0)
+    a.add_argument('--w', type=int, default=1440); a.add_argument('--h', type=int, default=900); a.add_argument('--dark', action='store_true')
+    a.add_argument('--start', help='视频片段起点，如 1:23 或 83'); a.add_argument('--dur', type=float, default=6.0)
     a = sp.add_parser('library', help='动效库体检：查重 / 闲置 / 缺样张缺触发词（只给建议，不删）；promote 改成熟度'); a.add_argument('action', choices=['audit', 'promote', 'index']); a.add_argument('id', nargs='?'); a.add_argument('status', nargs='?')
     a = sp.add_parser('catalog', help='动效目录：生成 references/catalog.md，或按关键词搜索可调用的组件 / 动效 / 原卡'); a.add_argument('keys', nargs='*'); a.add_argument('--limit', type=int, default=8); a.add_argument('--out')
     a = sp.add_parser('card', help='看一张原卡：样张 + 卡里全部可见文字（样板，按口播替换）+ 写法'); a.add_argument('id'); a.add_argument('--out'); a.add_argument('--replace', help='替换表 json：[[原文, 新文], …]')
