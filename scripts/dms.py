@@ -1141,6 +1141,11 @@ def cmd_lint(ns):
     base = Path(ns.edit).resolve().parent
     words = jload(base / E['words'])['words'] if E.get('words') and (base / E['words']).exists() else None
     E['_words'] = words
+    # 口播母版必须存在：找不到时 build 会给一条静音人声轨，成片只剩音效、没有口播（2026-11-20《GPT-6.2》出过这事）
+    if E.get('master') and not (base / E['master']).exists():
+        probs.append(f"口播母版找不到：{E['master']}（相对 edit.json）——成片会没有口播声音。改成 asr 用的那个视频 / 音频文件")
+    elif not E.get('master') and words:
+        probs.append('有口播字幕（words）却没写 master：成片会没有口播声音。把 asr 用的那个视频 / 音频文件写进 "master"')
     scenes = expand_all(E, dry=True)
     try:
         import dms_grab; probs += dms_grab.lint_media(ns.edit, E)   # 联网取来的视频片段：用户确认能用才放进片子
@@ -1722,6 +1727,7 @@ def cmd_build(ns):
     scenes = expand_all(E)   # 先展开模板（模板可能追加人物关键帧与镜头）
     # 2 母版 → 人物帧 + 人声
     master = (base / E['master']).resolve() if E.get('master') else None
+    if master and not master.exists(): raise SystemExit(f'✗ 口播母版找不到：{master}——成片会没有口播声音。改 edit.json 的 "master"')
     D = float(E.get('duration') or 0)
     pres = None
     if master and master.exists():
