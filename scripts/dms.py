@@ -2005,7 +2005,10 @@ def cmd_audio(ns):
 # =================================================================== render / check
 def cmd_render(ns):
     P = Path(ns.project).resolve(); TL = jload(P / 'timeline.json'); out = Path(ns.out).resolve()
-    if not (P / 'mix.wav').exists(): cmd_audio(argparse.Namespace(project=str(P), music_volume=None))
+    # 混音过期（人声 / 时间线比 mix.wav 新）也要重混：以前只在没有 mix.wav 时才混，换了口播母版后成片还是旧的静音混音
+    mx = P / 'mix.wav'
+    stale = not mx.exists() or any((P / f).exists() and (P / f).stat().st_mtime > mx.stat().st_mtime for f in ('voice.wav', 'timeline.json'))
+    if stale: cmd_audio(argparse.Namespace(project=str(P), music_volume=None))
     TL = jload(P / 'timeline.json')
     burn = TL['subtitles'].get('previewOnly') and (P / 'subtitles.ass').exists()
     pic = P / 'picture.mp4' if burn else out
