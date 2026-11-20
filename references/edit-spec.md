@@ -40,6 +40,7 @@
     "style": "clean",                                   // clean 白字描边 / pill 黑胶囊 / bold 超粗描边
     "burn": "ass",                                      // ass = 渲染后用 ASS 烧录（可编辑，另导出 SRT）；html = 画进动画层
     "cuesFile": "work/subs.json",                       // dms.py subs 对齐好的字幕；缺省时按字级时间码自动断句
+    "lang": "zh",                                       // zh 纯中文 / zh-en 中英双语（中文在上、英文在下，每条 cue 写 "en": "英文"）/ none 不要字幕（开工必问）
     "highlight": ["夯爆了", "一句话"],                  // 染色关键词
     "hide": [[75.1, 81.6]],                             // 这些区间不显示字幕
     "font": null, "size": null, "hlColor": "#FFC24B"

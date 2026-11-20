@@ -241,8 +241,8 @@ def srt_time(x):
     ms = int(round(x * 1000)); h, ms = divmod(ms, 3600000); m, ms = divmod(ms, 60000); s, ms = divmod(ms, 1000)
     return f'{h:02}:{m:02}:{s:02},{ms:03}'
 
-def write_srt(cues, path):
-    Path(path).write_text('\n'.join(f"{i}\n{srt_time(c['s'])} --> {srt_time(c['e'])}\n{c['t']}\n" for i, c in enumerate(cues, 1)), encoding='utf-8')
+def write_srt(cues, path, bilingual=False):
+    Path(path).write_text('\n'.join(f"{i}\n{srt_time(c['s'])} --> {srt_time(c['e'])}\n{c['t']}" + (f"\n{c['en']}" if bilingual and c.get('en') else '') + '\n' for i, c in enumerate(cues, 1)), encoding='utf-8')
 
 def cmd_asr(ns):
     wd = Path(ns.workdir); wd.mkdir(parents=True, exist_ok=True)
@@ -1116,6 +1116,7 @@ def cmd_kickoff(ns):
     print('1. 画幅：横屏 16:9 / 横屏 4:3 / 竖屏 9:16 / 竖屏 3:4')
     print('2. 分辨率：1080P（默认）/ 2K / 4K / 720P')
     print('3. 帧率：60（默认）/ 30 / 25 / 24')
+    print('   字幕：中英双语（中文在上、英文在下）/ 纯中文（默认）/ 不要字幕 → edit.json subtitles.lang = zh-en / zh / none；双语要给每条字幕写英文 en')
     if src and b:
         print(f"4. 文字墙品牌：已在 {src} 设定为 主行「{b['wall'][0]}」、副行「{b['wall'][1]}」——不用再问（用户要换时再改这个文件）")
     else:
@@ -1156,6 +1157,15 @@ def cmd_lint(ns):
         probs.append(f"口播母版找不到：{E['master']}（相对 edit.json）——成片会没有口播声音。改成 asr 用的那个视频 / 音频文件")
     elif not E.get('master') and words:
         probs.append('有口播字幕（words）却没写 master：成片会没有口播声音。把 asr 用的那个视频 / 音频文件写进 "master"')
+    sub = E.get('subtitles') or {}
+    if sub.get('lang') == 'zh-en':   # 中英双语：每条字幕都要有英文
+        cs = sub.get('cues')
+        if cs is None and sub.get('cuesFile') and (base / sub['cuesFile']).exists(): cs = jload(base / sub['cuesFile'])
+        miss = [c.get('t', '') for c in (cs or []) if not (c.get('en') or '').strip()]
+        if not cs: probs.append('字幕选了中英双语（lang: zh-en），但没有现成的字幕条（cues / cuesFile）：先跑 subs，再给每条加英文 en')
+        elif miss: probs.append(f'字幕选了中英双语，还有 {len(miss)} 条没写英文 en，如「{miss[0][:16]}」：逐条翻译后写进 cuesFile 的 en 字段')
+    elif sub.get('lang') not in (None, 'zh', 'zh-en', 'none'):
+        probs.append(f"subtitles.lang 只能是 zh / zh-en / none，现在是 {sub.get('lang')}")
     scenes = expand_all(E, dry=True)
     try:
         import dms_grab; probs += dms_grab.lint_media(ns.edit, E)   # 联网取来的视频片段：用户确认能用才放进片子
@@ -1843,9 +1853,14 @@ def cmd_build(ns):
     for fix in sub.get('replace', []):
         for c in cues or []: c['t'] = c['t'].replace(fix[0], fix[1])
     burn = sub.get('burn', 'ass')
-    tl_sub = {'style': sub.get('style', 'clean'), 'cues': cues or [], 'hide': sub.get('hide', []), 'enabled': sub.get('enabled', True) and bool(cues), 'size': sub.get('size')}
+    # 字幕语言（用户 2026-11-20 定，开工必问）：zh 纯中文（默认）/ zh-en 中英双语（中文在上、英文在下，英文写在每条 cue 的 en）/ none 不要字幕
+    lang = sub.get('lang', 'zh')
+    if lang == 'none': sub['enabled'] = False
+    for f in ('subtitles.srt', 'subtitles.ass'):
+        if lang == 'none' and (P / f).exists(): (P / f).unlink()
+    tl_sub = {'style': sub.get('style', 'clean'), 'cues': cues or [], 'hide': sub.get('hide', []), 'enabled': sub.get('enabled', True) and bool(cues), 'size': sub.get('size'), 'lang': lang}
     if burn == 'ass': tl_sub['previewOnly'] = True
-    if cues: write_srt(cues, P / 'subtitles.srt'); write_ass(cues, P / 'subtitles.ass', W, H, sub, words)
+    if cues and lang != 'none': write_srt(cues, P / 'subtitles.srt', lang == 'zh-en'); write_ass(cues, P / 'subtitles.ass', W, H, sub, words)
     TL = {'version': VERSION, 'title': E.get('title', ''), 'canvas': {'w': W, 'h': H, 'fps': FPS}, 'duration': round(D, 3), 'theme': E.get('theme', 'dark-tech'),
           'brand': brand_of(E, Path(ns.edit).resolve().parent), 'signature': E.get('signature', {'enabled': False, 'name': brand_of(E, Path(ns.edit).resolve().parent).get('name', '')}), 'presenter': pres, 'subtitles': tl_sub, 'scenes': scenes, 'camera': E.get('camera', []),
           'sfx': E.get('sfx', []), 'globals': E.get('globals', []), 'previewAudio': 'mix.wav', 'dayanLibrary': 'assets/dayan-library.html'}
@@ -1956,6 +1971,9 @@ def write_ass(cues, path, W, H, sub, words=None):
             tag = (f'{{\\t({off},{off + 80},\\c{col}&\\3c{glow}&\\bord{max(4, size // 9)}\\blur6\\fscy114)'
                    f'\\t({off + 80},{off + 300},\\bord2.6\\blur0.6\\fscy100\\3c&H00141414&)}}')
             t = t.replace(w, tag + w + '{\\r}', 1)
+        if sub.get('lang') == 'zh-en' and c.get('en'):   # 中英双语：中文在上，英文小一号、浅灰，在下
+            en = c['en'].replace('{', '(').replace('}', ')')
+            t = t + '\\N{\\fs' + str(int(size * 0.62)) + '\\b0\\c&H00E6E6E6&}' + en
         lines.append(f"Dialogue: 0,{ts(c['s'])},{ts(c['e'])},Default,,0,0,0,,{{\\fad(90,40)}}{t}")
     Path(path).write_text('\n'.join(lines) + '\n', encoding='utf-8')
 
