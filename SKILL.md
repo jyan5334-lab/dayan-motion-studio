@@ -2,7 +2,7 @@
 name: dayan-motion-studio
 description: 大琰DAYAN 口播自动剪辑 + 动效技能。把口播原片剪成带包装动效、人物窗连续迁移、关键词同步画面、转场音效和字幕的 60fps 成片，并交付可编辑工程（HTML 动画工程、分轨、SRT、Premiere/达芬奇 XML）和一套封面（A 手账贴纸 / B 科技海报 / C 电影海报 × 竖屏 3:4 + 横屏 4:3）；可以安装、调用和制作行业 Motion 模板包。用于"剪口播""自动剪辑""做包装动效""加转场音效""做/装/调用 Motion 模板包""做封面"等请求。
 metadata:
-  version: "1.14.1"
+  version: "1.14.2"
   author: "大琰DAYAN"
 ---
 

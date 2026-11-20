@@ -18,13 +18,14 @@
         <div class="ad"><i>‹</i><i>›</i><div class="u">${DMS.icon('lock')}<span></span></div></div>
         <div class="vp"><div class="pg">${IMGSLOT(p.img, 'pic', '待放真实网页截图')}</div>${p.mark ? `<div class="mk"><b>${esc(p.markLabel || '')}</b></div>` : ''}</div>`, e);
       const mk = w.querySelector('.mk'); if (mk) { const m = p.mark; Object.assign(mk.style, { left: m[0] * 100 + '%', top: m[1] * 100 + '%', width: m[2] * 100 + '%', height: m[3] * 100 + '%' }); }
-      return { w, u: w.querySelector('.u span'), pg: w.querySelector('.pg'), mk };
+      return { w, u: w.querySelector('.u span'), pg: w.querySelector('.pg'), vp: w.querySelector('.vp'), mk };
     },
     update(e, lt, p, s) {
       const q = prog(lt, 0, 0.55); s.w.style.opacity = clamp(q * 3).toFixed(3); s.w.style.transform = `translateY(${lerp(8, 0, E.outExpo(q)).toFixed(2)}cqh) scale(${lerp(0.92, 1, E.outExpo(q)).toFixed(3)})`;
       const u = [...String(p.url || '')]; s.u.textContent = u.slice(0, Math.floor(prog(lt, 0.35, Math.max(0.4, u.length / 30)) * u.length)).join('');
       const sc = p.scroll == null ? 0.3 : p.scroll, st = 0.45 + Math.max(0.4, u.length / 30);
-      s.pg.style.transform = `translateY(${(-sc * 100 * E.inOutCubic(prog(lt, st + 0.2, 1.2)) / (1 + sc)).toFixed(2)}%)`;
+      const over = Math.max(0, s.pg.offsetHeight - s.vp.clientHeight);   // 截图比窗口高出多少，scroll 是滚到这段的几成
+      s.pg.style.transform = `translateY(${(-sc * over * E.inOutCubic(prog(lt, st + 0.2, 1.2))).toFixed(1)}px)`;
       if (s.mk) { const mq = prog(lt, st + 1.5, 0.5); s.mk.style.opacity = clamp(mq * 3).toFixed(3); s.mk.style.transform = `scale(${lerp(1.15, 1, E.outBack(mq, 1.2)).toFixed(3)})`; }
     },
     sfx(p) { const u = String(p.url || '').length, st = 0.45 + Math.max(0.4, u / 30); return [{ at: 0, kind: 'card', gain: 0.35 }, { at: 0.35, kind: 'typing', gain: 0.3 }, { at: st + 0.2, kind: 'whoosh-soft', gain: 0.3 }].concat(p.mark ? [{ at: st + 1.5, kind: 'marker', gain: 0.4 }] : []); },

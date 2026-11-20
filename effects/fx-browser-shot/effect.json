@@ -38,5 +38,19 @@
    ]
   }
  },
- "code": "09-04"
+ "code": "09-04",
+ "editable": {
+  "checked": "2026-11-20 04:17",
+  "ok": false,
+  "issues": [
+   "[error·4] 文字加长 60% 后被裁掉：dayan-moti（用 DMS.fitText 自动缩字、或让卡片跟着文字长高 / 变宽）",
+   "[error·4] 文字加长 60% 后被裁掉：github.com（用 DMS.fitText 自动缩字、或让卡片跟着文字长高 / 变宽）"
+  ]
+ },
+ "checked": "2026-11-20 04:17",
+ "layouts": [
+  "16:9",
+  "4:3",
+  "9:16"
+ ]
 }

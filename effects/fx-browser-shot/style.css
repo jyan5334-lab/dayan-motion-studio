@@ -8,7 +8,9 @@
 .fx-browser-shot .u { flex: 1; display: flex; align-items: center; gap: .8cqw; height: 5.4cqh; padding: 0 1.6cqw; border-radius: 99px; background: #F1F3F4; }
 .fx-browser-shot .u .dms-ico { width: 3cqh; height: 3cqh; color: #5F6368; } .fx-browser-shot .u span { font: 700 min(4.4cqh, 2.8cqw)/1 var(--f-en); color: #202124; white-space: nowrap; }
 .fx-browser-shot .vp { position: relative; flex: 1; overflow: hidden; background: #F6F7F9; }
-.fx-browser-shot .pg { position: absolute; left: 0; right: 0; top: 0; height: 130%; } .fx-browser-shot .pg .pic { width: 100%; height: 100%; }
+.fx-browser-shot .pg { position: absolute; left: 0; right: 0; top: 0; } .fx-browser-shot .pg .pic { width: 100%; } .fx-browser-shot .pg .ph { height: 92cqh; }
+/* 真实截图按窗口宽度整幅显示（不裁左右），比窗口高的部分靠 scroll 往下滚 */
+.fx-browser-shot .pg .im img { height: auto !important; object-fit: initial !important; }
 .fx-browser-shot .pg .ph { background: repeating-linear-gradient(135deg, #E9ECF1 0 1.6cqmin, #F3F5F8 1.6cqmin 3.2cqmin); border: none; } .fx-browser-shot .pg .ph span { color: #8A93A3; }
 .fx-browser-shot .pg .im img { object-fit: cover; object-position: top; }
 .fx-browser-shot .mk { position: absolute; border: .5cqh solid var(--hl, #FFC24B); border-radius: 1cqh; box-shadow: 0 0 0 100vmax rgba(0,0,0,.28); }
