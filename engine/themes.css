@@ -398,6 +398,7 @@ html[data-orient="portrait"] .dms-sub { bottom: 18%; max-width: 72%; --sub-size:
 .c-logo .lw img { height: var(--lg-img, 90px); } .c-logo .lw .dms-ico { font-size: 80px; color: var(--accent); }
 .c-logo .lw b { font: 900 var(--lg-fs, 54px)/1 var(--f-en); color: var(--lg-c); letter-spacing: -.01em; white-space: nowrap; } .c-logo .lw small { font: 700 20px var(--f-mono); letter-spacing: .24em; color: var(--muted); }
 .c-logo.lg-row .lw { flex-direction: row; gap: 28px; }
+.c-logo .lw.lg-slot { border: 2px dashed rgba(255,255,255,.38) !important; background: rgba(255,255,255,.04) !important; box-shadow: none !important; }
 .c-logo.lg-metal .lw b { font-size: 130px; background: linear-gradient(180deg, #fff 10%, #9aa0aa 48%, #f4f6f8 52%, #6a707a 100%); -webkit-background-clip: text; color: transparent; filter: drop-shadow(0 8px 20px rgba(0,0,0,.5)); }
 
 .c-sticker { display: grid; place-items: center; height: 100%; }

@@ -196,7 +196,19 @@
       if (p.color) e.style.setProperty('--lg-c', p.color);
       if (p.size) { e.style.setProperty('--lg-img', p.size + 'px'); e.style.setProperty('--lg-fs', Math.round(p.size * 0.5) + 'px'); }
       if (p.row) e.classList.add('lg-row');
+      return { lw: e.querySelector('.lw') };
     },
+    /* 先占位后点亮：litAt = 点亮时刻（相对图层出场，秒）。之前是一张空白的暗卡（不露 logo 和名字，不剧透），念到名字时 logo 和名字亮起并弹一下 */
+    update(e, lt, p, s) {
+      if (p.litAt == null || !s || !s.lw) return;
+      const q = DMS.prog(lt, p.litAt, 0.35), k = DMS.ease.outBack(q, 1.8);
+      s.lw.style.filter = q >= 1 ? '' : `grayscale(${(1 - q).toFixed(2)}) brightness(${(0.55 + 0.45 * q).toFixed(2)})`;
+      s.lw.style.opacity = (0.8 + 0.2 * Math.min(1, q * 1.5)).toFixed(3);
+      s.lw.classList.toggle('lg-slot', q <= 0);
+      s.lw.style.transform = `scale(${(lt < p.litAt ? 0.96 : 0.96 + 0.04 * k + Math.sin(Math.PI * Math.min(1, q)) * 0.08).toFixed(3)})`;
+      s.lw.querySelectorAll('img, b, small, .dms-ico').forEach(n => { n.style.opacity = q.toFixed(3); });
+    },
+    sfx(p) { return p.litAt == null ? [{ at: 0, kind: 'pop-big', gain: 0.5 }] : [{ at: 0, kind: 'pop-soft', gain: 0.25 }, { at: p.litAt, kind: 'pop-big', gain: 0.55 }]; },
     enterSfx: 'pop-big',
   };
 

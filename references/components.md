@@ -48,7 +48,7 @@
 | `chat` | 对话回放（AI 先打点再出字） | `msgs:[{who: me/ai, t, at|cue, think}]` `title` `icon` `dark` |
 | `progress` | 任务进度 + 确认弹窗 + 完成 | `title` `from` `to` `at` `dur` `steps` `dialog:{at, pressAt, title, text}` `done:{at, text}` |
 | `media` | 素材卡（截图 / 录屏帧 / 照片） | `src`/`seq` `fit` `frame: card/glass/polaroid/none` `radius` `tilt` `kenburns` `caption` |
-| `logo` | 品牌字卡 / 玻璃 Logo / 金属大字（真实 logo 图放 `src`，提到这个品牌时出现） | `text` `sub` `src` `icon` `style: glass/solid/metal` `brand`（用引擎自带官方图标：claude / codex / openai / doubao / workbuddy / deepseek …，见 engine/logos/） `size`（logo 图高度 px，字号随之，默认 90） `row`（logo 和名字横排） |
+| `logo` | 品牌字卡 / 玻璃 Logo / 金属大字（真实 logo 图放 `src`，提到这个品牌时出现） | `text` `sub` `src` `icon` `style: glass/solid/metal` `brand`（用引擎自带官方图标：claude / codex / openai / doubao / workbuddy / deepseek …，见 engine/logos/） `size`（logo 图高度 px，字号随之，默认 90） `row`（logo 和名字横排） `litAt`（先占位、念到才亮：图层 `at` 时先出一张虚线空卡、不露 logo 和名字，到 `litAt` 秒（相对图层 at）亮起、logo 弹进去；用在下文已经定好的列举，见 playbook「先占位，念到才亮」） |
 | `sticker` | 图标 / emoji 贴纸 | `icon` `text` `style: round/plain/hl` `rotate` `bob` |
 | `mark` | 圈选 / 下划线 / 荧光笔 | `style: box/circle/under/marker` `label` `dur` |
 | `arrow` | 指引箭头 | `from:[x,y]` `to:[x,y]` `curve` `label` |

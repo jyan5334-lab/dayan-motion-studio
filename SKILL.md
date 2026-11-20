@@ -2,7 +2,7 @@
 name: dayan-motion-studio
 description: 大琰DAYAN 口播自动剪辑 + 动效技能。把口播原片剪成带包装动效、人物窗连续迁移、关键词同步画面、转场音效和字幕的 60fps 成片，并交付可编辑工程（HTML 动画工程、分轨、SRT、Premiere/达芬奇 XML）和一套封面（A 手账贴纸 / B 科技海报 / C 电影海报 × 竖屏 3:4 + 横屏 4:3）；可以安装、调用和制作行业 Motion 模板包。用于"剪口播""自动剪辑""做包装动效""加转场音效""做/装/调用 Motion 模板包""做封面"等请求。
 metadata:
-  version: "1.14.5"
+  version: "1.14.6"
   author: "大琰DAYAN"
 ---
 
@@ -131,7 +131,7 @@ A 和 B 可以混用：不装包时 A 照常工作；装了包，语义匹配到
 
 - **分类**：动效按 12 类组织——01 开场·标识 / 02 数据·报表 / 03 对比·论证 / 04 流程·关系 / 05 引用·社媒 / 06 人物·字幕 / 07 收尾·CTA / 08 转场 / 09 界面演示 / 10 背景 / 11 浮窗·画中画 / 12 质感·调色层，每类至少 5 个，清单和字段见 [components.md](references/components.md)「12 类动效清单」。先判断这句话属于哪一类，再在类里按语义挑。所有动效都是参数化组件，改 `props` 的文字、数字、时间即可复用。
 - **真实图片（硬规则）**：讲热点新闻、网友讨论、产品官网、海报、真实作品时，配图**必须是真实图片**（新闻配图、官方海报、真实截图），注明来源；不用 AI 生成或自己画的假图冒充。找不到真实图就不填 `img`，组件会显示占位——成片前要么补真图，要么换成不带图的动效。语义编码生成的包装动效（图表、卡片、标注）照常生成。
-- **品牌 / 产品 / 模型 / Agent 名字要配真实 logo（硬规则）**：口播提到 Claude、Codex、豆包这类名字时，用 `logo` 组件放官方图标（`src`），在念到这个名字的那一刻弹出，不能只放文字卡。引擎自带常用官方图标（`engine/logos/`：claude、codex、openai、deepseek、doubao、workbuddy、codebuddy、gemini、kimi、qwen、trae、minimax、kling、jimeng、hunyuan、zhipu、copilot、cursor、github、notion、figma、capcut、midjourney 等，单色图标另有 `-ink` 深色版），`logo` 组件写 `brand: "claude"` 就行；没有的再从开源图标库 `@lobehub/icons-static-svg`（npm）或官网素材取，放 `src`。`size` 调大小，`row` 让图标和名字横排。实在找不到真实 logo，就只写名字，不画假 logo。
+- **品牌 / 产品 / 模型 / Agent 名字要配真实 logo（硬规则）**：口播提到 Claude、Codex、豆包这类名字时，用 `logo` 组件放官方图标（`src`），在念到这个名字的那一刻弹出，不能只放文字卡。引擎自带常用官方图标（`engine/logos/`：claude、codex、openai、deepseek、doubao、workbuddy、codebuddy、gemini、kimi、qwen、trae、minimax、kling、jimeng、hunyuan、zhipu、copilot、cursor、github、notion、figma、capcut、midjourney 等，单色图标另有 `-ink` 深色版），`logo` 组件写 `brand: "claude"` 就行；没有的再从开源图标库 `@lobehub/icons-static-svg`（npm）或官网素材取，放 `src`。`size` 调大小，`row` 让图标和名字横排。连着列举几个已经定好的名字时，可以用 `litAt` 先占位、念到才亮（见 playbook）。实在找不到真实 logo，就只写名字，不画假 logo。
 - **对话场景用真实产品的对话界面（硬规则）**：口播里只要出现和 AI 对话的意思——"把要求说清楚 / 告诉它 / 提意见 / 问它 / 它回我 / 截图发过去 / 让它去做…"，哪怕原话里没有"对话"两个字，这一段的主画面都是 `fx-ai-chat-app`：按片子在讲的那个 AI 产品还原桌面端对话页（`brand`：claude / chatgpt / codex / doubao / workbuddy / deepseek；官方 logo、原生配色、侧边栏、输入框），我说的话先在输入框里逐字打出再发送，气泡按口播落点上屏，AI 先思考再逐字回复，"截图发过去"的消息带真实截图附件（`img`）。连着几句都在对话时**同一个窗口接着用**，消息往上滚，不要每句换一张卡；窗口旁边可以配这句话对应的真实素材（参考片段、找到的素材、截图）。通用的 `chat` 气泡只用在非 AI 的聊天（朋友 / 客户 / 网友）。原卡 P13·1–6（ChatGPT / Claude Code / DeepSeek / 豆包 / WorkBuddy / 六家横评真界面）也可以用，`dms.py card P13·2` 看样板文字。用的是示意界面就保留"界面示意"角标；有真录屏就用 `window` 放真视频。
 - **画面要有真实素材**：讲到"参考视频""第一版""实测""效果对比"时，优先放真实片段或截图（使用者往期成片、本期第一版、实测录屏、仓库截图），用 `window`（`seq` 播放视频）、`media`、`fx-stack-shots`、`fx-cursor-tour` 等承载；标签如实写清楚是什么（例如"同一句提示词 · 中等推理 vs 高推理"），不把素材说成别的东西。素材来源按这个顺序找：① 用户给的素材、用户工作库里的往期成片和截图；② 网上的真实素材——讲到网站 / 产品 / 仓库就放真实网页截图（`fx-browser-shot`），讲热点新闻就去搜这条新闻，放新闻页截图、新闻配图或相关视频片段，注明来源；③ 都拿不到时如实告诉用户缺哪张、去哪截，不用生成图冒充。抓网页截图的办法：先用本机的无头浏览器（Playwright）打开网址截图；网站打不开或样式加载不出来（工作环境的网络限制），而会话连着用户的电脑时，用用户电脑上的浏览器打开再截图；两条路都不通就请用户截好发过来。
 - **版面要满（用户 2026-11-17 要求）**：人物不是全屏时，内容区要被动效占满，不能"一个人 + 一个小动效 + 大片空背景"。

@@ -1503,12 +1503,24 @@ def cmd_direct(ns):
                 if t2 == txt and min(b0, b2) - max(a0, a2) > 0.15:
                     R['同一句话出现两次'].append(f"{max(a0, a2):.1f}s {S.get('id')}：{c2} 和 {L.get('c')} 都写着「{txt[:14]}」：留一个，另一个先退场（out）或删掉")
             seen.append((txt, L.get('c'), a0, b0))
+    # 可选写法（不计入建议、不拦渲染）：同一段里依次念出 3 个以上已经定好的品牌名，logo 一个个蹦出来前面会空一段 →
+    # 可以改成「先占位、念到才亮」：所有 logo 在列举开头一起出现成虚线空位，各自写 litAt = 念到名字的时刻 - 图层 at（用户 2026-11-20 认可）
+    tips = []
+    for S in T.get('scenes', []):
+        lg = [L for L in S.get('layers', []) if L.get('c') == 'logo' and isinstance(L.get('at'), (int, float))]
+        if len(lg) >= 3 and not any((L.get('props') or {}).get('litAt') is not None for L in lg):
+            ats = sorted(L['at'] for L in lg)
+            if ats[-1] - ats[0] >= 1.2:
+                tips.append(f"{ats[0]:.1f}–{ats[-1]:.1f}s {S.get('id')}：{len(lg)} 个 logo 依次出现，前面会空着——下文已经定好时，可以让它们在 {ats[0]:.1f}s 一起出现成虚线空位，各自写 litAt（念到名字的时刻 − 图层 at），念到哪个亮哪个")
     n = sum(len(v) for v in R.values())
     print(f"导演检查 · {T.get('title', '')} · {len(scenes)} 段 · {T['duration']:.1f}s")
     for k, v in R.items():
         print(f"\n【{k}】{'✓ 无' if not v else f'{len(v)} 处'}")
         for x in v: print('  · ' + x)
     print(f"\n合计 {n} 处建议" + ('' if n else '：语义与画面对应良好'))
+    if tips:
+        print('\n【可选写法】（不算建议，按需采用）')
+        for x in tips: print('  · ' + x)
     jsave(P / 'direct.json', R)
     return R
 
