@@ -14,7 +14,7 @@
    ```json
    {"c": "dayan", "cue": "价格", "box": "full", "props": {"id": "M03·2", "text": {"title": "¥129 / 月"}, "wall": "platinum"}}
    ```
-   原卡的署名、账号、文字墙自动换成使用者自己的品牌（edit.json 的 `brand`）。原卡是 1920×1080 横屏布局，竖屏片子不要直接嵌。
+   原卡的署名、账号、文字墙自动换成使用者自己的品牌（edit.json 的 `brand`）。卡里其他像账号的样板文字统一是占位 `@XXX1`、`@XXX2`…（T31、T33、T83、T86、M15·5），按口播语义用 `replace` 换掉，成片里不能留 `@XXX`（lint 会拦）。原卡是 1920×1080 横屏布局，竖屏片子不要直接嵌。
    查卡：`references/catalog.md`（按语义分组的完整目录）、`dms.py catalog 关键词`，或浏览器打开 `assets/dayan-library.html`。
 
 | 库内阶段 / 族 | 典型卡 | 升级版组件 |

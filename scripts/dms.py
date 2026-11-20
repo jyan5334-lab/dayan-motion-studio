@@ -979,6 +979,7 @@ def cmd_library(ns):
     if nosheet: print('\n【缺样张】' + '、'.join(nosheet) + '（dms.py effect check <id>）')
     if notrig: print(f'【缺触发词 triggers】{len(notrig)} 个：' + '、'.join(notrig[:30]) + (' …' if len(notrig) > 30 else '') + '（effect.json 里写口播里会出现的说法，搜索靠它）')
 
+PLACEHOLDER_CARDS = {'T31', 'T33', 'T83', 'T86', 'M15·5'}   # 带样板账号 @XXX1… 的原卡（2026-11-20 统一换成占位）
 EDIT_RULES_SINCE = '2026-11-20'   # 这天以后新建的动效：可编辑性体检有 error 就不能入库；之前的老动效只记下“待升级”，不拦
 _ENUM_KEYS = {'brand', 'skin', 'tint', 'style', 'kind', 'who', 'icon', 'theme', 'look', 'pos', 'align', 'mode', 'dir', 'shape', 'type', 'variant', 'layout', 'color', 'logo', 'img', 'src', 'font', 'ease', 'id', 'preset'}
 def _lengthen(v, key=''):
@@ -1165,6 +1166,17 @@ def cmd_lint(ns):
                 if b[0] < 0.02 or b[0] + b[2] > 0.98: warns.append(f"{s.get('id')}/{L.get('c')}: 贴边，超出安全区")
             txt = json.dumps(L.get('props', {}), ensure_ascii=False) if L.get('c') in ('title', 'stamp', 'chips', 'number', 'compare', 'flow', 'checklist', 'tags', 'equation', 'chapter') else ''
             for m in re.findall(r'"(?:text|title|t)": "([^"]{24,})"', txt): warns.append(f"{s.get('id')}/{L.get('c')}: 文案偏长（{len(m)} 字）：{m[:20]}…，大字建议 ≤12 字")
+            # 样板账号占位 @XXX1、@XXX2…（用户 2026-11-20 定）：用进片子时必须按口播语义换掉，成片里不能留 @XXX
+            pr = L.get('props', {}) or {}
+            def _strs(v):
+                if isinstance(v, str): yield v
+                elif isinstance(v, dict): yield from (x for k, w in v.items() if k != 'replace' for x in _strs(w))
+                elif isinstance(v, list): yield from (x for w in v for x in _strs(w))
+            rp = pr.get('replace') if isinstance(pr.get('replace'), list) else []
+            left = [x for x in list(_strs(pr)) + [str(r[1]) for r in rp if isinstance(r, list) and len(r) > 1] if re.search(r'@XXX\d*', x)]
+            if left: probs.append(f"{s.get('id')}/{L.get('c')}: 账号占位没换：{left[0][:24]}——按口播语义换成真实账号或合适称呼，不需要就换成空")
+            if L.get('c') == 'dayan' and str(pr.get('id', '')) in PLACEHOLDER_CARDS and not any(isinstance(r, list) and str(r[0]).startswith('@XXX') for r in rp):
+                warns.append(f"{s.get('id')}/dayan {pr.get('id')}: 这张原卡里有样板账号 @XXX1…，用 replace 按口播语义换掉（dms.py card {pr.get('id')} 看全部文字）")
     if D and abs(last - D) > 0.1: probs.append(f'分镜结束于 {last:.2f}s，片长 {D:.2f}s')
     keys = sorted([k for k in ((E.get('presenter') or {}).get('keys') or []) if 't' in k], key=lambda k: k['t'])
     for a, b in zip(keys, keys[1:]):

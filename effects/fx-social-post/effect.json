@@ -11,7 +11,7 @@
   "dur": 4.5,
   "props": {
    "name": "大琰DAYAN",
-   "handle": "@dayan_ai",
+   "handle": "@XXX1",
    "verified": true,
    "time": "刚刚",
    "text": "把剪辑技能开源了：说一句话，口播自动剪好，字幕、音效、转场全带上。",
@@ -39,5 +39,18 @@
    ]
   }
  },
- "code": "05-06"
+ "code": "05-06",
+ "editable": {
+  "checked": "2026-11-20 04:00",
+  "ok": false,
+  "issues": [
+   "[error·5] 文字加长后「大琰DAYAN」和「@XXX1xxx ·」压在一起（用 flex / grid 排版让它们互相让位，不要各自写死坐标）"
+  ]
+ },
+ "checked": "2026-11-20 04:00",
+ "layouts": [
+  "16:9",
+  "4:3",
+  "9:16"
+ ]
 }

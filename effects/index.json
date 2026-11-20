@@ -407,7 +407,7 @@
 "triggers": [],
 "status": "candidate",
 "presets": {},
-"example": "{\"name\": \"大琰DAYAN\", \"handle\": \"@dayan_ai\", \"verified\": true, \"time\": \"刚刚\", \"text\": \"把剪辑技能开源了：说一句话，口播自动剪好，字幕、音效、转场全带上。\", \"hl\": \"开源\", \"imgs\": [\"\", \"\"], \"likes\": 1"
+"example": "{\"name\": \"大琰DAYAN\", \"handle\": \"@XXX1\", \"verified\": true, \"time\": \"刚刚\", \"text\": \"把剪辑技能开源了：说一句话，口播自动剪好，字幕、音效、转场全带上。\", \"hl\": \"开源\", \"imgs\": [\"\", \"\"], \"likes\": 12800"
 },
 {
 "code": "06-01",
