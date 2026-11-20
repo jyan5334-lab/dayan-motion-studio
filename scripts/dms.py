@@ -1417,7 +1417,7 @@ def cmd_direct(ns):
             j = norm(c['t']).find(k)
             if j >= 0: return char_time(c, j)
         return None
-    R = {'照抄字幕': [], '一段两件事': [], '画面静止': [], '口播有画面没有': [], '出现错位': [], '字幕可读性': [], '样式单一': [], '画面单调': [], '版面太空': [], '动效断档': []}
+    R = {'照抄字幕': [], '一段两件事': [], '画面静止': [], '口播有画面没有': [], '出现错位': [], '字幕可读性': [], '样式单一': [], '画面单调': [], '版面太空': [], '动效断档': [], '同一句话出现两次': []}
     port = T['canvas']['h'] > T['canvas']['w']; maxc = 12 if port else 16
     for c in cues:
         n = _vlen(norm(c['t'])); d = c['e'] - c['s']
@@ -1491,6 +1491,18 @@ def cmd_direct(ns):
     R['样式单一'] += style_monotony(T)
     R['画面单调'] += visual_monotony(T)
     _e, _g = layout_density(T); R['版面太空'] += _e; R['动效断档'] += _g
+    # 同一句话同时在画面上出现两次（例如大问句还没退场，顶上又出一行同样的小标题）：用户 2026-11-20 在成片里指出过
+    for S in T.get('scenes', []):
+        seen = []
+        for L in S.get('layers', []):
+            lp = L.get('props') or {}
+            txt = norm(' '.join(str(lp.get(k, '')) for k in ('text', 'q') if lp.get(k)))
+            if len(txt) < 3: continue
+            a0 = L.get('at', S['t0']); b0 = L.get('out', S['t1'])
+            for (t2, c2, a2, b2) in seen:
+                if t2 == txt and min(b0, b2) - max(a0, a2) > 0.15:
+                    R['同一句话出现两次'].append(f"{max(a0, a2):.1f}s {S.get('id')}：{c2} 和 {L.get('c')} 都写着「{txt[:14]}」：留一个，另一个先退场（out）或删掉")
+            seen.append((txt, L.get('c'), a0, b0))
     n = sum(len(v) for v in R.values())
     print(f"导演检查 · {T.get('title', '')} · {len(scenes)} 段 · {T['duration']:.1f}s")
     for k, v in R.items():
