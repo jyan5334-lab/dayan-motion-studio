@@ -1241,7 +1241,7 @@ def visual_monotony(T):
         out.append(f"全片 {total} 个动效 / {D / 60:.1f} 分钟 = 每分钟 {total / (D / 60):.0f} 个：至少每分钟 15–20 个（每段 2–4 层：主画面 + 强调 + 辅助，一两句话换一次画面）")
     for S, comps, vis in per:
         dur = S['t1'] - S['t0']
-        swaps = sum(1 for L in S.get('layers', []) if L.get('out') is not None) + sum(max(0, len((L.get('props') or {}).get('beats') or []) - 1) for L in S.get('layers', []) if L.get('c') == 'demo-zone') + len([z for L in S.get('layers', []) for z in ((L.get('props') or {}).get('zoom') or [])])
+        swaps = sum(1 for L in S.get('layers', []) if L.get('out') is not None) + sum(max(0, len((L.get('props') or {}).get('beats') or []) - 1) for L in S.get('layers', []) if L.get('c') == 'demo-zone') + len([z for L in S.get('layers', []) for z in ((L.get('props') or {}).get('zoom') if isinstance((L.get('props') or {}).get('zoom'), list) else [])])
         if dur > 12 and swaps < int(dur // 8):
             out.append(f"{S['id']} {S['t0']:.1f}–{S['t1']:.1f}s 一段 {dur:.0f}s 画面没换过：一两句话（4–10 秒）就该换一次画面——拆成两段换背景 / 换主画面，或在段内用 out + 新元素翻页、demo-zone 换拍、窗口推近到新位置")
     textish = sum(1 for _, _, vis in per if not vis)

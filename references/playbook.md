@@ -90,7 +90,7 @@
 | 通知 / 私信 / 涨粉 | 手机 + 角标数字跳涨 + 消息下滑 | `phone` | 私信 12 → 99+ |
 | 软件 / 网站 / 录屏 | 窗口里放真录屏，点击处放大 + 光标 + 便签 | `window`（zoom/cursor/callouts/highlight） | D2 |
 | 文档 / 稿子 / 标注 | 文档卡逐行高亮 + 侧边批注 + 字数计数 | `doc` | 逐字稿：语气词/口误 |
-| 产品名 / 品牌 | 玻璃 Logo 卡 / 金属大字 | `logo` | Claude Code、GPT |
+| 产品名 / 品牌 | 真实 logo 玻璃卡（念到名字时弹出）/ 金属大字 | `logo`（`src` 放官方图标，`size` `row`） | Claude、Codex、豆包 |
 | 情绪爆点 | 彩纸 / 速度线 / 贴纸 emoji | `confetti`、`burst`、`sticker` | 太兴奋了！😂 |
 | 等式 / 定义 | A = B 分立人物两侧 | `equation` | Bot = 子Agent |
 | 自我介绍 | 名牌巨字 + 账号小字 | `namecard` | A1 结尾自我介绍名牌 |

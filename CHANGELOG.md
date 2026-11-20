@@ -1,5 +1,11 @@
 # 更新记录
 
+- **1.13.1**（用户 2026-11-20 要求）：剪辑 Skill 教程第一版漏放真实 logo、真实素材偏少，补上规则和组件参数。
+  - 新硬规则：口播提到品牌 / 产品 / 模型 / Agent 名字时，用 `logo` 组件放官方图标，在念到名字时弹出；图标先从开源图标库 `@lobehub/icons-static-svg` 取。讲参考视频、第一版、实测、效果对比时优先放真实片段或截图，标签如实写。
+  - `logo` 组件新增 `size`（图标高度，字号跟着变，默认 90）和 `row`（图标和名字横排）。
+  - 修复：导演检查遇到 `fx-cursor-tour` 这类 `zoom` 是数字的动效时报错。
+  - 验证：剪辑 Skill 教程 v2（4:3 60fps，26 段，四个 Agent 真实 logo + 往期成片与第一版真实画面），导演检查 0 建议、逐帧试跑 0 报错。
+
 - **1.13.0**（用户 2026-11-17 要求）：主技能定位为通用口播剪辑，行业画面交给 Motion 模板包。
   - **删掉 6 个内置模板**（钩子开场、章节页、对比裁决、术语讲解、侧推讲解、结尾）：质量不够，对应效果用动效库里的新动效（`fx-hook-question`、`fx-chapter-tag`、`fx-vs-split`、`fx-mind-tree`、`fx-side-caption`、`fx-follow-card` 等）；模板机制保留给行业包。
   - **行业模板包**（`scripts/dms_packs.py`，规范见 `references/motion-templates.md`）：`pack.json`（id、版本、行业、要求的主技能版本、仓库地址）；装在 `~/.dayan-motion-studio/packs/<包名>/` 自动发现；`dms.py pack list / install / update / new / check [--render]`；版本不满足直接报错；模板写 `<包名>:<模板 id>`，包里动效必须 `fx-<包名>-` 开头且不和主库重名。

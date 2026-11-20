@@ -395,8 +395,9 @@ html[data-orient="portrait"] .dms-sub { bottom: 18%; max-width: 72%; --sub-size:
 .c-logo .lw { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 28px 46px; border-radius: 26px; }
 .c-logo.lg-glass .lw { background: linear-gradient(160deg, rgba(255,255,255,.2), rgba(255,255,255,.05)); border: 1.5px solid rgba(255,255,255,.35); box-shadow: 0 20px 60px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.5); backdrop-filter: blur(12px); }
 .c-logo.lg-solid .lw { background: var(--card); color: var(--card-fg); border: 1.5px solid var(--line); }
-.c-logo .lw img { height: 90px; } .c-logo .lw .dms-ico { font-size: 80px; color: var(--accent); }
-.c-logo .lw b { font: 900 54px/1 var(--f-en); color: var(--lg-c); letter-spacing: -.01em; white-space: nowrap; } .c-logo .lw small { font: 700 20px var(--f-mono); letter-spacing: .24em; color: var(--muted); }
+.c-logo .lw img { height: var(--lg-img, 90px); } .c-logo .lw .dms-ico { font-size: 80px; color: var(--accent); }
+.c-logo .lw b { font: 900 var(--lg-fs, 54px)/1 var(--f-en); color: var(--lg-c); letter-spacing: -.01em; white-space: nowrap; } .c-logo .lw small { font: 700 20px var(--f-mono); letter-spacing: .24em; color: var(--muted); }
+.c-logo.lg-row .lw { flex-direction: row; gap: 28px; }
 .c-logo.lg-metal .lw b { font-size: 130px; background: linear-gradient(180deg, #fff 10%, #9aa0aa 48%, #f4f6f8 52%, #6a707a 100%); -webkit-background-clip: text; color: transparent; filter: drop-shadow(0 8px 20px rgba(0,0,0,.5)); }
 
 .c-sticker { display: grid; place-items: center; height: 100%; }
