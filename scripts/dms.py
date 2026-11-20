@@ -796,7 +796,7 @@ PACK_README = """# {name}
 
 def _copy_pack(src, dst):
     if dst.exists(): shutil.rmtree(dst)
-    shutil.copytree(src, dst, ignore=shutil.ignore_patterns('_check', '__pycache__'))
+    shutil.copytree(src, dst, ignore=shutil.ignore_patterns('_check', '_editcheck', '__pycache__'))
 
 def _fetch_pack(src, tmp):
     """把 git 地址 / zip / 文件夹 取到临时目录，返回包的根目录（里面有 pack.json）"""
@@ -897,7 +897,9 @@ def cmd_pack(ns):
 FX_JS = """/* {name}（{id}）—— 剪辑时现做的新动效，已沉淀进动效库
    什么时候用：{use}
    标准（SKILL.md「动效不够时」）：画面跟着口播的字走（子元素 at/cue 相对本层）、有入场和落定的质感、带音效、
-   16:9 / 4:3 / 9:16 都排得下（尺寸用 cqw/cqh，不写死像素）、时间的纯函数（只用 lt/t，不用真实时间和 Math.random）、不出现任何人的品牌。 */
+   16:9 / 4:3 / 9:16 都排得下（尺寸用 cqw/cqh，不写死像素）、时间的纯函数（只用 lt/t，不用真实时间和 Math.random）、不出现任何人的品牌。
+   剪辑台能改、改了不坏（references/editable.md 十条）：连线用 DMS.link(e, a, b) 并在 update 里 ln.update(k)；装饰做成被装饰元素的子元素；
+   一个节点一个容器；文字自适应（DMS.fitText）、flex/grid 排版；数字与图形同参数；动画不占用 translate/scale/rotate；颜色走 CSS 变量；可编辑元素写 data-edit。 */
 (function () {{
   'use strict';
   const DMS = window.DMS, C = DMS.components, E = DMS.ease, lerp = DMS.lerp, prog = DMS.prog, clamp = DMS.clamp, el = DMS.el;
@@ -907,7 +909,8 @@ FX_JS = """/* {name}（{id}）—— 剪辑时现做的新动效，已沉淀进�
       e.classList.add('{id}');
       const items = (p.items || []).map((it, i) => {{
         const o = typeof it === 'string' ? {{ t: it }} : it;
-        return {{ o, at: o.at == null ? 0.25 + i * 0.4 : o.at, el: el('div', 'it', DMS.hl(o.t || '', o.hl), e) }};
+        const x = el('div', 'it', DMS.hl(o.t || '', o.hl), e); x.dataset.edit = 'item-' + (i + 1);   // 稳定编号：剪辑台按它记修改
+        return {{ o, at: o.at == null ? 0.25 + i * 0.4 : o.at, el: x }};
       }});
       return {{ items }};
     }},
@@ -976,6 +979,46 @@ def cmd_library(ns):
     if nosheet: print('\n【缺样张】' + '、'.join(nosheet) + '（dms.py effect check <id>）')
     if notrig: print(f'【缺触发词 triggers】{len(notrig)} 个：' + '、'.join(notrig[:30]) + (' …' if len(notrig) > 30 else '') + '（effect.json 里写口播里会出现的说法，搜索靠它）')
 
+EDIT_RULES_SINCE = '2026-11-20'   # 这天以后新建的动效：可编辑性体检有 error 就不能入库；之前的老动效只记下“待升级”，不拦
+_ENUM_KEYS = {'brand', 'skin', 'tint', 'style', 'kind', 'who', 'icon', 'theme', 'look', 'pos', 'align', 'mode', 'dir', 'shape', 'type', 'variant', 'layout', 'color', 'logo', 'img', 'src', 'font', 'ease', 'id', 'preset'}
+def _lengthen(v, key=''):
+    """把参数里给人看的文字都加长 60%（枚举值、颜色、路径、图片不动），模拟用户在剪辑台把字改长"""
+    if isinstance(v, str):
+        if not v.strip() or key in _ENUM_KEYS or re.match(r'^(#|rgb|https?:|engine/|[\w./-]+\.(png|jpe?g|svg|webp|gif|mp4|mov)$)', v): return v
+        if re.fullmatch(r'[a-z][a-z0-9_-]*', v) and len(v) < 16: return v
+        n = max(2, int(len(v) * 0.6))
+        return v + ('加长文字测试' * 6)[:n] if re.search(r'[\u4e00-\u9fa5]', v) else v + 'x' * n
+    if isinstance(v, list): return [_lengthen(x, key) for x in v]
+    if isinstance(v, dict): return {k: _lengthen(x, k) for k, x in v.items()}
+    return v
+
+def _editcheck(d, m, strict=None):
+    """可编辑性体检（references/editable.md）：16:9 示例 + 文字加长 60% 版各建一个工程，按剪辑台的改法动一动：
+    手画连线 / DMS.link 跟随、附着装饰、文字加长出框、文字互相压住。返回 issues；strict 时有 error 直接失败"""
+    fid = m['id']; ex = m.get('example') or {}; dur = float(ex.get('dur', 4))
+    bx = (ex.get('box') or {}).get('landscape', 'center')
+    work = d / '_editcheck'; shutil.rmtree(work, ignore_errors=True); work.mkdir()
+    for tag, props in (('a', ex.get('props', {})), ('b', _lengthen(ex.get('props', {})))):
+        edit = {'schema': 'dayan-edit/1', 'title': fid, 'canvas': {'w': 1920, 'h': 1080, 'fps': 30}, 'theme': ex.get('theme', 'dark-tech'), 'duration': dur,
+                'brand': EXAMPLE_BRAND, 'signature': {'enabled': False}, 'subtitles': {'enabled': False}, 'music': {'mode': 'none'},
+                'scenes': [{'id': 'fx', 't0': 0, 't1': dur, 'bg': [{'c': 'bg-wall', 'props': {'skin': 'platinum'}}], 'layers': [{'c': fid, 'at': 0.2, 'box': bx, 'props': props}]}]}
+        jsave(work / f'{tag}.json', edit)
+        cmd_build(argparse.Namespace(edit=str(work / f'{tag}.json'), project=str(work / tag)))
+    t = round(0.2 + (dur - 0.2) * 0.85, 2)
+    r = subprocess.run([NODE, str(HERE / 'editcheck.mjs'), str(work / 'a'), str(work / 'b'), fid, str(t)], cwd=str(ROOT), capture_output=True, text=True)
+    shutil.rmtree(work, ignore_errors=True)
+    try: rep = json.loads(r.stdout.strip().splitlines()[-1])
+    except Exception: raise SystemExit('✗ 可编辑性体检没跑起来：\n' + (r.stderr or r.stdout)[-800:])
+    iss = rep['issues']; errs = [x for x in iss if x['level'] == 'error']
+    if strict is None: strict = str(m.get('created', '')) >= EDIT_RULES_SINCE
+    print(f"  可编辑性体检（references/editable.md）：DMS.link 连线 {rep['links']} 条（挪动后跟上 {rep['linkOk']} 条）；error {len(errs)} 个、warn {len(iss) - len(errs)} 个")
+    for x in iss[:12]: print(f"   {'✗' if x['level'] == 'error' else '⚠'} [第{x['rule']}条] {x['what']}")
+    m['editable'] = {'checked': time.strftime('%Y-%m-%d %H:%M'), 'ok': not errs, 'issues': [f"[{x['level']}·{x['rule']}] {x['what']}" for x in iss][:20]}
+    jsave(d / 'effect.json', m)
+    if errs and strict: raise SystemExit('✗ 可编辑性体检没通过：按 references/editable.md 改好再入库（剪辑台里拖、缩放、改字会错位）')
+    if errs: print('  ⚠ 老动效（规范之前做的）：先记为“待升级”，不拦；改到它时顺手按 references/editable.md 升级')
+    return iss
+
 def cmd_effect(ns):
     """动效库：new 新建骨架 / check 三种画幅出样张 / list 列出。剪辑时现做的新动效都走这里沉淀。
     存档分流（用户 2026-11-17）：通用的存主技能 effects/；只有某个行业才用的加 --pack <包名> 存进那个行业包（id 要 fx-<包名>- 开头）。"""
@@ -1017,6 +1060,9 @@ def cmd_effect(ns):
         (d / 'style.css').write_text(FX_CSS.format(id=fid), encoding='utf-8')
         print(f'✓ 新动效骨架 → {d}\n  改 component.js / style.css / effect.json（use、example），然后 dms.py effect check {fid}')
         return
+    if ns.action == 'editcheck':
+        if not d.exists(): raise SystemExit(f'✗ 动效库和已装行业包里都没有 {fid}')
+        _editcheck(d, jload(d / 'effect.json')); return
     if ns.action == 'check':
         """三种画幅（16:9 1920×1080 / 4:3 1440×1080 / 9:16 1080×1920）各渲染 4 帧，拼成 sheet.png；页面报错直接失败"""
         if not d.exists(): raise SystemExit(f'✗ 动效库和已装行业包里都没有 {fid}')
@@ -1051,6 +1097,7 @@ def cmd_effect(ns):
                 w2 = int(im.width * th / im.height); S.paste(im.resize((w2, th)), (x, y)); x += w2 + pad
             y += th + 14
         S.save(d / 'sheet.png'); shutil.rmtree(work, ignore_errors=True)
+        _editcheck(d, m)   # 可编辑性体检：规范之后新建的动效有 error 不能入库、不分配编号（references/editable.md）
         try:
             import dms_catalog as K
             if d.parent == ROOT / 'effects': K.build_index()   # 新动效检查通过 → 分配编号、进索引
@@ -1782,7 +1829,7 @@ def cmd_build(ns):
     for d in effect_dirs(packs_used):
         dst = P / 'effects' / d.name
         if dst.exists(): shutil.rmtree(dst)
-        shutil.copytree(d, dst, ignore=shutil.ignore_patterns('*.png', '_check'))
+        shutil.copytree(d, dst, ignore=shutil.ignore_patterns('*.png', '_check', '_editcheck'))
         if (d / 'style.css').exists(): fx_tags.append(f'<link rel="stylesheet" href="effects/{d.name}/style.css">')
         fx_tags.append(f'<script src="effects/{d.name}/component.js"></script>')
     html = html.replace('<script src="timeline.js"></script>', '\n'.join(fx_tags) + '\n<script src="timeline.js"></script>', 1) if fx_tags else html
@@ -2050,7 +2097,7 @@ def main():
     sp = ap.add_subparsers(dest='cmd')
     sp.add_parser('doctor')
     sp.add_parser('kickoff', help='新作品开工前要问用户的问题（画幅 / 分辨率 / 帧率 / 文字墙品牌）')
-    a = sp.add_parser('effect', help='动效库：new 新建 / check 三画幅样张 / list'); a.add_argument('action', choices=['new', 'check', 'list']); a.add_argument('id', nargs='?'); a.add_argument('--name'); a.add_argument('--use')
+    a = sp.add_parser('effect', help='动效库：new 新建 / check 三画幅样张 + 可编辑性体检 / editcheck 只做可编辑性体检 / list'); a.add_argument('action', choices=['new', 'check', 'editcheck', 'list']); a.add_argument('id', nargs='?'); a.add_argument('--name'); a.add_argument('--use')
     a.add_argument('--pack', help='行业专属动效：存进这个行业包（id 要 fx-<包名>- 开头）；通用动效不加，存主技能动效库'); a.add_argument('--force', action='store_true', help='查重发现很像时仍然新建')
     a = sp.add_parser('brand', help='查看 / 保存本机品牌（文字墙两行等）'); a.add_argument('action', choices=['show', 'set']); a.add_argument('--main'); a.add_argument('--sub'); a.add_argument('--name'); a.add_argument('--mark')
     a = sp.add_parser('asr'); a.add_argument('video'); a.add_argument('workdir'); a.add_argument('--engine'); a.add_argument('--fix', help='识别纠错表 json')

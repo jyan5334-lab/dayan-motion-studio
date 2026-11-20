@@ -11,3 +11,4 @@ proj/
 *.mov
 *.webm
 !assets/**/*.mp4
+_editcheck/

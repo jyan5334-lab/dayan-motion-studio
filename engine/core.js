@@ -592,6 +592,55 @@
     node.style.setProperty('--fit', k.toFixed(4));
     return k;
   };
+  /* 连线 / 箭头跟随（可编辑动效规范 references/editable.md 第 1 条）：两端绑在两个元素上，每帧按它们“当前真实位置”重画。
+     元素被拖动、缩放、文字变长撑大，线都跟着走；画线进度 k 按真实路径长度算，线变长变短都完整画完。
+     用法：build 里 s.ln = DMS.link(e, 起点元素, 终点元素, { from: 'auto'|'t'|'b'|'l'|'r'|'c', to: 同上, curve: 0~1, arrow: true, color, width, dash, gap })
+           update 里 s.ln.update(k)   // k = 0..1 画线进度；不传 = 1 */
+  DMS.link = function (root, a, b, o) {
+    o = o || {};
+    const NS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('class', 'dms-link' + (o.cls ? ' ' + o.cls : ''));
+    svg.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:' + (o.z == null ? 0 : o.z);
+    const path = document.createElementNS(NS, 'path');
+    path.setAttribute('fill', 'none'); path.setAttribute('stroke', o.color || 'var(--accent, #2CE0C0)');
+    path.setAttribute('stroke-width', o.width || 3); path.setAttribute('stroke-linecap', 'round');
+    svg.appendChild(path);
+    let head = null;
+    if (o.arrow) { head = document.createElementNS(NS, 'path'); head.setAttribute('fill', o.color || 'var(--accent, #2CE0C0)'); svg.appendChild(head); }
+    root.insertBefore(svg, root.firstChild);
+    svg._dmsEnds = [a, b];
+    const local = el => {
+      const R0 = root.getBoundingClientRect(), r = el.getBoundingClientRect(), k = (R0.width / (root.offsetWidth || R0.width)) || 1;
+      return { x: (r.left - R0.left) / k, y: (r.top - R0.top) / k, w: r.width / k, h: r.height / k };
+    };
+    const side = (r, s, q) => {
+      const cx = r.x + r.w / 2, cy = r.y + r.h / 2;
+      if (s === 'auto' || !s) { const dx = q.x + q.w / 2 - cx, dy = q.y + q.h / 2 - cy; s = Math.abs(dx) * r.h > Math.abs(dy) * r.w ? (dx > 0 ? 'r' : 'l') : (dy > 0 ? 'b' : 't'); }
+      const g = o.gap == null ? 6 : o.gap;
+      return { t: [cx, r.y - g, 0, -1], b: [cx, r.y + r.h + g, 0, 1], l: [r.x - g, cy, -1, 0], r: [r.x + r.w + g, cy, 1, 0], c: [cx, cy, 0, 0] }[s];
+    };
+    function update(k) {
+      k = k == null ? 1 : clamp(k);
+      const ra = local(a), rb = local(b);
+      const p = side(ra, o.from, rb), q = side(rb, o.to, ra);
+      const d = Math.hypot(q[0] - p[0], q[1] - p[1]), c = (o.curve == null ? 0.35 : o.curve) * d;
+      const c1 = [p[0] + p[2] * c, p[1] + p[3] * c], c2 = [q[0] + q[2] * c, q[1] + q[3] * c];
+      path.setAttribute('d', `M${p[0].toFixed(1)},${p[1].toFixed(1)} C${c1[0].toFixed(1)},${c1[1].toFixed(1)} ${c2[0].toFixed(1)},${c2[1].toFixed(1)} ${q[0].toFixed(1)},${q[1].toFixed(1)}`);
+      const L = path.getTotalLength() || 1;
+      if (o.dash) { path.setAttribute('stroke-dasharray', o.dash); path.style.clipPath = ''; path.style.opacity = k > 0 ? 1 : 0; path.setAttribute('stroke-dashoffset', 0); svg.style.setProperty('--k', k); }
+      else { path.setAttribute('stroke-dasharray', `${L} ${L}`); path.setAttribute('stroke-dashoffset', (L * (1 - k)).toFixed(1)); }
+      if (head) {
+        const e = path.getPointAtLength(L * k), e0 = path.getPointAtLength(Math.max(0, L * k - 2));
+        const ang = Math.atan2(e.y - e0.y, e.x - e0.x), s = (o.width || 3) * 3.2;
+        const pts = [[e.x, e.y], [e.x - s * Math.cos(ang - 0.45), e.y - s * Math.sin(ang - 0.45)], [e.x - s * Math.cos(ang + 0.45), e.y - s * Math.sin(ang + 0.45)]];
+        head.setAttribute('d', 'M' + pts.map(v => v[0].toFixed(1) + ',' + v[1].toFixed(1)).join(' L') + ' Z');
+        head.style.opacity = k > 0.02 ? 1 : 0;
+      }
+      return L;
+    }
+    return { svg, path, head, update };
+  };
   DMS.wait = p => { if (p && p.then) pending.push(p); };
   DMS.now = () => lastT;
 

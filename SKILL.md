@@ -2,7 +2,7 @@
 name: dayan-motion-studio
 description: 大琰DAYAN 口播自动剪辑 + 动效技能。把口播原片剪成带包装动效、人物窗连续迁移、关键词同步画面、转场音效和字幕的 60fps 成片，并交付可编辑工程（HTML 动画工程、分轨、SRT、Premiere/达芬奇 XML）和一套封面（A 手账贴纸 / B 科技海报 / C 电影海报 × 竖屏 3:4 + 横屏 4:3）；可以安装、调用和制作行业 Motion 模板包。用于"剪口播""自动剪辑""做包装动效""加转场音效""做/装/调用 Motion 模板包""做封面"等请求。
 metadata:
-  version: "1.13.4"
+  version: "1.14.0"
   author: "大琰DAYAN"
 ---
 
@@ -117,13 +117,15 @@ A 和 B 可以混用：不装包时 A 照常工作；装了包，语义匹配到
    - **带音效**：每个接触点一个（`sfx`），落在动作那一帧；
    - **三种画幅都排得下**：尺寸用 `cqw` / `cqh` / `cqmin`，不写死像素；
    - 时间的纯函数（只用 lt / t，不用真实时间和 `Math.random`）；不出现任何人的品牌（品牌一律取 `brand`）。
+   - **剪辑台能改、改了不坏**（用户 2026-11-20 要求，硬规则，完整十条见 [editable.md](references/editable.md)）：用户会在剪辑台里改字、改字号颜色、改配色、拖动 / 缩放 / 隐藏卡里任意元素，怎么改都不能错位、断开、出框，动画照常播放。要点：连线 / 箭头用 `DMS.link` 两端绑元素、每帧自动跟随；圈注、高亮、光环、角标做成被装饰元素的子元素；同一个节点（图标 + 名字 + 数值）放一个容器；卡片跟着文字长、单行大字 `DMS.fitText` 缩字，不固定宽高裁字；flex / grid 排版互相让位，不给每段字写死坐标；柱子、进度、图表点位和显示的数字用同一个参数；逐字、跑马灯副本运行时生成；动画不占用 `translate` / `scale` / `rotate` 独立属性（留给剪辑台）；颜色走 CSS 变量；可编辑元素写稳定编号 `data-edit`。
 3. **质量关**（用户 2026-11-08 定）：用户分享过的参考博主（风格 A–D）的剪辑动效、包装、MG 动画**都是质量参照**——哪里进、哪里出、同一页面上丝滑连续的演示都要学；**风格 C 最贴近用户口味**（同等合适时优先），但哪种风格的做法更适合眼前的内容就用哪种。目标：质量提上去，样式要高级。完整标准和自检清单见 [quality.md](references/quality.md)，要点：
    - **进与出都有交代**：从空间里该来的方向进、虚化→清晰 + 回弹落定、退场有方向；同一时刻只有一个主动作；
    - **同一页面连续演示**：先给舞台再逐个点亮，舞台不换、状态推进（数字跳涨、进度走满、标注逐条出现），信息累加完整再翻页；
    - **翻页丝滑**：推/滑/承接，全片方向一致，硬切只用在节奏点；同一主题共用一面文字墙；
    - **高级感**：留白、三级字号、质感（投影/细描边/光泽/运动模糊）、颜色克制、不抢人。
-4. **检查**：`dms.py effect check fx-名字`——16:9 / 4:3 / 9:16 各渲染 4 帧并逐帧试跑一遍，页面报错直接失败，通过后生成 `sheet.png`，**必须打开看**有没有溢出、压到人物或字幕区。用进片子后照常过 `dms.py direct` 导演检查和静帧检查。交付说明里写明"这次新做了哪些动效（名称 + 用在哪一段）"。
+4. **检查**：`dms.py effect check fx-名字`——16:9 / 4:3 / 9:16 各渲染 4 帧并逐帧试跑一遍，页面报错直接失败，通过后生成 `sheet.png`，**必须打开看**有没有溢出、压到人物或字幕区。最后自动做**可编辑性体检**（也可单独 `dms.py effect editcheck fx-名字`）：手画连线、`DMS.link` 挪动后跟不跟、附着装饰、文字加长 60% 后出框 / 压字；2026-11-20 以后新建的动效有 error 不能入库（不分配编号），老动效只记“待升级”。用进片子后照常过 `dms.py direct` 导演检查和静帧检查。交付说明里写明"这次新做了哪些动效（名称 + 用在哪一段）"。
 5. **沉淀（自动，不用等用户确认）**：存到哪先分流（用户 2026-11-17 要求）——**通用的**（任何口播都能用）存主技能 `effects/`；**只有某个行业才用的**加 `--pack <包名>` 存进那个行业包（id 写 `fx-<包名>-…`）。`effect new` 会先查重：和已有的几百种比，相似的会列出来，很像时拒绝新建（确实不同再加 `--force`）——能改进旧的就改进旧的，不堆相似的。通过检查的新动效就留在动效库里，以后剪辑 `build` 时自动带进工程、按 id 直接用；`effect.json` 写清 `use`（什么语义用它）和 `example`。有本地工作库时，把技能包同步到 `05_模板与脚本/dayan-motion-studio/`，并在版本记录里写一笔。动效库里同样只写风格代号，不写参考博主的名字。
+6. **用户丢来的卡片 / 动效**（HTML、截图、视频参考都算）：不原样嵌入入库，先按 [editable.md](references/editable.md) 还原成可编辑动效（十条规则），`effect check` 连同可编辑性体检通过后再入库、分配编号。大琰DAYAN 原卡和老动效按 editable.md 文末的体检清单分批升级，改到哪个顺手升级哪个。
 
 ## 12 类动效与版面（v1.12，用户 2026-11-17 要求）
 
@@ -172,13 +174,13 @@ A 和 B 可以混用：不装包时 A 照常工作；装了包，语义匹配到
 ```
 SKILL.md                 本文件
 engine/                  时间轴引擎（core / presenter / 45 个组件 / 7 套主题）
-scripts/dms.py           命令行入口；dms_audio.py 声音；dms_packs.py 行业模板包；dms_templates.py 模板合同与伸缩；dms_export.py 导出；render.mjs 渲染；dms_cover.py + cover.mjs 封面
+scripts/dms.py           命令行入口；editcheck.mjs 可编辑性体检；dms_audio.py 声音；dms_packs.py 行业模板包；dms_templates.py 模板合同与伸缩；dms_export.py 导出；render.mjs 渲染；dms_cover.py + cover.mjs 封面
 assets/cover/cover.html  封面模板（A 手账贴纸 / B 科技海报 / C 电影海报；有真人 / 文字 + 背景两种版式）
 effects/                 动效库：剪辑时现做、自动沉淀的新动效（每个一个文件夹：effect.json + component.js + style.css + sheet.png 三画幅样张）
 assets/dayan-library.html  大琰DAYAN 动效库 v6.1（334 条原卡，可用 dayan 组件嵌入）
 assets/sfx/              CC0 真实采样音效库（35 类，来源见 LICENSES.md）
 assets/models/           YuNet 人脸检测模型（OpenCV Zoo，MIT）
-references/              orchestration 编排手册 · catalog 动效目录 · playbook 剪辑语法 · cover 封面 · edit-spec · components · motion-templates · sound · qa · dayan-library · reference-videos · platforms
+references/              editable 可编辑动效规范 · orchestration 编排手册 · catalog 动效目录 · playbook 剪辑语法 · cover 封面 · edit-spec · components · motion-templates · sound · qa · dayan-library · reference-videos · platforms
 examples/                样片的 edit.json / cut.json / lines.txt（完整可复现）；claude-vs-codex/ 是带编排单的完整范例；packs/demo/ 是行业模板包的参照包
 AGENTS.md                给 Codex 等编码助手的入口说明
 ```
