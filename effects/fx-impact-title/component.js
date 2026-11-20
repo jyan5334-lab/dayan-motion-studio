@@ -19,6 +19,7 @@
       return { R, t, sub, bits };
     },
     update(e, lt, p, s) {
+      DMS.fitText(s.t, e.clientWidth * 0.96);   // 标题太长时按 box 宽度缩小，不冲出画面
       const rq = prog(lt, 0, 0.4);
       s.R.forEach((r, i) => { r.style.opacity = (rq < 1 ? (0.25 + (i % 3) * 0.25) * (1 - prog(lt, 0.3, 0.3)) : 0).toFixed(3);
         r.style.setProperty('--len', lerp(60, 8, E.inCubic(rq)).toFixed(1) + 'cqmax'); });

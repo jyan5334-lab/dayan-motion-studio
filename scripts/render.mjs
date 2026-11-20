@@ -79,6 +79,8 @@ async function main() {
     const page = await openPage(browser); const step = +A.sweep > 0 ? +A.sweep : 1 / 30;
     const f0 = +(A.from || 0), f1 = +(A.to || DUR); let n = 0;
     for (let t = f0; t <= f1 + 1e-6; t += step) { await page.evaluate(tt => DMS.renderAt(tt), +t.toFixed(4)); n++; }
+    const ov = await page.evaluate(() => DMS.overflowCheck ? DMS.overflowCheck() : []);
+    ov.forEach(o => console.log(`[overflow:${o.level}] ${o.scene} ${o.c} @${o.t}s「${o.text}」${o.why} ${o.px}px`));
     console.log('sweep', n, 'frames'); await browser.close(); return;
   }
   if (A.stills) {

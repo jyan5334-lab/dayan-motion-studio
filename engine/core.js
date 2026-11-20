@@ -553,6 +553,45 @@
     drawFlash(flash, line);
     return Promise.all(pending.slice());
   };
+  /* 文字出界检查（sweep 调用）：每个图层在动作做完、稳定停留的时刻量一次，
+     文字超出画布 = 错误（观众看不到）；超出自己的 box 太多 = 提醒（可能压到别的东西） */
+  DMS.overflowCheck = async function () {
+    const out = [], sr = stage.getBoundingClientRect(), k = sr.width / W;
+    for (let i = 0; i < scenes.length; i++) {
+      const S = scenes[i], d = S.def;
+      for (const L of S.layers) {
+        const a0 = (L.at || 0), end = Math.min(L.out != null ? L.out - 0.3 : 1e9, d.t1 - 0.45);
+        const t = Math.min(a0 + 1.6, end);
+        if (!(t > a0 + 0.3)) continue;
+        await DMS.renderAt(t);
+        const ws = getComputedStyle(L.el); if (ws.display === 'none' || +ws.opacity < 0.5) continue;
+        const br = L.el.getBoundingClientRect(); if (!br.width) continue;
+        let worst = null;
+        L.el.querySelectorAll('*').forEach(n => {
+          if (![...n.childNodes].some(c => c.nodeType === 3 && c.textContent.trim())) return;
+          const cs = getComputedStyle(n); if (cs.visibility === 'hidden' || +cs.opacity === 0) return;
+          const r = n.getBoundingClientRect(); if (!r.width || !r.height) return;
+          const offCanvas = Math.max(sr.left - r.left, r.right - sr.right, sr.top - r.top, r.bottom - sr.bottom) / k;
+          const offBox = Math.max(br.left - r.left, r.right - br.right) / k;
+          const v = { text: n.textContent.trim().slice(0, 16), offCanvas, offBox };
+          if (!worst || offCanvas > worst.offCanvas || (offCanvas <= 2 && offBox > worst.offBox)) worst = v;
+        });
+        if (!worst) continue;
+        const boxW = br.width / k;
+        if (worst.offCanvas > 2) out.push({ level: 'error', scene: d.id, c: L.def.c, t: +t.toFixed(2), text: worst.text, px: Math.round(worst.offCanvas), why: '文字超出画布' });
+        else if (worst.offBox > Math.max(24, boxW * 0.08)) out.push({ level: 'warn', scene: d.id, c: L.def.c, t: +t.toFixed(2), text: worst.text, px: Math.round(worst.offBox), why: '文字超出自己的 box' });
+      }
+    }
+    return out;
+  };
+  /* 文字按可用宽度自动缩小：node 的字号写成 calc(原字号 * var(--fit, 1))，每帧调用一次；不超宽时 --fit = 1 */
+  DMS.fitText = function (node, avail) {
+    if (!node || !(avail > 0)) return 1;
+    node.style.setProperty('--fit', 1);
+    const w = node.scrollWidth, k = w > avail ? avail / w : 1;
+    node.style.setProperty('--fit', k.toFixed(4));
+    return k;
+  };
   DMS.wait = p => { if (p && p.then) pending.push(p); };
   DMS.now = () => lastT;
 

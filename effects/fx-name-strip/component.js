@@ -15,7 +15,8 @@
       return { bar, t, b: t.querySelector('b'), sp: t.querySelector('span') };
     },
     update(e, lt, p, s) {
-      e.style.fontSize = Math.min(e.clientHeight * 0.36, e.clientWidth * 0.08).toFixed(1) + 'px';
+      let fs = Math.min(e.clientHeight * 0.36, e.clientWidth * 0.08); e.style.fontSize = fs.toFixed(1) + 'px';
+      const need = s.t.offsetLeft + s.t.scrollWidth; if (need > e.clientWidth * 0.98) { fs *= e.clientWidth * 0.98 / need; e.style.fontSize = fs.toFixed(1) + 'px'; }   // 名字太长时整体缩小
       const q = E.outExpo(prog(lt, 0, 0.5)); s.bar.style.transform = `scaleX(${q.toFixed(3)})`;
       const nq = prog(lt, 0.2, 0.5); s.b.style.clipPath = `inset(0 ${((1 - E.outExpo(nq)) * 100).toFixed(1)}% 0 0)`;
       const tq = prog(lt, 0.45, 0.5); s.sp.style.opacity = clamp(tq * 2).toFixed(3); s.sp.style.transform = `translateY(${lerp(.4, 0, E.outExpo(tq)).toFixed(2)}em)`;

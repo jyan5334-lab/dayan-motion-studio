@@ -1944,6 +1944,13 @@ def cmd_sweep(ns):
     args = [NODE, str(HERE / 'render.mjs'), str(P), '--sweep', str(ns.step)] + (['--from', str(ns.start)] if ns.start is not None else []) + (['--to', str(ns.end)] if ns.end is not None else [])
     r = subprocess.run(args, cwd=str(ROOT), capture_output=True, text=True)
     errs = [l.strip() for l in (r.stdout + r.stderr).splitlines() if re.search(r'^\s*\[(page|console)\]', l)]
+    ovs = [l.strip() for l in r.stdout.splitlines() if l.startswith('[overflow:')]
+    ov_err = [l for l in ovs if l.startswith('[overflow:error]')]; ov_warn = [l for l in ovs if l.startswith('[overflow:warn]')]
+    if ov_warn:
+        print(f'⚠ 文字超出自己的 box {len(ov_warn)} 处（打开对应帧看有没有压到别的东西）：'); [print('  · ' + l.split('] ', 1)[1]) for l in ov_warn[:12]]
+    if ov_err:
+        print(f'✗ 文字超出画布 {len(ov_err)} 处（观众看不到，必须改：缩短文字、加大 box 或换小字号）：'); [print('  · ' + l.split('] ', 1)[1]) for l in ov_err[:12]]
+        if not (r.returncode or errs): sys.exit(1)
     if r.returncode or errs:
         print(f'✗ 逐帧试跑发现 {len(errs)} 次页面报错（{len(set(errs))} 种）：'); [print('  · ' + e) for e in sorted(set(errs))[:12]]
         sys.exit(1)
