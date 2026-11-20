@@ -4,7 +4,7 @@
 
 ## 开工前必读（按顺序）
 
-1. `SKILL.md`：完整流程、开工要问的 4 个问题、必须遵守的规则。
+1. `SKILL.md`：完整流程、每次剪辑前必问的问题（画幅、分辨率、帧率、封面、品牌，选了封面再问风格和人物）、必须遵守的规则。
 2. `references/orchestration.md`：**编排手册**，先写编排单再写 edit.json，以及怎么选动效、怎么现做动效。
 3. 找动效用 `python scripts/dms.py catalog 关键词`（读 `effects/index.json` 索引，按匹配度 + 成熟度 + 使用次数排序，默认前 8 个；知道编号可直接搜 `09-08`）。`references/catalog.md` 是按类浏览用的目录，库大了不要整份读。
 4. 需要时再查：`references/playbook.md`（剪辑语法）、`references/edit-spec.md`（edit.json 字段）、`references/components.md`（组件参数）、`references/quality.md`（动效质量标准）、`references/cover.md`（封面）。
@@ -29,7 +29,7 @@
 
 ```bash
 python scripts/dms.py doctor
-python scripts/dms.py kickoff                       # 新作品：先问用户 4 个问题
+python scripts/dms.py kickoff                       # 每条新视频：先问用户（画幅 / 分辨率 / 帧率 / 封面…），等回答再剪
 python scripts/dms.py asr 原片.mp4 work
 python scripts/dms.py cut 原片.mp4 cut.json work
 python scripts/dms.py subs work lines.txt

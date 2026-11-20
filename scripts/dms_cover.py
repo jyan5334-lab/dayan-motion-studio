@@ -278,8 +278,24 @@ def make_covers(P, brand, out=None, person='auto', frames=None):
         ranges = visible_ranges(TL, D) if master and master.exists() else []
     elif pmode in (True, 'yes', 'on'): ranges = [[0.0, D]] if master else []
     else: ranges = []
-    picks = pick_frames(P, TL, master, ranges, 3, frames or cfg.get('frames')) if ranges else []
+    # 封面人物照（用户 2026-11-20 定）：cover.photo 给一张或三张（A/B/C）准备好的人物图——
+    # Codex / 豆包 / WorkBuddy 按参考图生成的带手势人物图，或用户自己拍的照片；有它就不从视频里挑帧
+    photos = cfg.get('photo') or cfg.get('photos')
+    if isinstance(photos, str): photos = [photos]
     people = {}
+    if photos and pmode not in (False, 'no', 'off'):
+        import numpy as np
+        from PIL import Image
+        base_dir = Path(E.get('_base') or pj.get('edit') and Path(pj['edit']).parent or P)
+        for i, s in enumerate('ABC'):
+            f = Path(photos[min(i, len(photos) - 1)]); f = f if f.is_absolute() else (base_dir / f)
+            if not f.exists(): f = P / photos[min(i, len(photos) - 1)]
+            if not f.exists(): raise SystemExit(f'✗ 封面人物照找不到：{photos[min(i, len(photos) - 1)]}')
+            img = np.asarray(Image.open(f).convert('RGB'))
+            info = cut_person(img, s, wk / f'person_{s}.png'); info.update({'src': f'person_{s}.png', 't': None}); people[s] = info
+        log('封面人物：用准备好的人物照 ' + '、'.join(str(x) for x in photos[:3]) + ('（抠像）' if people['A']['cut'] else '（没有抠图模型：用照片卡）'))
+        ranges = []
+    picks = pick_frames(P, TL, master, ranges, 3, frames or cfg.get('frames')) if ranges else []
     if picks:
         import numpy as np
         get, _ = frame_reader(P, TL, master)
@@ -287,7 +303,7 @@ def make_covers(P, brand, out=None, person='auto', frames=None):
             img, _ = get(t, full=True)
             info = cut_person(img, s, wk / f'person_{s}.png'); info.update({'src': f'person_{s}.png', 't': t}); people[s] = info
         log('封面人物帧：' + '、'.join(f'{s} {people[s]["t"]:.2f}s' for s in people) + ('（抠像）' if people['A']['cut'] else '（没有抠图模型：用照片卡）'))
-    else: log('没有可用的真人画面 → 出文字 + 背景版封面')
+    elif not people: log('没有可用的真人画面 → 出文字 + 背景版封面')
     base = default_text(E, brand)
     shots = [x for x in (extract_shot(P, master, s, i, wk, TL) for i, s in enumerate((cfg.get('shots') or [])[:2])) if x]
     data = {'title': cfg.get('title') or base['title'], 'hl': cfg.get('hl', base['hl']), 'sub': cfg.get('sub', ''), 'note': cfg.get('note', ''),
