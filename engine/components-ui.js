@@ -191,7 +191,8 @@
     enter: 'pop',
     build(e, p) {
       e.classList.add('c-logo', 'lg-' + (p.style || 'glass'));
-      el('div', 'lw', `${p.src ? `<img src="${esc(p.src)}">` : p.icon ? DMS.icon(p.icon) : ''}<b>${esc(p.text || '')}</b>${p.sub ? `<small>${esc(p.sub)}</small>` : ''}`, e);
+      const src = p.src || (p.brand ? `engine/logos/${p.brand}.svg` : '');
+      el('div', 'lw', `${src ? `<img src="${esc(src)}">` : p.icon ? DMS.icon(p.icon) : ''}<b>${esc(p.text || '')}</b>${p.sub ? `<small>${esc(p.sub)}</small>` : ''}`, e);
       if (p.color) e.style.setProperty('--lg-c', p.color);
       if (p.size) { e.style.setProperty('--lg-img', p.size + 'px'); e.style.setProperty('--lg-fs', Math.round(p.size * 0.5) + 'px'); }
       if (p.row) e.classList.add('lg-row');

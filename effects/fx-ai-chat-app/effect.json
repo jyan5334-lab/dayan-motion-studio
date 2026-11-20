@@ -1,0 +1,72 @@
+{
+ "id": "fx-ai-chat-app",
+ "name": "AI 产品对话界面",
+ "use": "口播里出现\"跟 AI 说 / 把要求告诉它 / 提意见 / 截图发过去 / 它回我\"这类对话场景：按真实产品（Claude / ChatGPT / Codex / 豆包 / WorkBuddy / DeepSeek）的桌面端对话页还原——官方 logo、原生配色、侧边栏、输入框；我的话先在输入框逐字打出再发送，AI 先思考再逐字回复，可带截图附件",
+ "props": "brand 产品（claude/chatgpt/codex/doubao/workbuddy/deepseek）；title 窗口标题；model 模型标签；history:[侧边栏会话]；msgs:[{who: me/ai, t, at, img 附件截图}]；label 角标（默认\"界面示意\"）；logo 自定义 logo",
+ "ref": "真实产品界面（DAYAN 动效库 P13「讲它就用它的样子」）",
+ "cat": "09 界面演示",
+ "created": "2026-11-20",
+ "version": "1.0.0",
+ "example": {
+  "dur": 6.0,
+  "props": {
+   "brand": "claude",
+   "title": "剪辑这条口播",
+   "model": "Claude Opus",
+   "history": [
+    "剪辑这条口播",
+    "封面怎么做",
+    "字幕润色"
+   ],
+   "msgs": [
+    {
+     "who": "me",
+     "t": "动效要有冲击力",
+     "at": 1.2
+    },
+    {
+     "who": "me",
+     "t": "节奏要卡点",
+     "at": 2.4
+    },
+    {
+     "who": "ai",
+     "t": "好的，按这两点重新剪一版。",
+     "at": 3.2
+    }
+   ]
+  },
+  "box": {
+   "landscape": [
+    0.06,
+    0.06,
+    0.88,
+    0.78
+   ],
+   "portrait": [
+    0.04,
+    0.14,
+    0.92,
+    0.6
+   ]
+  }
+ },
+ "checked": "2026-11-20 02:07",
+ "layouts": [
+  "16:9",
+  "4:3",
+  "9:16"
+ ],
+ "code": "09-08",
+ "status": "candidate",
+ "triggers": [
+  "告诉它",
+  "提要求",
+  "提意见",
+  "截图发过去",
+  "问它",
+  "它回我",
+  "跟 AI 说",
+  "对话"
+ ]
+}

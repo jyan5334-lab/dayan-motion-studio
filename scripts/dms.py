@@ -937,6 +937,40 @@ def _similar_effects(name, use, limit=3):
         if g: out.append((len(q & g) / len(q), it['src'], it['id'], it.get('name', '')))
     return [x for x in sorted(out, reverse=True)[:limit] if x[0] >= 0.1]
 
+def cmd_library(ns):
+    """动效库体检（只给建议，从不删除）：查重、闲置、缺样张 / 缺触发词，以及按使用情况升降成熟度"""
+    import dms_catalog as K
+    U = K.load_usage(); lib = ROOT / 'effects'
+    if ns.action == 'index':
+        rows = K.build_index(); K.write_md(); return log(f'动效索引 → {K.INDEX}（{len(rows)} 个，编号 01-01 … 12-xx），目录 → references/catalog.md')
+    if ns.action == 'promote':
+        d = lib / (ns.id or '')
+        if not (d / 'effect.json').exists() or ns.status not in K.STATUS_W: die('用法：dms.py library promote fx-xxx stable|candidate|experimental')
+        m = jload(d / 'effect.json'); old = m.get('status', 'candidate'); m['status'] = ns.status; jsave(d / 'effect.json', m); K.build_index()
+        return log(f'{ns.id}：{old} → {ns.status}')
+    fx = K.effects(); ids = [x['id'] for x in fx]
+    print(f'动效库 {len(fx)} 个：' + '、'.join(f"{k} {sum(1 for x in fx if x.get('status') == k)}" for k in K.STATUS_W))
+    # 1 很像的两个：建议合并成一个动效的两个变体（presets）
+    pairs = []
+    for x in fx:
+        for sc, src, yid, nm in _similar_effects(x['name'], x['use'], limit=4):
+            if yid != x['id'] and yid in ids and sc >= 0.45 and (yid, x['id']) not in [(b, a) for _, a, b in pairs]: pairs.append((sc, x['id'], yid))
+    if pairs:
+        print(f'\n【可能重复】{len(pairs)} 对（考虑把其中一个改成另一个的变体 presets，保留两个也可以，但描述要写出区别）：')
+        for sc, a, b in sorted(pairs, reverse=True)[:15]: print(f'  {sc:.2f}  {a}  ↔  {b}')
+    # 2 成熟度建议
+    up = [x['id'] for x in fx if (U.get(x['id']) or {}).get('uses', 0) >= 3 and x.get('status') != 'stable']
+    if up: print('\n【建议升 stable】用过 3 期以上：' + '、'.join(up) + '（dms.py library promote <id> stable）')
+    exp = [x['id'] for x in fx if x.get('status') == 'experimental' and (U.get(x['id']) or {}).get('uses', 0) >= 1]
+    if exp: print('【建议升 candidate】已在真实成片里用过：' + '、'.join(exp))
+    idle = [x['id'] for x in fx if not (U.get(x['id']) or {}).get('uses')]
+    if idle and U: print(f'\n【还没在成片里用过】{len(idle)} 个（不删；检查 use / triggers 写得够不够清楚，搜不到的动效等于不存在）：' + '、'.join(idle[:30]) + (' …' if len(idle) > 30 else ''))
+    # 3 资料不全
+    nosheet = [i for i in ids if not (lib / i / 'sheet.png').exists()]
+    notrig = [x['id'] for x in fx if x.get('status') == 'experimental' and (not x.get('tags', '').strip() or '（' in x.get('tags', ''))]
+    if nosheet: print('\n【缺样张】' + '、'.join(nosheet) + '（dms.py effect check <id>）')
+    if notrig: print(f'【缺触发词 triggers】{len(notrig)} 个：' + '、'.join(notrig[:30]) + (' …' if len(notrig) > 30 else '') + '（effect.json 里写口播里会出现的说法，搜索靠它）')
+
 def cmd_effect(ns):
     """动效库：new 新建骨架 / check 三种画幅出样张 / list 列出。剪辑时现做的新动效都走这里沉淀。
     存档分流（用户 2026-11-17）：通用的存主技能 effects/；只有某个行业才用的加 --pack <包名> 存进那个行业包（id 要 fx-<包名>- 开头）。"""
@@ -968,9 +1002,10 @@ def cmd_effect(ns):
         if sim:
             print('⚠ 先查重：这些已有的动效和你要做的有点像，能直接用或改进就不要新建（改进旧的比新建一个相似的更好）：')
             for sc, src, xid, nm in sim: print(f'   {sc:.2f}  [{src}] {xid}  {nm}')
-            if sim[0][0] >= 0.3 and not getattr(ns, 'force', False): raise SystemExit(f'✗ 和 {sim[0][2]} 太像了（{sim[0][0]:.2f}）：确实要新建就加 --force')
+            if sim[0][0] >= 0.3 and not getattr(ns, 'force', False): raise SystemExit(f'✗ 和 {sim[0][2]} 太像了（{sim[0][0]:.2f}）：优先给它加一个变体——在 effects/{sim[0][2]}/effect.json 的 presets 里写 {{"<变体名>": {{"use": "什么时候用", "props": {{…}}}}}}，图层写 "preset": "<变体名>"；画面结构确实不同、变体做不到时才加 --force 新建')
         d.mkdir(parents=True)
-        meta = {'id': fid, 'name': ns.name or fid, 'use': ns.use or '（说到什么时用：写清楚语义）', 'created': time.strftime('%Y-%m-%d'), 'version': '1.0.0',
+        meta = {'id': fid, 'name': ns.name or fid, 'use': ns.use or '（说到什么时用：写清楚语义）', 'created': time.strftime('%Y-%m-%d'), 'version': '1.0.0', 'status': 'experimental',
+                'triggers': ['（口播里出现哪些说法时用它：3–8 个词，搜索靠它）'],
                 'props': '（主要参数说明）', 'ref': '（参考了哪种风格的哪种做法，只写代号，如 C2 无限画布横移）', 'example': {'dur': 4.0, 'props': {'items': ['第一条', '第二条', '第三条']}, 'box': {'landscape': 'center', 'portrait': 'center'}}}
         jsave(d / 'effect.json', meta)
         (d / 'component.js').write_text(FX_JS.format(id=fid, name=meta['name'], use=meta['use']), encoding='utf-8')
@@ -1011,6 +1046,10 @@ def cmd_effect(ns):
                 w2 = int(im.width * th / im.height); S.paste(im.resize((w2, th)), (x, y)); x += w2 + pad
             y += th + 14
         S.save(d / 'sheet.png'); shutil.rmtree(work, ignore_errors=True)
+        try:
+            import dms_catalog as K
+            if d.parent == ROOT / 'effects': K.build_index()   # 新动效检查通过 → 分配编号、进索引
+        except Exception as e: log('索引没更新（不影响样张）：', e)
         m['checked'] = time.strftime('%Y-%m-%d %H:%M'); m['layouts'] = ['16:9', '4:3', '9:16']; jsave(d / 'effect.json', m)
         print(f'✓ 三种画幅都渲染通过 → {d / "sheet.png"}（必须打开看：文字有没有溢出、有没有压到人物和字幕区）')
 
@@ -1706,6 +1745,24 @@ def cmd_build(ns):
     E.pop('_words', None)
     for k in ('motionBlur', 'lift', 'sheen', 'depth'):
         if k in E: TL[k] = E[k]
+    # 动效变体：图层写 "preset": "<变体名>"，取 effect.json 里 presets 的参数打底，图层自己的 props 覆盖（相似需求做成变体，不另建新动效）
+    fx_meta = {}
+    for d in effect_dirs(active_packs(E, scenes)):
+        try: fx_meta[d.name] = json.loads((d / 'effect.json').read_text(encoding='utf-8'))
+        except Exception: pass
+    used = []
+    for S in scenes:
+        for L in (S.get('layers') or []) + [b for b in (S.get('bg') or []) if isinstance(b, dict)]:
+            c = L.get('c'); used.append(c if c != 'dayan' else 'dayan:' + str((L.get('props') or {}).get('id', '')))
+            pn = L.get('preset')
+            if pn and c in fx_meta:
+                pr = (fx_meta[c].get('presets') or {}).get(pn)
+                if not isinstance(pr, dict): log(f'⚠ {S.get("id")} 的 {c} 没有变体 {pn}（有：{"、".join(fx_meta[c].get("presets") or {}) or "无"}）'); continue
+                L['props'] = {**(pr.get('props') or {}), **(L.get('props') or {})}
+    used += [g.get('c') for g in E.get('globals', []) if isinstance(g, dict)]
+    try:
+        import dms_catalog; dms_catalog.record_usage([u for u in used if u], str(Path(ns.edit).resolve().parent))
+    except Exception: pass
     jsave(P / 'timeline.json', TL)
     (P / 'timeline.js').write_text('window.TIMELINE = ' + json.dumps(TL, ensure_ascii=False) + ';\n', encoding='utf-8')
     html = (ROOT / 'engine' / 'stage.html').read_text(encoding='utf-8')
@@ -2001,7 +2058,8 @@ def main():
     a = sp.add_parser('audio'); a.add_argument('project'); a.add_argument('--music-volume', dest='music_volume', type=float)
     a = sp.add_parser('sweep', help='逐帧试跑查页面报错（渲染前跑）'); a.add_argument('project'); a.add_argument('--step', type=float, default=1 / 30); a.add_argument('--from', dest='start', type=float); a.add_argument('--to', dest='end', type=float); a.set_defaults(fn=cmd_sweep)
     a = sp.add_parser('render'); a.add_argument('project'); a.add_argument('out'); a.add_argument('--workers', type=int); a.add_argument('--preset', default='medium'); a.add_argument('--crf', type=int, default=16); a.add_argument('--reuse', action='store_true', help='画面没改时复用已渲染的 picture.mp4，只重做字幕和声音'); a.add_argument('--no-cover', dest='no_cover', action='store_true', help='不顺带出封面')
-    a = sp.add_parser('catalog', help='动效目录：生成 references/catalog.md，或按关键词搜索可调用的组件 / 动效 / 原卡'); a.add_argument('keys', nargs='*'); a.add_argument('--limit', type=int, default=20); a.add_argument('--out')
+    a = sp.add_parser('library', help='动效库体检：查重 / 闲置 / 缺样张缺触发词（只给建议，不删）；promote 改成熟度'); a.add_argument('action', choices=['audit', 'promote', 'index']); a.add_argument('id', nargs='?'); a.add_argument('status', nargs='?')
+    a = sp.add_parser('catalog', help='动效目录：生成 references/catalog.md，或按关键词搜索可调用的组件 / 动效 / 原卡'); a.add_argument('keys', nargs='*'); a.add_argument('--limit', type=int, default=8); a.add_argument('--out')
     a = sp.add_parser('card', help='看一张原卡：样张 + 卡里全部可见文字（样板，按口播替换）+ 写法'); a.add_argument('id'); a.add_argument('--out'); a.add_argument('--replace', help='替换表 json：[[原文, 新文], …]')
     a = sp.add_parser('plan', help='把 edit.json / 工程整理成编排单 plan.md（每段主画面一目了然）'); a.add_argument('src'); a.add_argument('--out')
     a = sp.add_parser('cover', help='封面：A/B/C 三种风格 × 竖屏 3:4 + 横屏 4:3（有真人抠像，没有出文字 + 背景版）'); a.add_argument('project'); a.add_argument('--out'); a.add_argument('--person', choices=['auto', 'yes', 'no']); a.add_argument('--frames', help='手动指定 A,B,C 三帧的母版秒数，如 12.3,40.1,70.2')

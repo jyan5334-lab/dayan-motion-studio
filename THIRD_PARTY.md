@@ -11,3 +11,8 @@
 封面人像抠图模型 MODNet（ZHKKKe/MODNet，ONNX 版来自 Hugging Face Xenova/modnet，Apache-2.0）首次出封面时下载到本机缓存，不随仓库分发。
 
 运行时依赖（不随仓库分发，安装时下载）：FFmpeg（LGPL/GPL）、Node.js、playwright-core（Apache-2.0）、numpy / scipy / pillow / soundfile / opencv-python / jieba / sherpa-onnx（各自开源许可）；语音识别模型首次使用时从 GitHub 下载。
+
+
+## 品牌图标（engine/logos/）
+
+来自开源图标库 LobeHub Icons（`@lobehub/icons-static-svg`，MIT License，https://github.com/lobehub/lobe-icons）。图标对应的商标归各自所有者；这里只用于在口播里指称对应的产品。

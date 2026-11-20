@@ -38,17 +38,87 @@ def components():
         out.append({'src': '组件', 'id': cid, 'name': cid, 'use': use, 'props': '', 'stage': '12', 'call': f'{{"c": "{cid}", "cue": "关键词", "box": [0, 0, 1, 0.8]}}'})
     return out
 
+# ---------------- 使用记录（库越大越要靠它排序）：每次 build 把这条片子用到的组件 / 动效 / 原卡记一笔，存在本机，不进仓库
+def usage_path():
+    import os
+    return Path(os.environ.get('DMS_HOME') or (Path.home() / '.dayan-motion-studio')).expanduser() / 'usage.json'
+
+def load_usage():
+    try: return json.loads(usage_path().read_text(encoding='utf-8'))
+    except Exception: return {}
+
+def record_usage(ids, project=''):
+    import time
+    U = load_usage(); today = time.strftime('%Y-%m-%d')
+    for i in sorted(set(ids)):
+        u = U.setdefault(i, {'uses': 0, 'projects': []})
+        if project and project in u['projects']: continue      # 同一个工程反复 build 只算一次
+        u['uses'] += 1; u['last'] = today
+        if project: u['projects'] = (u['projects'] + [project])[-20:]
+    try: usage_path().parent.mkdir(parents=True, exist_ok=True); usage_path().write_text(json.dumps(U, ensure_ascii=False, indent=0), encoding='utf-8')
+    except Exception: pass
+
+STATUS_W = {'stable': 4, 'candidate': 2, 'experimental': 0}
+
+# ---------------- 动效编号 + 索引：库再大也只读一个小文件
+# 每个动效有固定编号「类号-序号」（如 09-07 = 第 09 类界面演示的第 7 个），一经分配不再变；
+# effects/index.json 收录全部动效的编号、名称、用途、触发词、成熟度、变体，搜索只读它，不再逐个打开几百个文件夹。
+INDEX = ROOT / 'effects' / 'index.json'
+
+def _fx_stage(e):
+    return FX_STAGE.get(e['id']) or (str(e.get('cat', ''))[:2] if str(e.get('cat', ''))[:2] in STAGES else '11')
+
+def build_index(assign=True):
+    """重建 effects/index.json；没有编号的动效按类别分配下一个空号并写回 effect.json"""
+    rows, metas = [], []
+    for d in sorted((ROOT / 'effects').glob('fx-*')):
+        try: e = json.loads((d / 'effect.json').read_text(encoding='utf-8'))
+        except Exception: continue
+        metas.append((d, e))
+    used = {}
+    for d, e in metas:
+        if e.get('code'): used.setdefault(e['code'].split('-')[0], set()).add(int(e['code'].split('-')[1]))
+    for d, e in sorted(metas, key=lambda x: (x[1].get('created', ''), x[1]['id'])):
+        st = _fx_stage(e)
+        if not e.get('code') and assign:
+            n = 1
+            while n in used.setdefault(st, set()): n += 1
+            used[st].add(n); e['code'] = f'{st}-{n:02d}'
+            (d / 'effect.json').write_text(json.dumps(e, ensure_ascii=False, indent=1), encoding='utf-8')
+        ex = json.dumps((e.get('example') or {}).get('props') or {}, ensure_ascii=False)
+        rows.append({'code': e.get('code', ''), 'id': e['id'], 'name': e.get('name', ''), 'stage': st, 'use': e.get('use', ''), 'props': str(e.get('props', '')),
+                     'triggers': e.get('triggers') or [], 'status': e.get('status') or 'candidate',
+                     'presets': {k: (v.get('use', '') if isinstance(v, dict) else '') for k, v in (e.get('presets') or {}).items()}, 'example': ex[:160]})
+    rows.sort(key=lambda r: r['code'])
+    INDEX.write_text(json.dumps({'count': len(rows), 'effects': rows}, ensure_ascii=False, indent=0), encoding='utf-8')
+    return rows
+
+def load_index():
+    """读索引；文件夹数量和索引对不上（新建 / 拷进来的动效）就自动重建"""
+    try:
+        J = json.loads(INDEX.read_text(encoding='utf-8'))
+        if J.get('count') == sum(1 for _ in (ROOT / 'effects').glob('fx-*/effect.json')): return J['effects']
+    except Exception: pass
+    return build_index()
+
 def effects(with_packs=False):
     out = []
-    dirs = sorted((ROOT / 'effects').glob('fx-*'))
-    if with_packs:
-        from dms_packs import pack_effect_dirs
-        dirs += pack_effect_dirs(None)
+    for r in load_index():
+        out.append({'src': '动效库', 'id': r['id'], 'code': r['code'], 'name': r['name'], 'use': r['use'], 'props': r['props'], 'stage': r['stage'],
+                    'tags': ' '.join(r['triggers']) + ' ' + ' '.join(f'{k} {v}' for k, v in r['presets'].items()), 'status': r['status'], 'presets': list(r['presets']),
+                    'call': f'{{"c": "{r["id"]}", "cue": "关键词", "box": "zone", "props": {r["example"]}}}', 'sheet': f'effects/{r["id"]}/sheet.png'})
+    if not with_packs: return out
+    dirs = []
+    from dms_packs import pack_effect_dirs
+    dirs += pack_effect_dirs(None)
     for d in dirs:
         try: e = json.loads((d / 'effect.json').read_text(encoding='utf-8'))
         except Exception: continue
         ex = json.dumps((e.get('example') or {}).get('props') or {}, ensure_ascii=False)
-        out.append({'src': '动效库' if d.parent == ROOT / 'effects' else '行业包动效', 'id': e['id'], 'name': e.get('name', ''), 'use': e.get('use', ''), 'props': str(e.get('props', '')), 'stage': FX_STAGE.get(e['id']) or (str(e.get('cat', ''))[:2] if str(e.get('cat', ''))[:2] in STAGES else '11'),
+        pre = e.get('presets') or {}
+        out.append({'src': '动效库' if d.parent == ROOT / 'effects' else '行业包动效', 'id': e['id'], 'name': e.get('name', ''), 'use': e.get('use', ''), 'props': str(e.get('props', '')),
+                    'tags': ' '.join(e.get('triggers') or []) + ' ' + ' '.join(f"{k} {v.get('use', '')}" for k, v in pre.items() if isinstance(v, dict)),
+                    'status': e.get('status') or 'candidate', 'presets': list(pre), 'stage': FX_STAGE.get(e['id']) or (str(e.get('cat', ''))[:2] if str(e.get('cat', ''))[:2] in STAGES else '11'),
                     'call': f'{{"c": "{e["id"]}", "cue": "关键词", "box": "zone", "props": {ex[:160]}}}', 'sheet': str(d / 'sheet.png') if d.parent != ROOT / 'effects' else f'effects/{d.name}/sheet.png'})
     return out
 
@@ -77,6 +147,18 @@ def library():
         try: o, _ = dec.raw_decode(s, m.start())
         except Exception: continue
         if 'name' in o: out.setdefault(o['id'], {}).update(o)
+    # 包装件里有一部分是 JS 写法（PP(13, [{ name:'…', use:'…' }])，不是 JSON），比如 P13 真实产品界面（ChatGPT / Claude Code / 豆包 / WorkBuddy …）：
+    # 之前目录读不到它们，编排时就找不到"真实界面"卡，这里按 PP 分组补进来
+    for m in re.finditer(r'PP\((\d+),\s*\[', s):
+        n, i0 = int(m.group(1)), m.end()
+        nxt = re.search(r'\nPP\(\d+,\s*\[', s[i0:]); blk = s[i0:i0 + nxt.start()] if nxt else s[i0:i0 + 400000]
+        for k, e in enumerate(re.finditer(r"\{\s*name:'([^']*)'(.*?)(?=\n\{\s*name:'|\Z)", blk, re.S), 1):
+            cid = f'P{n:02d}·{k}'
+            if cid in out: continue
+            body = e.group(2); g = lambda key: (re.search(key + r":\s*'([^']*)'", body) or [None, ''])[1]
+            sc = re.search(r"scene:\s*\[([^\]]*)\]", body)
+            out[cid] = {'id': cid, 'name': e.group(1), 'use': g('use'), 'motion': g('motion'), 'stage': f'{n:02d}' if n <= 12 else '09',
+                        'scene': re.findall(r"'([^']*)'", sc.group(1)) if sc else [], 'type': '包装件'}
     res = []
     for o in out.values():
         slots = o.get('slotList') or o.get('slots') or []
@@ -96,7 +178,7 @@ SYN = {   # 口播里的说法 → 目录里的说法（搜索时一起找）
     '快': ['数字', '倍'], '速度': ['数字', '倍'], '倍': ['数字'], '便宜': ['价格', '成本'], '成本': ['价格', '数字'], '钱': ['价格'], '贵': ['价格'],
     '比': ['对比'], 'vs': ['对比'], '不一样': ['对比', '前后'], '以前': ['前后', '对比'], '现在': ['前后'],
     '步骤': ['流程'], '先': ['流程'], '然后': ['流程'], '怎么做': ['流程', '步骤'], '注意': ['印章', '警告'], '风险': ['警告', '印章'], '提醒': ['印章'],
-    '问': ['对话', '聊天'], '回答': ['对话'], '提示词': ['输入', '打字'], '命令': ['终端', '打字'], '代码': ['终端', '代码'],
+    '问': ['对话', '聊天'], '回答': ['对话'], '告诉': ['对话'], '要求': ['对话'], '意见': ['对话'], '发给': ['对话'], '发过去': ['对话'], '回我': ['对话'], '提示词': ['输入', '打字'], '命令': ['终端', '打字'], '代码': ['终端', '代码'],
     '软件': ['窗口', '界面'], '网站': ['窗口', '界面'], '录屏': ['窗口'], '手机': ['手机', '通知'], '粉丝': ['数字', '通知'],
     '优势': ['叠卡', '功能'], '功能': ['叠卡'], '组成': ['节点'], '很多': ['网格'], '挑': ['网格', '高亮'], '结论': ['大字', '印章'],
     '震惊': ['砸', '印章'], '夯': ['砸', '印章'], '厉害': ['砸', '彩纸'], '完美': ['彩纸', '印章'], '关注': ['三连', '关注'], '点赞': ['三连'], '开源': ['仓库'],
@@ -104,20 +186,28 @@ SYN = {   # 口播里的说法 → 目录里的说法（搜索时一起找）
     '下期': ['预告'], '系列': ['目录'], '官网': ['浏览器'], '截图': ['截图', '浏览器'], '细节': ['放大镜'], '转折': ['故障', '转场'], '回忆': ['漏光', '光斑'],
 }
 
-def search(words, limit=24):
-    items = everything(with_packs=True); ks = [w.lower() for w in words if w.strip()]
+def search(words, limit=8):
+    items = everything(with_packs=True); ks = [w.lower() for w in words if w.strip()]; U = load_usage()
     for w in list(ks):
         for k, v in SYN.items():
             if k in w: ks += [x for x in v if x not in ks]
     def score(it):
-        hay = ' '.join(str(it.get(k, '')) for k in ('id', 'name', 'use', 'props', 'tags')).lower() + ' ' + STAGES.get(it['stage'], '')
+        hay = ' '.join(str(it.get(k, '')) for k in ('id', 'code', 'name', 'use', 'props', 'tags')).lower() + ' ' + STAGES.get(it['stage'], '')
         sc = sum(hay.count(k) * (3 if k in (it['name'] or '').lower() or k in (it['use'] or '').lower()[:30] else 1) for k in ks)
         if it['src'] in ('行业包模板', '行业包动效') and sc: return sc * 2 + 5   # 装了行业包：同等匹配时包里的优先（这个行业专门做的）
         return sc * 2 + 3 if it['src'] in ('动效库', '组件') and sc else sc   # 同等匹配时优先引擎组件和动效库（能按关键词对齐、自带音效、三画幅自适应）
-    hits = sorted((x for x in items if score(x) > 0), key=lambda x: -score(x))[:limit]
+    import math
+    def rank(it):   # 先看语义匹配，同等匹配时：成熟度（stable > candidate > experimental）> 用得多的 > 新的
+        sc = score(it)
+        if sc <= 0: return 0
+        u = (U.get(it['id']) or {}).get('uses', 0)
+        return sc + STATUS_W.get(it.get('status') or ('stable' if it['src'] in ('组件', '原卡库') else 'candidate'), 2) + min(4, math.log2(u + 1))
+    hits = sorted((x for x in items if rank(x) > 0), key=lambda x: -rank(x))[:limit]
+    if hits: print(f'（按匹配度 + 成熟度 + 使用次数排序，只列前 {limit} 个；要更多加 --limit）')
     if not hits: print('没有匹配：换个说法（如"数字""价格""对比""流程""聊天""手机""印章""开场"），或按 orchestration.md 第 4 节现做一个新动效'); return
     for it in hits:
-        print(f"[{it['src']}] {it['id']} · {it['name']} — {STAGES.get(it['stage'], '')}")
+        u = (U.get(it['id']) or {}).get('uses', 0); st = it.get('status')
+        print(f"[{it['src']}] {('#' + it['code'] + ' ') if it.get('code') else ''}{it['id']} · {it['name']} — {STAGES.get(it['stage'], '')}" + (f"  〔{st}〕" if st else '') + (f"  用过 {u} 次" if u else '') + (f"  变体：{'、'.join(it['presets'])}" if it.get('presets') else ''))
         print(f"    用在：{it['use'][:90]}")
         if it.get('props'): print(f"    {'动作' if it['src'] == '原卡库' else '参数'}：{str(it['props'])[:90]}")
         print(f"    写法：{it['call']}")
@@ -129,16 +219,17 @@ def write_md(path=None):
     L = ['# 动效目录（自动生成：`dms.py catalog`）', '',
          f"共 {sum(n.values())} 项：引擎组件 {n['组件']} · 动效库 {n['动效库']} · 大琰DAYAN 原卡 {n['原卡库']}。按语义分组；编排时先在对应分组里挑，"
          '找不到就 `dms.py catalog 关键词` 搜，再找不到才现做新动效（references/orchestration.md）。', '',
+         '**库会越来越大：不要整份读这个文件。** 每段口播用 2–3 个关键词 `dms.py catalog 关键词` 搜，只看排在前面的几个（按匹配度 + 成熟度 + 使用次数排序）；这份目录只用来按分组浏览。★ = stable（多期真实使用验证过）。', '',
          '调用写法：组件和动效库直接 `{"c": "<id>", …}`。装了行业模板包时，`dms.py catalog 关键词` 会把包里的模板和动效一起搜出来，模板在场景上写 `"template": "<包名>:<模板 id>"`（见 references/motion-templates.md）。', '',
          ('（本机没有原卡库 `assets/dayan-library.html`：原卡不在目录里，放入后重新运行 `dms.py catalog`。）' if not n['原卡库'] else '') + '\n\n' +
          '**原卡（328 张）可以直接改来用**：卡里的文字、数字、价格、产品名都是样板。先 `dms.py card <卡号>` 看样张和卡里全部可见文字，再写 `{"c": "dayan", "box": "full", "props": {"id": "<卡号>", "replace": [["样板文字", "本期口播的内容"], …]}}`，每一条可见文字都换成本期内容（不要的换成 ""），换完再看一次样张。原卡是 1920×1080 横屏版式；原卡里的文字墙和署名会自动换成 edit.json 的 brand。', '']
     for st, title in STAGES.items():
         grp = [x for x in items if x['stage'] == st]
         if not grp: continue
-        L += [f'## {st} · {title}', '', '| 来源 | id | 名称 | 用在 | 动作 / 参数 |', '|---|---|---|---|---|']
-        for x in sorted(grp, key=lambda x: ['组件', '动效库', '原卡库'].index(x['src'])):
-            cell = lambda s: str(s).replace('|', '/').replace('\n', ' ')[:80]
-            L.append(f"| {x['src']} | `{x['id']}` | {cell(x['name'])} | {cell(x['use'])} | {cell(x.get('props', ''))} |")
+        L += [f'## {st} · {title}', '', '| 来源 | id | 名称 | 用在 |', '|---|---|---|---|']
+        for x in sorted(grp, key=lambda x: (['组件', '动效库', '原卡库'].index(x['src']), -STATUS_W.get(x.get('status') or 'candidate', 2))):
+            cell = lambda s, n=46: str(s).replace('|', '/').replace('\n', ' ')[:n]
+            L.append(f"| {x['src']} | {('#' + x['code'] + ' ') if x.get('code') else ''}`{x['id']}` | {cell(x['name'], 20)}{' ★' if x.get('status') == 'stable' else ''} | {cell(x['use'])} |")
         L.append('')
     path.write_text('\n'.join(L), encoding='utf-8')
     return n, path
