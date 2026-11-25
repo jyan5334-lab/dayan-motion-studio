@@ -1106,11 +1106,63 @@ def cmd_effect(ns):
         m['checked'] = time.strftime('%Y-%m-%d %H:%M'); m['layouts'] = ['16:9', '4:3', '9:16']; jsave(d / 'effect.json', m)
         print(f'✓ 三种画幅都渲染通过 → {d / "sheet.png"}（必须打开看：文字有没有溢出、有没有压到人物和字幕区）')
 
+# =================================================================== show（把示例图真正发给用户看）
+SHOW_IMAGES = {
+    '文字墙示例': ('什么是文字墙', lambda: ROOT / 'assets' / '文字墙示例.jpg'),
+    '风格样张': ('封面 A / B / C 三种风格样张（上排竖版、下排横版）', lambda: ROOT / 'assets' / 'cover' / '风格样张.jpg'),
+    '人物总览': ('工作库人物总览（每张标有编号）', lambda: _find_people_sheet()),
+}
+
+def _find_people_sheet():
+    """在当前文件夹和上层找用户工作库的 03_人物资产，里面文件名带「总览」的 jpg/png。"""
+    for q in [Path.cwd().resolve()] + list(Path.cwd().resolve().parents):
+        d = q / '03_人物资产'
+        if d.is_dir():
+            hit = sorted([p for p in d.iterdir() if p.is_file() and '总览' in p.stem and p.suffix.lower() in ('.jpg', '.jpeg', '.png')])
+            if hit: return hit[0]
+    return None
+
+def _md_image(label, p):
+    return f'![{label}]({Path(p).resolve().as_uri()})'
+
+def _open_with_viewer(p):
+    try:
+        if sys.platform.startswith('win'): os.startfile(str(p))          # noqa
+        elif sys.platform == 'darwin': subprocess.Popen(['open', str(p)])
+        else: subprocess.Popen(['xdg-open', str(p)])
+        return True
+    except Exception as e:
+        log('没能用看图软件打开：', e); return False
+
+def cmd_show(ns):
+    """用户 2026-11-26 定：开工提问用的示例图要真的让用户看到。Agent 读图（read_file / 看图工具）只是模型自己看，不算发给用户。
+    这个命令同时做两件事：① 打印一行可直接贴进回复正文的 Markdown 图片；② 用系统默认看图软件在用户电脑上打开这张图（兜底，任何 Agent 都有效）。"""
+    key = ns.name
+    if key in SHOW_IMAGES:
+        label, fn = SHOW_IMAGES[key]; p = fn()
+    else:
+        label, p = Path(key).stem, Path(key)
+    if not p or not Path(p).exists():
+        sys.exit(f'找不到图：{key}' + ('（在工作库文件夹里运行，或直接给图片路径：dms.py show <路径>）' if key == '人物总览' else ''))
+    p = Path(p).resolve()
+    print('把下面这一行原样贴进给用户的回复正文（在弹出提问之前）：')
+    print('   ' + _md_image(label, p))
+    if not ns.no_open:
+        if _open_with_viewer(p): print(f'✓ 已在用户电脑上用看图软件打开：{p}（回复里也要告诉用户「已在你电脑上打开了这张图」）')
+    print(f'图片文件：{p}')
+
 def cmd_kickoff(ns):
     """新作品开工时要问用户的问题。用户 2026-11-23 定：每一条新视频都把每一题问一遍，不能因为上一期答过、本机或工作库有配置就跳过——
     上一次的回答只放进选项里当「沿用上次」，让用户自己点。只有同一条视频的修改（改一处、重渲染、补一段）才不重问。"""
     b = load_brand()
     src = next((q / BRAND_FILE for q in [Path.cwd().resolve()] + list(Path.cwd().resolve().parents) if (q / BRAND_FILE).exists()), None)
+    wall_img, cover_img = ROOT / 'assets' / '文字墙示例.jpg', ROOT / 'assets' / 'cover' / '风格样张.jpg'
+    print('【怎么把示例图发给用户（用户 2026-11-26 定，所有 Agent 必须做到）】')
+    print('   读图（read_file / 看图工具）只是你自己看，用户那边看不到，不算「发」。按你所在的 Agent 这样发：')
+    print('   · Claude 桌面端：用它展示本机文件 / 图片给用户的功能把图发出来（和以前一样）。')
+    print('   · Codex / Antigravity / WorkBuddy / 豆包：在回复正文里贴下面给的 Markdown 图片行，同时跑 dms.py show <图名> 用看图软件在用户电脑上打开（兜底）。')
+    print('   · 顺序：先发图 + 一句说明 → 再弹这一步的问题。提问弹窗里放不了图，不能指望弹窗带出图。')
+    print('   · 发完问一句「看到图了吗」只在第一次需要；用户说看不到时，改成只靠 dms.py show 打开。')
     print('每条新视频开剪前，下面每一题都要问（用户已经在这次请求里说明的才跳过；不许沿用上一期直接默认）。分步问：每一步先发这一步的示例图，再弹出这一步的问题，回答后再进下一步：')
     print('第 1 步 · 视频设置（一个弹窗）：')
     print('1. 画幅：横屏 16:9 / 横屏 4:3 / 竖屏 9:16 / 竖屏 3:4')
@@ -1118,7 +1170,7 @@ def cmd_kickoff(ns):
     print('3. 帧率：60（默认）/ 30 / 25 / 24')
     print('4. 字幕：中英双语（中文在上、英文在下）/ 纯中文（默认）/ 不要字幕 → edit.json subtitles.lang = zh-en / zh / none；双语要给每条字幕写英文 en')
     print('第 2 步 · 5. 文字墙品牌（每次都问）：背景文字墙会循环显示你的品牌，分两行——主行写品牌名，副行写英文名或口号。')
-    print(f'   第一次用先发示例图「什么是文字墙」→ {ROOT / "assets" / "文字墙示例.jpg"}')
+    print(f'   第一次用先发示例图「什么是文字墙」：dms.py show 文字墙示例，回复正文贴 → {_md_image("什么是文字墙", wall_img)}')
     last = (f"沿用上次：主行「{b['wall'][0]}」/ 副行「{b['wall'][1]}」" + (f'（来自 {src}）' if src else '')) if b else None
     print('   弹窗选项：' + (last + ' / ' if last else '') + '输入新的品牌 / 先不用（中性占位字 MOTION · STUDIO）')
     print('   选「输入新的品牌」→ 马上在对话里（不用弹窗）请用户直接回复「主行 / 副行」两行，示例：主行「小明说AI」、副行「XIAOMING · AI LAB」')
@@ -1126,10 +1178,12 @@ def cmd_kickoff(ns):
     print('封面（视频设置问完后，最后问，分步；规则见 references/cover.md「开工时问的封面问题」）：')
     print('  第 3 步 · 6. 要不要封面（单独一个弹窗）：同时生成（默认）/ 不要封面（选不要，后面不问）')
     print('  第 4 步 · 7. 封面怎么做（cover.mode）：按口播自定义（AI 按标题和口播自己设计配色、元素、版式）/ 用模板（A 手账 / B 科技 / C 电影）/ 两种都出 / 我发一张参考封面')
-    print(f'     选了模板：先发样张 {ROOT / "assets" / "cover" / "风格样张.jpg"}，再问 三种都出 / A / B / C（cover.styles）')
+    print(f'     选了模板：先发样张（dms.py show 风格样张），回复正文贴 → {_md_image("封面风格样张", cover_img)}，再问 三种都出 / A / B / C（cover.styles）')
     print('     选了自定义：问出几套（1 / 2 / 3，每套横竖各一张）+ 风格方向（AI 按口播自己定 / 我说个方向 / 发参考图）')
     print('  第 5 步 · 8. 封面有没有人物（模板和自定义都问）：有人物 / 没有人物（文字 + 背景版）')
     print('     有人物 → 9. 人物从哪来：工作库里的人物图（发总览图，让用户选编号或说"随意"由 AI 按每套风格挑动作）/ 我自己准备新图 / 从视频里自动挑（有真人出镜时）')
+    ps = _find_people_sheet()
+    print('       发总览图：在工作库里跑 dms.py show 人物总览' + (f'，回复正文贴 → {_md_image("人物总览", ps)}' if ps else '（当前文件夹往上没找到 03_人物资产 里的总览图；在工作库里运行或 dms.py show <路径>）'))
     print('     自己准备：Codex / 豆包 / WorkBuddy 能按人物照 + 参考图生成；Claude 不能生图，请用户生成好或拍好发来。写进 cover.photo（或每套的 custom[i].photo）')
     print('画幅 × 分辨率 → 画布：16:9 1920×1080 / 2560×1440 / 3840×2160 / 1280×720；4:3 1440×1080 / 1920×1440 / 2880×2160 / 960×720；')
     print('                     9:16 1080×1920 / 1440×2560 / 2160×3840 / 720×1280；3:4 1080×1440 / 1440×1920 / 2160×2880 / 720×960')
@@ -2178,6 +2232,7 @@ def main():
     sp = ap.add_subparsers(dest='cmd')
     sp.add_parser('doctor')
     sp.add_parser('kickoff', help='新作品开工前要问用户的问题（画幅 / 分辨率 / 帧率 / 文字墙品牌）')
+    a = sp.add_parser('show', help='把开工示例图发给用户：打印可贴进回复的 Markdown 图片行，并用看图软件在用户电脑上打开（文字墙示例 / 风格样张 / 人物总览 / 图片路径）'); a.add_argument('name'); a.add_argument('--no-open', dest='no_open', action='store_true', help='只打印 Markdown，不打开看图软件')
     a = sp.add_parser('effect', help='动效库：new 新建 / check 三画幅样张 + 可编辑性体检 / editcheck 只做可编辑性体检 / list'); a.add_argument('action', choices=['new', 'check', 'editcheck', 'list']); a.add_argument('id', nargs='?'); a.add_argument('--name'); a.add_argument('--use')
     a.add_argument('--pack', help='行业专属动效：存进这个行业包（id 要 fx-<包名>- 开头）；通用动效不加，存主技能动效库'); a.add_argument('--force', action='store_true', help='查重发现很像时仍然新建')
     a = sp.add_parser('brand', help='查看 / 保存本机品牌（文字墙两行等）'); a.add_argument('action', choices=['show', 'set']); a.add_argument('--main'); a.add_argument('--sub'); a.add_argument('--name'); a.add_argument('--mark')
