@@ -1,0 +1,45 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<!-- 自定义封面 · 审片批改：口播结尾问"你能看出来是 AI 剪的吗"，中段讲"导演检查：照抄字幕、出框、空画面、晚出现，有一条不过关就不渲染" →
+     米白审片单 + 横线 + 左侧红色装订线；标题关键词被红笔圈住；一张"导演检查"清单（红笔打勾）+ 红色圆章"0 条建议" + 手写便签。人物托下巴思考，清单贴着人物排。 -->
+<link rel="stylesheet" href="fonts.css"><script src="fontlist.js"></script><script src="data.js"></script><script src="cover-kit.js"></script>
+<style>
+@font-face{font-family:DMSSmiley;src:url(smiley.woff2)}
+*{margin:0;padding:0;box-sizing:border-box} html,body{background:#000;overflow:hidden}
+#root{background:#F5F1E8;color:#15171C;font-weight:900}
+.rule{position:absolute;inset:0;background-image:linear-gradient(rgba(40,70,140,.10) 1px,transparent 1px)}
+.margin{position:absolute;top:0;bottom:0;width:3px;background:rgba(214,40,40,.55)}
+.hole{position:absolute;border-radius:50%;background:#E3DDCF;box-shadow:inset 0 2px 4px rgba(0,0,0,.18)}
+.ttl{position:absolute;z-index:3;line-height:1.12;letter-spacing:-.035em;white-space:nowrap}
+.ttl .ln{display:block}
+.ttl .hl{color:#D62828;position:relative;display:inline-block;padding:0 .08em}
+.ttl .hl svg{position:absolute;left:-.28em;top:-.2em;width:calc(100% + .56em);height:calc(100% + .32em);overflow:visible}
+.sub{display:inline-block;margin-top:.5em;font-size:.3em;letter-spacing:0;color:#fff;background:#15171C;padding:.32em .8em .36em;border-radius:.12em}
+.card{background:#fff;border:2px solid #15171C;border-radius:.3em;padding:.6em .9em .7em;box-shadow:.12em .16em 0 rgba(21,23,28,.85);white-space:nowrap;line-height:1.5}
+.card .k-t{display:block;font-size:.55em;letter-spacing:.12em;color:#fff;background:#D62828;padding:.15em .6em;border-radius:.2em;width:max-content;margin-bottom:.4em}
+.card div{position:relative;padding-left:1.4em}
+.card div::before{content:"✓";position:absolute;left:0;top:-.1em;color:#D62828;font-family:DMSSmiley,var(--en);font-size:1.25em}
+.seal{width:4.2em;height:4.2em;border-radius:50%;border:.14em solid #D62828;color:#D62828;display:flex;flex-direction:column;align-items:center;justify-content:center;transform:rotate(-12deg);line-height:1;text-align:center;background:rgba(245,241,232,.9)}
+.seal b{font-family:var(--en);font-size:1.7em}
+.seal small{font-size:.48em;margin-top:.2em;letter-spacing:.05em}
+.memo{font-family:DMSSmiley,var(--cn);font-weight:400;background:#FFE867;color:#15171C;padding:.45em .8em .5em;transform:rotate(3deg);box-shadow:.08em .12em .3em rgba(0,0,0,.25);white-space:nowrap}
+</style></head><body><div id="root"></div><script>
+const D = KIT.boot(), W = KIT.W, H = KIT.H, V = KIT.V, px = KIT.px, root = KIT.root;
+KIT.el('div', 'rule', '', root, { backgroundSize: '100% ' + px(52) + 'px' });
+KIT.el('div', 'margin', '', root, { left: px(V ? 40 : 34) + 'px' });
+[.18, .5, .82].forEach(y => KIT.el('div', 'hole', '', root, { left: px(10) + 'px', top: H * y + 'px', width: px(18) + 'px', height: px(18) + 'px' }));
+const circle = `<svg viewBox="0 0 100 40" preserveAspectRatio="none"><path d="M6 22 C 4 6, 92 2, 96 18 C 99 34, 20 40, 8 30 C 2 24, 30 6, 70 8" fill="none" stroke="#D62828" stroke-width="2.6" stroke-linecap="round" vector-effect="non-scaling-stroke" style="stroke-width:5px"/></svg>`;
+(async () => {
+  await KIT.fonts();
+  KIT.init(root, W, H, { margin: px(V ? 64 : 58), gap: px(26) });
+  const box = V ? { x: W * .26, y: H * .36, w: W * .74, h: H * .64 } : { x: W * .5, y: H * .08, w: W * .5, h: H * .92 };
+  if (KIT.PER) { const p = await KIT.person(KIT.PER, box, 'r'); p.style.filter = `drop-shadow(0 ${px(10)}px ${px(24)}px rgba(21,23,28,.28))`; }
+  const t = KIT.el('div', 'ttl', KIT.lines(D.title, D.hl).replace(/<span class="hl">(.*?)<\/span>/, `<span class="hl">$1${circle}</span>`) + (D.sub ? `<br><span class="sub">${KIT.esc(D.sub)}</span>` : ''), root);
+  KIT.fitTitle(t, px(V ? 148 : 132), px(54), { top: px(V ? 80 : 64), maxH: H * (V ? .32 : .42) }); KIT.track(t);
+  const nodes = [];
+  if (D.check) nodes.push(KIT.el('div', 'card', `<span class="k-t">${KIT.esc(D.check.title || '导演检查')}</span>` + D.check.items.map(x => `<div>${KIT.esc(x)}</div>`).join(''), root, { fontSize: px(34) + 'px', zIndex: 3 }));
+  if (D.seal) nodes.push(KIT.el('div', 'seal', `<b>${KIT.esc(D.seal[0])}</b><small>${KIT.esc(D.seal[1] || '')}</small>`, root, { fontSize: px(40) + 'px', zIndex: 3 }));
+  if (D.memo) nodes.push(KIT.el('div', 'memo', KIT.esc(D.memo), root, { fontSize: px(38) + 'px', zIndex: 3 }));
+  KIT.flow(nodes, { top: t.offsetTop + t.offsetHeight + px(40), bottom: H - px(50), gap: px(26), maxScale: 1.4 });
+  KIT.ready('#F5F1E8');
+})();
+</script></body></html>

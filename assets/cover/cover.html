@@ -4,6 +4,7 @@
 <link rel="stylesheet" href="fonts.css">
 <script src="fontlist.js"></script>
 <script src="data.js"></script>
+<script src="cover-kit.js"></script>
 <style>
 @font-face{font-family:DMSSmiley;src:url(smiley.woff2)}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -122,12 +123,13 @@ const asideItems = [];
 if (d.note) asideItems.push({ k: 'note' });
 const hasAside = asideItems.length > 0;
 let G;
-if (MODE === 'P') G = V ? { hx: 70, hy: 120, hw: W / u - 140, hh: 0.3 * H / u, ax: 60, aw: 0.38 * W / u, ab: 0.86 * H / u, max: 124, pw: 0.64, ph: 0.6 }
-                        : { hx: 0.05 * W / u, hy: 0.075 * H / u, hw: 0.55 * W / u, hh: 0.38 * H / u, ax: 0.05 * W / u, aw: 0.55 * W / u, ab: 0.93 * H / u, max: 108, pw: 0.45, ph: 0.86 };
+if (MODE === 'P') G = V ? { hx: 70, hy: 120, hw: W / u - 140, hh: 0.3 * H / u, ax: 60, aw: 0.38 * W / u, ab: 0.86 * H / u, max: 124, pw: 0.7, ph: 0.62 }
+                        : { hx: 0.05 * W / u, hy: 0.075 * H / u, hw: 0.55 * W / u, hh: 0.38 * H / u, ax: 0.05 * W / u, aw: 0.55 * W / u, ab: 0.93 * H / u, max: 108, pw: 0.52, ph: 0.9 };
 else if (V) G = { hx: 44, hy: 0.12 * H / u, hw: W / u - 88, hh: 0.4 * H / u, ax: 70, aw: W / u - 140, ab: 0.86 * H / u, max: 200, tight: 1 };
 else G = hasAside ? { hx: 0.045 * W / u, hy: 0.12 * H / u, hw: 0.56 * W / u, hh: 0.66 * H / u, ax: 0.635 * W / u, ay: 0.1 * H / u, aw: 0.33 * W / u, ab: 0.9 * H / u, max: 180, tight: 1 }
                   : { hx: 0.06 * W / u, hy: 0.16 * H / u, hw: 0.88 * W / u, hh: 0.56 * H / u, ax: 0.08 * W / u, aw: 0.84 * W / u, ab: 0.9 * H / u, max: 210, center: 1, tight: 1 };
 if (S === 'C' && MODE === 'P') G.max *= 1.0;
+const HUG = MODE === 'P' && PER && PER.cut;   // v1.17：有抠像人物时，标题和元素都环绕人物排（cover-kit.js）
 
 /* ---------- 标题块 ---------- */
 const head = el('abs head', '', root, { left: px(G.hx) + 'px', top: px(G.hy) + 'px', width: px(G.hw) + 'px', zIndex: 3, textAlign: (G.center || (MODE === 'T' && S !== 'A')) ? 'center' : 'left' });
@@ -158,7 +160,8 @@ if (PER) {
     el('abs', '', root, { right: -W * G.pw * .15 + 'px', bottom: -H * .1 + 'px', width: W * G.pw * 1.3 + 'px', height: H * G.ph * 1.05 + 'px', zIndex: 1,
       background: 'radial-gradient(50% 50% at 50% 55%, rgba(70,170,215,.55), rgba(40,110,150,.25) 45%, transparent 72%)' });
   }
-  if (PER.cut) {
+  if (HUG) { /* 人物由 KIT.person 在排版时放 */ }
+  else if (PER.cut) {
     const e = el('person' + ((PER.edges || []).includes('right') ? ' r' : ''), `<img src="${esc(PER.src)}">`, root, box);
     if ((PER.edges || []).includes('left') && !(PER.edges || []).includes('right')) e.style.webkitMaskImage = e.style.maskImage = 'linear-gradient(90deg,transparent 0,#000 12%)';
     if (S === 'B') e.style.filter = `drop-shadow(0 0 ${px(30)}px rgba(255,255,255,.35))`;
@@ -247,5 +250,28 @@ function layout() {
     if (MODE === 'T' && G.ay != null) { const y = (H - aside.scrollHeight * sc) / 2; aside.style.top = Math.max(px(G.ay), y) + 'px'; head.style.top = Math.max(px(80), (H - head.offsetHeight) / 2 - px(20)) + 'px'; }
   } else if (MODE === 'T') head.style.top = Math.max(px(110), ((V ? px(G.ab) : H) - head.offsetHeight) / 2) + 'px';
 }
-Promise.all([document.fonts.ready, ...[...document.images].map(i => i.decode().catch(() => 0))]).then(() => { presetContrast(); layout(); checkContrast(true); window.__coverContrast = checkContrast(false); requestAnimationFrame(() => requestAnimationFrame(() => { window.__coverReady = true; })); });
+async function layoutHug() {
+  KIT.init(root, W, H, { margin: px(V ? 56 : 50), gap: px(26) });
+  const al = (PER.edges || []).includes('left') && !(PER.edges || []).includes('right') ? 'l' : 'r';
+  const pe = await KIT.person(PER, { x: W - W * G.pw, y: H - H * G.ph, w: W * G.pw, h: H * G.ph, z: 2 }, 'r');
+  if (S === 'B') pe.style.filter = `drop-shadow(0 0 ${px(30)}px rgba(255,255,255,.35))`;
+  if (S === 'C') pe.style.filter = `drop-shadow(0 0 ${px(26)}px rgba(70,170,210,.55)) drop-shadow(${px(-6)}px 0 ${px(4)}px rgba(255,190,110,.35))`;
+  if ((PER.edges || []).includes('left') && !(PER.edges || []).includes('right')) pe.style.webkitMaskImage = pe.style.maskImage = 'linear-gradient(90deg,transparent 0,#000 12%)';
+  // 标题块：从大往小试，标题每一行都要放进它那几行在人物旁边的空区间（头顶上方没有人的行可以更宽）
+  const top = px(V ? 90 : 70); let fs = px(V ? 150 : 132), iv = null;
+  for (let k = 0; k < 90; k++) {
+    ttl.style.fontSize = fs + 'px'; if (subw) subw.style.fontSize = Math.max(px(24), Math.round(fs * 0.3)) + 'px';
+    head.style.width = 'auto'; head.style.left = '0px'; head.style.top = top + 'px';
+    const w = Math.max(...[...ttl.children].map(c => c.scrollWidth), subw ? subw.firstChild.offsetWidth : 0), h = head.offsetHeight;
+    const fr = KIT.free(top, top + h); iv = fr.reduce((x, y) => (y.b - y.a > x.b - x.a ? y : x), { a: 0, b: 0 });
+    if ((w <= iv.b - iv.a && h <= H * (V ? 0.36 : 0.44)) || fs <= px(48)) { head.style.width = w + 'px'; head.style.left = (iv.side === 'r' ? iv.a : iv.a) + 'px'; break; }
+    fs = Math.floor(fs * 0.96);
+  }
+  KIT.track(head);
+  // 话题元素拆出来，按货架排进人物旁边，贴着人物那一侧
+  const nodes = [...aside.children]; nodes.forEach(n => { root.appendChild(n); n.style.zIndex = 3; });
+  aside.remove();
+  KIT.flow(nodes, { top: head.offsetTop + head.offsetHeight + px(S === 'A' ? 44 : 36), bottom: H - px(V ? 50 : 44), gap: px(S === 'A' ? 26 : 20), maxScale: 1.45 });
+}
+Promise.all([document.fonts.ready, ...[...document.images].map(i => i.decode().catch(() => 0))]).then(async () => { presetContrast(); if (HUG) await layoutHug(); else layout(); checkContrast(true); window.__coverContrast = checkContrast(false); if (window.KIT && KIT.root) KIT.audit(); requestAnimationFrame(() => requestAnimationFrame(() => { window.__coverReady = true; })); });
 </script></body></html>

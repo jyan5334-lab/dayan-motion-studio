@@ -1,0 +1,59 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<!-- 自定义封面 · 剪辑台：口播讲"剪辑全是我做的、他一帧都没动过" → 画面就是一台剪辑软件：深色工程界面、四条轨道（字幕 / 动画 / 音效 / 封面）、红色播放头、时间码。
+     配色：工程黑 #0B0E13 + 选中青 #23E6D2 + 播放头红 #FF3D5A + 琥珀 #FFB020。人物站在时间轴前，标题和片段标签贴着人物排。 -->
+<link rel="stylesheet" href="fonts.css"><script src="fontlist.js"></script><script src="data.js"></script><script src="cover-kit.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box} html,body{background:#000;overflow:hidden}
+#root{background:#0B0E13;color:#fff;font-weight:900}
+.grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px)}
+.glow{position:absolute;border-radius:50%;filter:blur(40px)}
+.bar{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;background:#151A22;border-bottom:1px solid rgba(255,255,255,.08);color:#8A94A6;font-weight:700;white-space:nowrap}
+.bar i{display:inline-block;border-radius:50%;margin-right:.5em}
+.bar .rec{margin-left:auto;color:#FF3D5A;font-family:var(--en);letter-spacing:.06em}
+.ttl{position:absolute;z-index:3;line-height:1.06;letter-spacing:-.04em;white-space:nowrap}
+.ttl .ln{display:block}
+.ttl .hl{color:#0B0E13;background:#23E6D2;padding:0 .12em;border-radius:.08em;position:relative;display:inline-block;margin:0 .04em}
+.ttl .hl::before,.ttl .hl::after{content:"";position:absolute;top:-.06em;bottom:-.06em;width:.07em;background:#23E6D2;border-radius:.03em}
+.ttl .hl::before{left:-.11em}.ttl .hl::after{right:-.11em}
+.sub{display:inline-block;margin-top:.5em;font-size:.34em;letter-spacing:0;color:#0B0E13;background:#FFB020;padding:.3em .7em .34em;border-radius:.18em}
+.clip{display:flex;align-items:center;gap:.4em;padding:.42em .8em .46em;border-radius:.28em;color:#0B0E13;white-space:nowrap;box-shadow:0 .18em .5em rgba(0,0,0,.45)}
+.clip b{font-family:var(--en);font-size:.62em;opacity:.7}
+.tc{font-family:var(--en);background:#151A22;border:2px solid #FF3D5A;color:#fff;padding:.35em .7em .4em;border-radius:.25em;white-space:nowrap;box-shadow:0 0 .8em rgba(255,61,90,.45)}
+.tc small{display:block;font-size:.42em;color:#FF8FA0;letter-spacing:.12em;margin-top:.2em}
+.ok{background:#fff;color:#0B0E13;padding:.4em .8em .44em;border-radius:99px;white-space:nowrap}
+.ok em{font-style:normal;color:#0A9F8F}
+.tl{position:absolute;left:0;right:0;bottom:0;background:#11151C;border-top:1px solid rgba(255,255,255,.1);z-index:1}
+.trk{position:absolute;left:0;right:0;height:18%;}
+.blk{position:absolute;top:18%;bottom:18%;border-radius:4px;opacity:.9}
+.ph{position:absolute;top:-14px;bottom:0;width:3px;background:#FF3D5A;z-index:1;box-shadow:0 0 12px #FF3D5A}
+.ph::before{content:"";position:absolute;top:0;left:-9px;border:10px solid transparent;border-top:14px solid #FF3D5A}
+</style></head><body><div id="root"></div><script>
+const D = KIT.boot(), W = KIT.W, H = KIT.H, V = KIT.V, px = KIT.px, root = KIT.root;
+const C = ['#23E6D2', '#FFB020', '#FF3D5A', '#7C8CFF'];
+KIT.el('div', 'grid', '', root, { backgroundSize: px(54) + 'px ' + px(54) + 'px' });
+KIT.el('div', 'glow', '', root, { width: W * .7 + 'px', height: W * .7 + 'px', right: -W * .15 + 'px', top: H * .1 + 'px', background: 'rgba(35,230,210,.18)' });
+KIT.el('div', 'glow', '', root, { width: W * .5 + 'px', height: W * .5 + 'px', left: -W * .15 + 'px', bottom: -W * .1 + 'px', background: 'rgba(255,61,90,.14)' });
+const bh = px(V ? 58 : 50);
+KIT.el('div', 'bar', `<i style="width:${px(14)}px;height:${px(14)}px;background:#FF5F57"></i><i style="width:${px(14)}px;height:${px(14)}px;background:#FEBC2E"></i><i style="width:${px(14)}px;height:${px(14)}px;background:#28C840"></i><span style="margin-left:${px(14)}px">${KIT.esc(D.project || '大琰DAYAN · 剪辑工程')}</span><span class="rec">● REC&nbsp;&nbsp;${KIT.esc(D.timecode || '00:03:19:00')}</span>`, root, { height: bh + 'px', padding: `0 ${px(26)}px`, fontSize: px(V ? 22 : 20) + 'px' });
+// 底部时间轴（在人物身后）
+const th = H * (V ? .16 : .2), tl = KIT.el('div', 'tl', '', root, { height: th + 'px' });
+(D.tracks || ['字幕', '动画', '音效', '封面']).forEach((n, i) => {
+  const t = KIT.el('div', 'trk', '', tl, { top: (6 + i * 22) + '%' });
+  KIT.el('div', '', KIT.esc(n), t, { position: 'absolute', left: px(18) + 'px', top: '50%', transform: 'translateY(-50%)', fontSize: px(18) + 'px', color: '#8A94A6', fontWeight: 700 });
+  let x = 9 + i * 3; for (let k = 0; k < 7; k++) { const w = 6 + ((i * 7 + k * 5) % 9); KIT.el('div', 'blk', '', t, { left: x + '%', width: w + '%', background: C[i] }); x += w + 1.5; }
+});
+KIT.el('div', 'ph', '', tl, { left: '41%' });
+(async () => {
+  await KIT.fonts();
+  const box = V ? { x: W * .3, y: H * .33, w: W * .7, h: H * .67 } : { x: W * .44, y: bh + H * .03, w: W * .56, h: H - bh - H * .03 };
+  if (KIT.PER) { const p = await KIT.person(KIT.PER, box, 'r'); p.style.filter = `drop-shadow(0 0 ${px(30)}px rgba(35,230,210,.45))`; }
+  const t = KIT.el('div', 'ttl', KIT.lines(D.title, D.hl) + (D.sub ? `<span class="sub">${KIT.esc(D.sub)}</span>` : ''), root);
+  KIT.fitTitle(t, px(V ? 150 : 138), px(56), { top: bh + px(V ? 56 : 44), maxH: H * (V ? .3 : .42) }); KIT.track(t);
+  const nodes = [];
+  (D.clips || []).forEach((c, i) => nodes.push(KIT.el('div', 'clip', `${KIT.esc(c)}<b>${String(i + 1).padStart(2, '0')}</b>`, root, { background: C[i % 4], fontSize: px(40) + 'px', zIndex: 3 })));
+  if (D.ok) nodes.push(KIT.el('div', 'ok', D.ok.replace(/\*\*(.+?)\*\*/g, '<em>$1</em>'), root, { fontSize: px(34) + 'px', zIndex: 3 }));
+  if (D.timecodeBadge) nodes.push(KIT.el('div', 'tc', `${KIT.esc(D.timecodeBadge[0])}<small>${KIT.esc(D.timecodeBadge[1] || '')}</small>`, root, { fontSize: px(48) + 'px', zIndex: 3 }));
+  KIT.flow(nodes, { top: t.offsetTop + t.offsetHeight + px(34), bottom: H - th - px(20), gap: px(18), maxScale: 1.5 });
+  KIT.ready('#0B0E13');
+})();
+</script></body></html>

@@ -29,14 +29,19 @@ try { b = await pw.chromium.launch(Object.assign({}, launch, exe && process.env.
 catch (e) { b = await pw.chromium.launch(launch); }
 fs.mkdirSync(out, { recursive: true });
 let errs = 0;
-for (const s of ['A', 'B', 'C']) for (const [w, h, tag] of [[1080, 1440, '竖屏3比4'], [1440, 1080, '横屏4比3']]) {
+// v1.17：jobs.json 列出要出的每一套（模板 A/B/C 的子集 + 自定义封面），每套出竖屏 3:4 + 横屏 4:3
+const jf = path.join(wk, 'jobs.json');
+const jobs = fs.existsSync(jf) ? JSON.parse(fs.readFileSync(jf, 'utf8')) : ['A', 'B', 'C'].map(s => ({ page: 'cover.html', q: `s=${s}`, name: `封面_${s}_${names[s]}` }));
+for (const j of jobs) for (const [w, h, tag] of [[1080, 1440, '竖屏3比4'], [1440, 1080, '横屏4比3']]) {
   const p = await b.newPage({ viewport: { width: w, height: h } });
-  p.on('pageerror', e => { errs++; console.error('[page]', s, tag, e.message); });
-  await p.goto(pathToFileURL(path.join(wk, 'cover.html')).href + `?s=${s}&w=${w}&h=${h}`);
+  p.on('pageerror', e => { errs++; console.error('[page]', j.name, tag, e.message); });
+  await p.goto(pathToFileURL(path.join(wk, j.page)).href + `?${j.q}&w=${w}&h=${h}`);
   await p.waitForFunction(() => window.__coverReady === true, null, { timeout: 30000 });
   const low = await p.evaluate(() => window.__coverContrast || []);
-  if (low.length) console.log(`[对比度] ${s} ${tag} 还有 ${low.length} 处偏低：` + low.join('；'));
-  await p.screenshot({ path: path.join(out, `封面_${s}_${names[s]}_${tag}.png`), clip: { x: 0, y: 0, width: w, height: h } });
+  if (low.length) console.log(`[对比度] ${j.name} ${tag} 还有 ${low.length} 处偏低：` + low.join('；'));
+  const iss = await p.evaluate(() => window.__coverIssues || []);
+  if (iss.length) console.log(`[排版] ${j.name} ${tag}：` + iss.join('；'));
+  await p.screenshot({ path: path.join(out, `${j.name}_${tag}.png`), clip: { x: 0, y: 0, width: w, height: h } });
   await p.close();
 }
 await b.close();

@@ -1107,33 +1107,30 @@ def cmd_effect(ns):
         print(f'✓ 三种画幅都渲染通过 → {d / "sheet.png"}（必须打开看：文字有没有溢出、有没有压到人物和字幕区）')
 
 def cmd_kickoff(ns):
-    """新作品开工时要问用户的问题（只在新作品时问；同一作品的修改、重渲染、补段都不问）。
-    有提问弹窗就用弹窗（最多 4 题，正好一题一个），没有就原样发给用户。技能暂不定义模板：不问"选哪个模板"。"""
+    """新作品开工时要问用户的问题。用户 2026-11-23 定：每一条新视频都把每一题问一遍，不能因为上一期答过、本机或工作库有配置就跳过——
+    上一次的回答只放进选项里当「沿用上次」，让用户自己点。只有同一条视频的修改（改一处、重渲染、补一段）才不重问。"""
     b = load_brand()
-    print('每条新视频开剪前都要问，分步问：每一步先发这一步的示例图，再弹出这一步的问题，回答后再进下一步（用户已经说明的项跳过；只有同一条视频的修改才不重问）：')
-    print('第 1 步 · 视频设置（一个弹窗）：')
     src = next((q / BRAND_FILE for q in [Path.cwd().resolve()] + list(Path.cwd().resolve().parents) if (q / BRAND_FILE).exists()), None)
+    print('每条新视频开剪前，下面每一题都要问（用户已经在这次请求里说明的才跳过；不许沿用上一期直接默认）。分步问：每一步先发这一步的示例图，再弹出这一步的问题，回答后再进下一步：')
+    print('第 1 步 · 视频设置（一个弹窗）：')
     print('1. 画幅：横屏 16:9 / 横屏 4:3 / 竖屏 9:16 / 竖屏 3:4')
     print('2. 分辨率：1080P（默认）/ 2K / 4K / 720P')
     print('3. 帧率：60（默认）/ 30 / 25 / 24')
-    print('   字幕：中英双语（中文在上、英文在下）/ 纯中文（默认）/ 不要字幕 → edit.json subtitles.lang = zh-en / zh / none；双语要给每条字幕写英文 en')
-    if src and b:
-        print(f"4. 文字墙品牌：已在 {src} 设定为 主行「{b['wall'][0]}」、副行「{b['wall'][1]}」——不用再问（用户要换时再改这个文件）")
-    else:
-      print('第 2 步 · 4. 文字墙品牌（首次使用才问，之后沿用，用户要改时再问）：背景文字墙会循环显示你的品牌，分两行——主行写品牌名，副行写英文名或口号。')
-      print(f'   先把示例图发给用户看「什么是文字墙」→ {ROOT / "assets" / "文字墙示例.jpg"}')
-      print('   弹窗：输入我的品牌 / 先不用（有上次的品牌再加「沿用上次」）；选「输入我的品牌」→ 马上在对话里（不用弹窗）请用户直接回复「主行 / 副行」两行')
-      print('   示例：主行「小明说AI」、副行「XIAOMING · AI LAB」；或 主行「光影研究所」、副行「LIGHT · LAB · STUDIO」')
-      _hint = ('上次用的是：主行「' + b['wall'][0] + '」、副行「' + b['wall'][1] + '」（回复"沿用"即可）') if b else '还没有保存过品牌；不想写可以回复"先不用"，文字墙会用中性占位字（MOTION · STUDIO）'
-      print('   ' + _hint)
-      print('   拿到答案后：dms.py scaffold … --wall-main "主行" --wall-sub "副行"（会存进本机配置，下次新作品默认沿用）')
+    print('4. 字幕：中英双语（中文在上、英文在下）/ 纯中文（默认）/ 不要字幕 → edit.json subtitles.lang = zh-en / zh / none；双语要给每条字幕写英文 en')
+    print('第 2 步 · 5. 文字墙品牌（每次都问）：背景文字墙会循环显示你的品牌，分两行——主行写品牌名，副行写英文名或口号。')
+    print(f'   第一次用先发示例图「什么是文字墙」→ {ROOT / "assets" / "文字墙示例.jpg"}')
+    last = (f"沿用上次：主行「{b['wall'][0]}」/ 副行「{b['wall'][1]}」" + (f'（来自 {src}）' if src else '')) if b else None
+    print('   弹窗选项：' + (last + ' / ' if last else '') + '输入新的品牌 / 先不用（中性占位字 MOTION · STUDIO）')
+    print('   选「输入新的品牌」→ 马上在对话里（不用弹窗）请用户直接回复「主行 / 副行」两行，示例：主行「小明说AI」、副行「XIAOMING · AI LAB」')
+    print('   拿到答案后：dms.py scaffold … --wall-main "主行" --wall-sub "副行"')
     print('封面（视频设置问完后，最后问，分步；规则见 references/cover.md「开工时问的封面问题」）：')
-    print('  第 3 步 · 5. 要不要同时生成封面（单独一个弹窗）：同时生成（默认）/ 不要封面（选不要，后面不问）')
-    print(f'  第 4 步 · 6. 封面风格：先发样张，再弹窗问 → {ROOT / "assets" / "cover" / "风格样张.jpg"}')
-    print('     三种都出（默认）/ A 手账贴纸 / B 科技海报 / C 电影海报 / 我发一张参考封面')
-    print('  第 5 步 · 7. 封面人物（弹窗）：我自己准备人物图 / 从视频里自动挑（有真人出镜时）/ 不要人物')
-    print('     选「自己准备」：提醒用户提前准备一张封面人物图（姿势、手势按想要的封面来）。Codex / 豆包 / WorkBuddy 能按人物照 + 参考图生成；')
-    print('     Claude 不能生图，请用户生成好或拍好发来。拿到后写进 edit.json 的 cover.photo')
+    print('  第 3 步 · 6. 要不要封面（单独一个弹窗）：同时生成（默认）/ 不要封面（选不要，后面不问）')
+    print('  第 4 步 · 7. 封面怎么做（cover.mode）：按口播自定义（AI 按标题和口播自己设计配色、元素、版式）/ 用模板（A 手账 / B 科技 / C 电影）/ 两种都出 / 我发一张参考封面')
+    print(f'     选了模板：先发样张 {ROOT / "assets" / "cover" / "风格样张.jpg"}，再问 三种都出 / A / B / C（cover.styles）')
+    print('     选了自定义：问出几套（1 / 2 / 3，每套横竖各一张）+ 风格方向（AI 按口播自己定 / 我说个方向 / 发参考图）')
+    print('  第 5 步 · 8. 封面有没有人物（模板和自定义都问）：有人物 / 没有人物（文字 + 背景版）')
+    print('     有人物 → 9. 人物从哪来：工作库里的人物图（发总览图，让用户选编号或说"随意"由 AI 按每套风格挑动作）/ 我自己准备新图 / 从视频里自动挑（有真人出镜时）')
+    print('     自己准备：Codex / 豆包 / WorkBuddy 能按人物照 + 参考图生成；Claude 不能生图，请用户生成好或拍好发来。写进 cover.photo（或每套的 custom[i].photo）')
     print('画幅 × 分辨率 → 画布：16:9 1920×1080 / 2560×1440 / 3840×2160 / 1280×720；4:3 1440×1080 / 1920×1440 / 2880×2160 / 960×720；')
     print('                     9:16 1080×1920 / 1440×2560 / 2160×3840 / 720×1280；3:4 1080×1440 / 1440×1920 / 2160×2880 / 720×960')
     fx = effect_dirs()
@@ -1166,6 +1163,17 @@ def cmd_lint(ns):
         elif miss: probs.append(f'字幕选了中英双语，还有 {len(miss)} 条没写英文 en，如「{miss[0][:16]}」：逐条翻译后写进 cuesFile 的 en 字段')
     elif sub.get('lang') not in (None, 'zh', 'zh-en', 'none'):
         probs.append(f"subtitles.lang 只能是 zh / zh-en / none，现在是 {sub.get('lang')}")
+    cv = E.get('cover') or {}   # v1.17 封面：模板 / 自定义 / 两种都出
+    if cv and cv.get('enabled') is not False:
+        md = cv.get('mode', 'template')
+        if md not in ('template', 'custom', 'both'): probs.append(f'cover.mode 只能是 template / custom / both，现在是 {md}')
+        if md in ('custom', 'both'):
+            if not cv.get('custom'): probs.append('cover.mode 选了自定义，但 cover.custom 是空的：每一套写 {"name", "html", "photo", 文案…}（见 cover.md「自定义封面」）')
+            for k, c in enumerate(cv.get('custom') or []):
+                if not c.get('html') or not (base / c['html']).exists(): probs.append(f"cover.custom[{k}] 的 html 找不到：{c.get('html')}")
+                if c.get('photo') and not (base / c['photo']).exists(): probs.append(f"cover.custom[{k}] 的人物图找不到：{c['photo']}")
+        for st in cv.get('styles') or []:
+            if st not in ('A', 'B', 'C'): probs.append(f'cover.styles 只能写 A / B / C，现在有 {st}')
     scenes = expand_all(E, dry=True)
     try:
         import dms_grab; probs += dms_grab.lint_media(ns.edit, E)   # 联网取来的视频片段：用户确认能用才放进片子

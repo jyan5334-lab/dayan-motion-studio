@@ -1,0 +1,39 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<!-- 自定义封面 · 踩坑报告：口播后半段讲"48 个版本，每一版都是剪真片子剪出来的问题；每踩一个坑就多一条规矩" →
+     施工警示黄 #FFD400 + 黑色警示斜条 + 背后巨大的描边「48」；三张"问题单"贴纸（出框 / 结尾空 / 没声音）盖红章"已修复"。人物握拳，问题单贴着人物排。 -->
+<link rel="stylesheet" href="fonts.css"><script src="fontlist.js"></script><script src="data.js"></script><script src="cover-kit.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box} html,body{background:#000;overflow:hidden}
+#root{background:#FFD400;color:#111;font-weight:900}
+.dots{position:absolute;inset:0;background-image:radial-gradient(rgba(0,0,0,.09) 1.4px,transparent 1.6px)}
+.haz{position:absolute;background:repeating-linear-gradient(-45deg,#111 0 34px,#FFD400 34px 68px);box-shadow:0 6px 0 rgba(0,0,0,.18)}
+.big{position:absolute;font-family:var(--en);font-weight:900;color:transparent;-webkit-text-stroke:6px rgba(17,17,17,.9);letter-spacing:-.06em;line-height:.8;white-space:nowrap;z-index:1}
+.big small{font-size:.16em;-webkit-text-stroke:0;color:#111;letter-spacing:.02em;margin-left:.1em}
+.ttl{position:absolute;z-index:3;line-height:1.08;letter-spacing:-.04em;white-space:nowrap}
+.ttl .ln{display:block}
+.ttl .hl{background:#111;color:#FFD400;padding:0 .14em .04em;margin:0 .04em;display:inline-block;transform:rotate(-2deg)}
+.sub{display:inline-block;margin-top:.45em;font-size:.32em;letter-spacing:0;background:#fff;border:.08em solid #111;padding:.28em .7em .32em;box-shadow:.14em .14em 0 #111}
+.bug{position:relative;background:#fff;border:.07em solid #111;box-shadow:.12em .14em 0 #111;padding:.5em .8em .55em .8em;white-space:nowrap;line-height:1.25}
+.bug .k-t{display:block;font-size:.5em;letter-spacing:.08em;color:#fff;background:#111;padding:.15em .5em;margin:-.2em 0 .45em;width:max-content}
+.bug .fix{display:block;font-size:.72em;color:#C8102E;margin-top:.2em}
+.stamp{position:absolute;right:-.5em;top:-.6em;font-size:.42em;color:#C8102E;border:.18em solid #C8102E;border-radius:50%;width:4.4em;height:4.4em;display:flex;align-items:center;justify-content:center;text-align:center;transform:rotate(14deg);background:rgba(255,255,255,.85);line-height:1.1}
+.tape{background:#111;color:#FFD400;padding:.35em .8em .4em;white-space:nowrap;font-family:var(--en);letter-spacing:.06em}
+</style></head><body><div id="root"></div><script>
+const D = KIT.boot(), W = KIT.W, H = KIT.H, V = KIT.V, px = KIT.px, root = KIT.root;
+KIT.el('div', 'dots', '', root, { backgroundSize: px(26) + 'px ' + px(26) + 'px' });
+KIT.el('div', 'haz', '', root, { left: 0, right: 0, top: 0, height: px(26) + 'px' });
+KIT.el('div', 'haz', '', root, { left: 0, right: 0, bottom: 0, height: px(26) + 'px' });
+KIT.el('div', 'big', `${KIT.esc(D.big || '48')}<small>${KIT.esc(D.bigUnit || '')}</small>`, root, V ? { fontSize: px(720) + 'px', right: px(-30) + 'px', top: H * .3 + 'px' } : { fontSize: px(760) + 'px', right: px(-20) + 'px', top: H * .06 + 'px' });
+(async () => {
+  await KIT.fonts();
+  KIT.init(root, W, H, { margin: px(V ? 56 : 50), gap: px(24) });
+  const box = V ? { x: W * .3, y: H * .36, w: W * .7, h: H * .64 - px(26) } : { x: W * .47, y: H * .1, w: W * .53, h: H * .9 - px(26) };
+  if (KIT.PER) { const p = await KIT.person(KIT.PER, box, 'r'); p.style.filter = `drop-shadow(${px(14)}px ${px(14)}px 0 rgba(17,17,17,.9))`; p.style.zIndex = 2; }
+  const t = KIT.el('div', 'ttl', KIT.lines(D.title, D.hl) + (D.sub ? `<br><span class="sub">${KIT.esc(D.sub)}</span>` : ''), root);
+  KIT.fitTitle(t, px(V ? 140 : 128), px(54), { top: px(V ? 78 : 62), maxH: H * (V ? .3 : .4) }); KIT.track(t);
+  const nodes = (D.bugs || []).map((b, i) => { const e = KIT.el('div', 'bug', `<span class="k-t">BUG #${KIT.esc(b.no || i + 1)}</span>${KIT.esc(b.t)}<span class="fix">→ ${KIT.esc(b.fix)}</span><span class="stamp">已修复</span>`, root, { fontSize: px(36) + 'px', zIndex: 3 }); e.style.transform = `rotate(${[-2, 1.5, -1][i % 3]}deg)`; return e; });
+  if (D.tape) nodes.push(KIT.el('div', 'tape', KIT.esc(D.tape), root, { fontSize: px(26) + 'px', zIndex: 3 }));
+  KIT.flow(nodes, { top: t.offsetTop + t.offsetHeight + px(46), bottom: H - px(60), gap: px(30), maxScale: 1.35 });
+  KIT.ready('#FFD400');
+})();
+</script></body></html>

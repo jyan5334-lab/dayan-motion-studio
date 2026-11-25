@@ -100,15 +100,25 @@ def retouch(a, style):
     a = a * .74 + sm * .26
     lum = (a @ [.299, .587, .114])[..., None] / 255.
     a = a + (1 - lum) ** 2 * np.array([6, 7, 8])                     # 轻提暗部
-    if style == 'A': a = a * [1.035, 1.01, .975]
+    if style in ('A', 'N'): a = a * [1.035, 1.01, .975]
     if style == 'B': a = a * [1.02, 1.0, .99]
     if style == 'C': a = a + (1 - lum) ** 2 * np.array([-16, 4, 18]) + lum ** 2 * np.array([18, 7, -14])   # 阴影偏青、高光偏暖
     im = Image.fromarray(np.clip(a, 0, 255).astype(np.uint8))
-    im = ImageEnhance.Brightness(im).enhance({'A': 1.05, 'B': 1.04, 'C': .97}[style])
-    im = ImageEnhance.Contrast(im).enhance({'A': 1.04, 'B': 1.05, 'C': 1.14}[style])
+    im = ImageEnhance.Brightness(im).enhance({'A': 1.05, 'B': 1.04, 'C': .97, 'N': 1.04}[style])
+    im = ImageEnhance.Contrast(im).enhance({'A': 1.04, 'B': 1.05, 'C': 1.14, 'N': 1.06}[style])
     return np.asarray(im.filter(ImageFilter.UnsharpMask(radius=2, percent=50, threshold=3))).astype(np.float32)
 
-def cut_person(rgb, style, path, target_h=1500):
+def silhouette(path, rows=240):
+    """人物轮廓：每一行不透明像素的最左 / 最右（占图片宽度的比例，-1 = 没有人），给 cover-kit.js 排版用（元素环绕人物）"""
+    import numpy as np
+    from PIL import Image
+    a = np.asarray(Image.open(path).convert('RGBA'))[..., 3] > 127; h, w = a.shape; L, R = [], []
+    for i in range(rows):
+        band = a[int(i * h / rows):max(int(i * h / rows) + 1, int((i + 1) * h / rows))].any(0); xs = np.where(band)[0]
+        L.append(round(xs.min() / w, 4) if len(xs) else -1); R.append(round((xs.max() + 1) / w, 4) if len(xs) else -1)
+    return {'l': L, 'r': R}
+
+def cut_person(rgb, style, path, target_h=1500, outline=None):
     """抠像 + 调色 + （A）贴纸描边 → RGBA PNG；返回 {cut, edges}，cut=False 表示抠不了，输出的是照片卡用的裁切图"""
     import numpy as np, cv2
     from PIL import Image
@@ -127,7 +137,7 @@ def cut_person(rgb, style, path, target_h=1500):
     rgba = np.dstack([np.clip(col, 0, 255), a * 255]).astype(np.uint8)[y0:y1, x0:x1]
     im = Image.fromarray(rgba, 'RGBA')
     if sc > 1.01: im = im.resize((int(im.width * sc), int(im.height * sc)), Image.LANCZOS)
-    if style == 'A':   # 贴纸描边：白 16px + 细黑 5px；被画框截断的边不描（贴着画布边）
+    if (outline or ('sticker' if style == 'A' else None)) == 'sticker':   # 贴纸描边：白 16px + 细黑 5px；被画框截断的边不描（贴着画布边）
         al = np.asarray(im)[..., 3].astype(np.float32) / 255.
         pl, pr, pt, pb = (0 if 'left' in edges else pad), (0 if 'right' in edges else pad), (0 if 'top' in edges else pad), (0 if 'bottom' in edges else pad)
         big = np.pad(al, ((pt, pb), (pl, pr))); hard = (big > .5).astype(np.uint8) * 255
@@ -137,7 +147,7 @@ def cut_person(rgb, style, path, target_h=1500):
             mk = cv2.GaussianBlur(cv2.dilate(hard, k(r)), (0, 0), .8); lay = Image.new('RGBA', out.size, c); lay.putalpha(Image.fromarray(mk)); out = Image.alpha_composite(out, lay)
         out.alpha_composite(im, (pl, pt)); im = out
     im.save(path)
-    return {'cut': True, 'edges': edges}
+    return {'cut': True, 'edges': edges, 'prof': silhouette(path)}
 
 # ------------------------------------------------------------------ 选帧
 def visible_ranges(TL, D):
@@ -283,10 +293,34 @@ def make_covers(P, brand, out=None, person='auto', frames=None):
     photos = cfg.get('photo') or cfg.get('photos')
     if isinstance(photos, str): photos = [photos]
     people = {}
-    if photos and pmode not in (False, 'no', 'off'):
+    mode = cfg.get('mode', 'template')   # v1.17：template 模板（A/B/C）/ custom 按口播自定义 / both 两种都出
+    if mode not in ('template', 'custom', 'both'): raise SystemExit(f'✗ cover.mode 只能是 template / custom / both，现在是 {mode}')
+    styles = [x for x in (cfg.get('styles') or ['A', 'B', 'C']) if x in 'ABC'] if mode != 'custom' else []
+    base_dir = Path(pj['edit']).parent if pj.get('edit') else P
+    def find(p):
+        f = Path(p); f = f if f.is_absolute() else (base_dir / f)
+        if not f.exists(): f = P / p
+        if not f.exists(): raise SystemExit(f'✗ 封面文件找不到：{p}')
+        return f
+    customs = []
+    if mode in ('custom', 'both'):
         import numpy as np
         from PIL import Image
-        base_dir = Path(E.get('_base') or pj.get('edit') and Path(pj['edit']).parent or P)
+        cl = cfg.get('custom') or []
+        if not cl: raise SystemExit('✗ cover.mode 选了自定义，但 cover.custom 是空的：按 cover.md「自定义封面」给每一套写 {"name", "html", "photo"}')
+        for i, c in enumerate(cl):
+            item = {k: v for k, v in c.items() if k not in ('html', 'photo')}; item['page'] = f'custom_{i}.html'
+            shutil.copy(find(c['html']), wk / item['page'])
+            ph = c.get('photo', photos[i % len(photos)] if photos else None)
+            if ph and c.get('person', True) is not False and pmode not in (False, 'no', 'off'):
+                img = np.asarray(Image.open(find(ph)).convert('RGB'))
+                info = cut_person(img, 'N', wk / f'person_c{i}.png', outline=c.get('outline')); info['src'] = f'person_c{i}.png'; item['person'] = info
+            else: item['person'] = None
+            customs.append(item)
+        log('自定义封面：' + '、'.join(f"{c.get('name', i + 1)}（{'有人物' if customs[i]['person'] else '无人物'}）" for i, c in enumerate(cl)))
+    if photos and styles and pmode not in (False, 'no', 'off'):
+        import numpy as np
+        from PIL import Image
         for i, s in enumerate('ABC'):
             f = Path(photos[min(i, len(photos) - 1)]); f = f if f.is_absolute() else (base_dir / f)
             if not f.exists(): f = P / photos[min(i, len(photos) - 1)]
@@ -295,7 +329,7 @@ def make_covers(P, brand, out=None, person='auto', frames=None):
             info = cut_person(img, s, wk / f'person_{s}.png'); info.update({'src': f'person_{s}.png', 't': None}); people[s] = info
         log('封面人物：用准备好的人物照 ' + '、'.join(str(x) for x in photos[:3]) + ('（抠像）' if people['A']['cut'] else '（没有抠图模型：用照片卡）'))
         ranges = []
-    picks = pick_frames(P, TL, master, ranges, 3, frames or cfg.get('frames')) if ranges else []
+    picks = pick_frames(P, TL, master, ranges, 3, frames or cfg.get('frames')) if ranges and styles else []
     if picks:
         import numpy as np
         get, _ = frame_reader(P, TL, master)
@@ -303,17 +337,20 @@ def make_covers(P, brand, out=None, person='auto', frames=None):
             img, _ = get(t, full=True)
             info = cut_person(img, s, wk / f'person_{s}.png'); info.update({'src': f'person_{s}.png', 't': t}); people[s] = info
         log('封面人物帧：' + '、'.join(f'{s} {people[s]["t"]:.2f}s' for s in people) + ('（抠像）' if people['A']['cut'] else '（没有抠图模型：用照片卡）'))
-    elif not people: log('没有可用的真人画面 → 出文字 + 背景版封面')
+    elif not people and styles: log('没有可用的真人画面 → 模板封面出文字 + 背景版')
     base = default_text(E, brand)
     shots = [x for x in (extract_shot(P, master, s, i, wk, TL) for i, s in enumerate((cfg.get('shots') or [])[:2])) if x]
     data = {'title': cfg.get('title') or base['title'], 'hl': cfg.get('hl', base['hl']), 'sub': cfg.get('sub', ''), 'note': cfg.get('note', ''),
             'badges': (cfg.get('badges') or [])[:3], 'label': cfg.get('label') or ((brand.get('wall') or ['', ''])[-1] if not brand.get('_placeholder') else 'AI · VIDEO'),
             'colors': cfg.get('colors') or ['#FF9A3C', '#E8561A'], 'shots': shots, 'people': people, 'brand': {k: brand.get(k) for k in ('name', 'mark')},
-            'styles': {s: cfg.get(s) or {} for s in 'ABC'}}
+            'styles': {s: cfg.get(s) or {} for s in 'ABC'}, 'custom': customs}
     if isinstance(data['title'], str): data['title'] = [x for x in re.split(r'\s*[/\n]\s*', data['title']) if x]
     if not cfg: log('edit.json 没写 "cover"：标题用片名自动拆两行（', ' / '.join(data['title']), '），交付前建议补上 cover 文案')
     (wk / 'data.js').write_text('window.COVER=' + json.dumps(data, ensure_ascii=False) + ';', encoding='utf-8')
-    shutil.copy(ROOT / 'assets' / 'cover' / 'cover.html', wk / 'cover.html')
+    shutil.copy(ROOT / 'assets' / 'cover' / 'cover.html', wk / 'cover.html'); shutil.copy(ROOT / 'assets' / 'cover' / 'cover-kit.js', wk / 'cover-kit.js')
+    jobs = [{'page': 'cover.html', 'q': f's={s}', 'name': f'封面_{s}_{NAMES[s]}'} for s in styles]
+    jobs += [{'page': c['page'], 'q': f'c={i}', 'name': f"封面_自定义{i + 1}_{re.sub(r'[^0-9A-Za-z一-鿿]+', '', c.get('name') or '') or i + 1}"} for i, c in enumerate(customs)]
+    (wk / 'jobs.json').write_text(json.dumps(jobs, ensure_ascii=False), encoding='utf-8')
     shutil.copy(ROOT / 'engine' / 'fonts' / 'SmileySans-Oblique.woff2', wk / 'smiley.woff2')
     fonts = []
     for f in sorted((ROOT / 'assets' / 'fonts').glob('*')) if (ROOT / 'assets' / 'fonts').exists() else []:
@@ -324,18 +361,19 @@ def make_covers(P, brand, out=None, person='auto', frames=None):
     r = subprocess.run([NODE, str(HERE / 'cover.mjs'), str(wk), str(out)], cwd=str(ROOT), capture_output=True, text=True)
     if r.returncode: raise RuntimeError('封面截图失败：' + (r.stderr or r.stdout)[-800:])
     for l in (r.stdout or '').splitlines():
-        if l.startswith('[对比度]'): log(l)
-    files = [out / f'封面_{s}_{NAMES[s]}_{tag}.png' for s in 'ABC' for _, _, tag in SIZES]
+        if l.startswith('[对比度]') or l.startswith('[排版]'): log(l)
+    files = [out / f"{j['name']}_{tag}.png" for j in jobs for _, _, tag in SIZES]
     sheet(files, out / '封面_总览.jpg')
-    log(f'封面 6 张 → {out}')
+    log(f'封面 {len(files)} 张 → {out}')
     return files
 
 def sheet(files, dst):
+    """总览：上排竖版、下排横版，每一套一列"""
     from PIL import Image
     ims = [Image.open(f).convert('RGB') for f in files if Path(f).exists()]
-    if len(ims) < 6: return
-    v = [ims[i] for i in (0, 2, 4)]; h = [ims[i] for i in (1, 3, 5)]
-    W = 540 * 3 + 40; im = Image.new('RGB', (W, 720 + 405 + 30), 'white')
+    if len(ims) < 2: return
+    v = ims[0::2]; h = ims[1::2]; n = len(v)
+    W = 550 * n + 10; im = Image.new('RGB', (W, 720 + 405 + 30), 'white')
     for i, x in enumerate(v): im.paste(x.resize((540, 720)), (10 + i * 550, 0))
     for i, x in enumerate(h): im.paste(x.resize((540, 405)), (10 + i * 550, 740))
     im.save(dst, quality=88)
