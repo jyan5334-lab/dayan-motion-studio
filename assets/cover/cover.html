@@ -123,11 +123,11 @@ const asideItems = [];
 if (d.note) asideItems.push({ k: 'note' });
 const hasAside = asideItems.length > 0;
 let G;
-if (MODE === 'P') G = V ? { hx: 70, hy: 120, hw: W / u - 140, hh: 0.3 * H / u, ax: 60, aw: 0.38 * W / u, ab: 0.86 * H / u, max: 124, pw: 0.7, ph: 0.62 }
-                        : { hx: 0.05 * W / u, hy: 0.075 * H / u, hw: 0.55 * W / u, hh: 0.38 * H / u, ax: 0.05 * W / u, aw: 0.55 * W / u, ab: 0.93 * H / u, max: 108, pw: 0.52, ph: 0.9 };
-else if (V) G = { hx: 44, hy: 0.12 * H / u, hw: W / u - 88, hh: 0.4 * H / u, ax: 70, aw: W / u - 140, ab: 0.86 * H / u, max: 200, tight: 1 };
-else G = hasAside ? { hx: 0.045 * W / u, hy: 0.12 * H / u, hw: 0.56 * W / u, hh: 0.66 * H / u, ax: 0.635 * W / u, ay: 0.1 * H / u, aw: 0.33 * W / u, ab: 0.9 * H / u, max: 180, tight: 1 }
-                  : { hx: 0.06 * W / u, hy: 0.16 * H / u, hw: 0.88 * W / u, hh: 0.56 * H / u, ax: 0.08 * W / u, aw: 0.84 * W / u, ab: 0.9 * H / u, max: 210, center: 1, tight: 1 };
+if (MODE === 'P') G = V ? { hx: 44, hy: 56, hw: W / u - 88, hh: 0.32 * H / u, ax: 44, aw: 0.42 * W / u, ab: 0.88 * H / u, max: 180, pw: 0.66, ph: 0.62 }
+                        : { hx: 0.04 * W / u, hy: 0.05 * H / u, hw: 0.54 * W / u, hh: 0.40 * H / u, ax: 0.04 * W / u, aw: 0.54 * W / u, ab: 0.94 * H / u, max: 165, pw: 0.50, ph: 0.92 };
+else if (V) G = { hx: 40, hy: 0.06 * H / u, hw: W / u - 80, hh: 0.44 * H / u, ax: 44, aw: W / u - 88, ab: 0.90 * H / u, max: 240, tight: 1 };
+else G = hasAside ? { hx: 0.04 * W / u, hy: 0.08 * H / u, hw: 0.56 * W / u, hh: 0.80 * H / u, ax: 0.62 * W / u, ay: 0.08 * H / u, aw: 0.34 * W / u, ab: 0.92 * H / u, max: 215, tight: 1 }
+                  : { hx: 0.045 * W / u, hy: 0.10 * H / u, hw: 0.91 * W / u, hh: 0.78 * H / u, ax: 0.05 * W / u, aw: 0.90 * W / u, ab: 0.92 * H / u, max: 250, center: 1, tight: 1 };
 if (S === 'C' && MODE === 'P') G.max *= 1.0;
 const HUG = MODE === 'P' && PER && PER.cut;   // v1.17：有抠像人物时，标题和元素都环绕人物排（cover-kit.js）
 
@@ -232,46 +232,56 @@ function presetContrast() {   // 先按配色挑好颜色，再逐个检查
 
 function layout() {
   let fs = px(G.max); ttl.style.fontSize = fs + 'px';
-  const maxW = px(G.hw), maxH = px(G.hh) - (subw ? subw.offsetHeight + px(30) : 0);
-  for (let i = 0; i < 80 && (ttl.scrollWidth > maxW + 1 || [...ttl.children].some(c => c.scrollWidth > maxW + 1) || ttl.offsetHeight > maxH) && fs > px(48); i++) { fs = Math.floor(fs * 0.96); ttl.style.fontSize = fs + 'px'; }
-  if (subw) { let ss = Math.max(px(26), Math.round(fs * 0.33)); subw.style.fontSize = ss + 'px'; const sp = subw.firstChild; for (let i = 0; i < 30 && sp.offsetWidth > maxW; i++) { ss = Math.floor(ss * 0.95); subw.style.fontSize = ss + 'px'; } }
-  if (S === 'B' && MODE === 'P' && V) {}
+  const maxW = px(G.hw), maxH = px(G.hh) - (subw ? px(96) : 0);
+  for (let i = 0; i < 90 && (ttl.scrollWidth > maxW + 1 || [...ttl.children].some(c => c.scrollWidth > maxW + 1) || ttl.offsetHeight > maxH) && fs > px(48); i++) { fs = Math.floor(fs * 0.96); ttl.style.fontSize = fs + 'px'; }
+  if (subw) { let ss = Math.max(px(28), Math.round(fs * (MODE === 'T' ? 0.36 : 0.34))); subw.style.fontSize = ss + 'px'; const sp = subw.firstChild; for (let i = 0; i < 36 && sp.offsetWidth > maxW; i++) { ss = Math.floor(ss * 0.95); subw.style.fontSize = ss + 'px'; } }
   let hb = head.offsetTop + head.offsetHeight;
-  const top0 = G.ay != null ? px(G.ay) : hb + px(S === 'A' ? 50 : 40);
+  const top0 = G.ay != null ? px(G.ay) : hb + px(S === 'A' ? 42 : 34);
   if (hasAside) {
     aside.style.top = top0 + 'px'; const avH = px(G.ab) - top0, avW = px(G.aw);
-    const sc = Math.min(MODE === 'T' && V ? 1.25 : 1, avW / Math.max(1, aside.scrollWidth), avH / Math.max(1, aside.scrollHeight));
+    const sc = Math.min(MODE === 'T' ? 1.75 : 1.45, avW / Math.max(1, aside.scrollWidth), avH / Math.max(1, aside.scrollHeight));
     aside.style.transform = `scale(${sc})`;
-    if (MODE === 'T' && G.ay == null) {   // 竖屏文字版：标题 + 元素整体垂直居中
-      const tot = hb - head.offsetTop + px(40) + aside.scrollHeight * sc; const y0 = Math.max(px(110), (px(G.ab) - tot) / 2 + px(20));
-      head.style.top = y0 + 'px'; aside.style.top = (y0 + head.offsetHeight + px(40)) + 'px';
+    if (MODE === 'T' && G.ay == null) {   // 无人物竖屏：标题 + 知识模块放大占满整个封面并垂直居中
+      const tot = hb - head.offsetTop + px(36) + aside.scrollHeight * sc; const y0 = Math.max(px(64), (px(G.ab) - tot) / 2 + px(12));
+      head.style.top = y0 + 'px'; aside.style.top = (y0 + head.offsetHeight + px(36)) + 'px';
       if (V) aside.style.left = (W - aside.scrollWidth * sc) / 2 + 'px', aside.style.width = aside.scrollWidth + 'px';
     }
-    if (MODE === 'T' && G.ay != null) { const y = (H - aside.scrollHeight * sc) / 2; aside.style.top = Math.max(px(G.ay), y) + 'px'; head.style.top = Math.max(px(80), (H - head.offsetHeight) / 2 - px(20)) + 'px'; }
-  } else if (MODE === 'T') head.style.top = Math.max(px(110), ((V ? px(G.ab) : H) - head.offsetHeight) / 2) + 'px';
+    if (MODE === 'T' && G.ay != null) { const y = (H - aside.scrollHeight * sc) / 2; aside.style.top = Math.max(px(G.ay), y) + 'px'; head.style.top = Math.max(px(64), (H - head.offsetHeight) / 2 - px(16)) + 'px'; }
+  } else if (MODE === 'T') head.style.top = Math.max(px(72), ((V ? px(G.ab) : H) - head.offsetHeight) / 2) + 'px';
 }
 async function layoutHug() {
-  KIT.init(root, W, H, { margin: px(V ? 56 : 50), gap: px(26) });
-  const al = (PER.edges || []).includes('left') && !(PER.edges || []).includes('right') ? 'l' : 'r';
+  KIT.init(root, W, H, { margin: px(V ? 42 : 42), gap: px(20) });
   const pe = await KIT.person(PER, { x: W - W * G.pw, y: H - H * G.ph, w: W * G.pw, h: H * G.ph, z: 2 }, 'r');
   if (S === 'B') pe.style.filter = `drop-shadow(0 0 ${px(30)}px rgba(255,255,255,.35))`;
   if (S === 'C') pe.style.filter = `drop-shadow(0 0 ${px(26)}px rgba(70,170,210,.55)) drop-shadow(${px(-6)}px 0 ${px(4)}px rgba(255,190,110,.35))`;
   if ((PER.edges || []).includes('left') && !(PER.edges || []).includes('right')) pe.style.webkitMaskImage = pe.style.maskImage = 'linear-gradient(90deg,transparent 0,#000 12%)';
-  // 标题块：从大往小试，标题每一行都要放进它那几行在人物旁边的空区间（头顶上方没有人的行可以更宽）
-  const top = px(V ? 90 : 70); let fs = px(V ? 150 : 132), iv = null;
+  // v1.17.5：主标题先独立放大撑满可用宽度（竖屏通栏、横屏顶满人物左侧），副标题单独适配不压低主标题
+  const top = px(V ? 48 : 38); let fs = px(V ? 225 : 200), iv = null;
+  if (subw) subw.style.display = 'none';
   for (let k = 0; k < 90; k++) {
-    ttl.style.fontSize = fs + 'px'; if (subw) subw.style.fontSize = Math.max(px(24), Math.round(fs * 0.3)) + 'px';
+    ttl.style.fontSize = fs + 'px';
     head.style.width = 'auto'; head.style.left = '0px'; head.style.top = top + 'px';
-    const w = Math.max(...[...ttl.children].map(c => c.scrollWidth), subw ? subw.firstChild.offsetWidth : 0), h = head.offsetHeight;
+    const w = Math.max(...[...ttl.children].map(c => c.scrollWidth)), h = head.offsetHeight;
     const fr = KIT.free(top, top + h); iv = fr.reduce((x, y) => (y.b - y.a > x.b - x.a ? y : x), { a: 0, b: 0 });
-    if ((w <= iv.b - iv.a && h <= H * (V ? 0.36 : 0.44)) || fs <= px(48)) { head.style.width = w + 'px'; head.style.left = (iv.side === 'r' ? iv.a : iv.a) + 'px'; break; }
+    if ((w <= iv.b - iv.a && h <= H * (V ? 0.28 : 0.36)) || fs <= px(52)) { head.style.width = w + 'px'; head.style.left = iv.a + 'px'; break; }
     fs = Math.floor(fs * 0.96);
   }
+  if (subw) {
+    subw.style.display = '';
+    const subTop = top + head.offsetHeight;
+    const sfr = KIT.free(subTop, subTop + px(90));
+    const siv = sfr.reduce((x, y) => (y.b - y.a > x.b - x.a ? y : x), iv);
+    const maxSW = Math.max(head.offsetWidth, siv.b - siv.a);
+    let ss = Math.max(px(30), Math.round(fs * 0.34)); subw.style.fontSize = ss + 'px';
+    const sp = subw.firstChild;
+    for (let i = 0; i < 40 && sp.offsetWidth > maxSW && ss > px(22); i++) { ss = Math.floor(ss * 0.95); subw.style.fontSize = ss + 'px'; }
+    head.style.width = Math.max(head.offsetWidth, sp.offsetWidth) + 'px';
+  }
   KIT.track(head);
-  // 话题元素拆出来，按货架排进人物旁边，贴着人物那一侧
+  // 话题元素拆出来，按货架占满人物以外的空余区域
   const nodes = [...aside.children]; nodes.forEach(n => { root.appendChild(n); n.style.zIndex = 3; });
   aside.remove();
-  KIT.flow(nodes, { top: head.offsetTop + head.offsetHeight + px(S === 'A' ? 44 : 36), bottom: H - px(V ? 50 : 44), gap: px(S === 'A' ? 26 : 20), maxScale: 1.45 });
+  KIT.flow(nodes, { top: head.offsetTop + head.offsetHeight + px(S === 'A' ? 30 : 24), bottom: H - px(V ? 42 : 36), gap: px(S === 'A' ? 22 : 18), maxScale: 1.8 });
 }
 Promise.all([document.fonts.ready, ...[...document.images].map(i => i.decode().catch(() => 0))]).then(async () => { presetContrast(); if (HUG) await layoutHug(); else layout(); checkContrast(true); window.__coverContrast = checkContrast(false); if (window.KIT && KIT.root) KIT.audit(); requestAnimationFrame(() => requestAnimationFrame(() => { window.__coverReady = true; })); });
 </script></body></html>

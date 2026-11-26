@@ -2,7 +2,7 @@
  "id": "fx-ai-chat-app",
  "name": "AI 产品对话界面",
  "use": "口播里出现\"跟 AI 说 / 把要求告诉它 / 提意见 / 截图发过去 / 它回我\"这类对话场景：按真实产品（Claude / ChatGPT / Codex / 豆包 / WorkBuddy / DeepSeek）的桌面端对话页还原——官方 logo、原生配色、侧边栏、输入框；我的话先在输入框逐字打出再发送，AI 先思考再逐字回复，可带截图附件",
- "props": "brand 产品（claude/chatgpt/codex/doubao/workbuddy/deepseek）；title 窗口标题；model 模型标签；history:[侧边栏会话]；msgs:[{who: me/ai, t, at, img 附件截图}]；label 角标（默认\"界面示意\"）；logo 自定义 logo",
+ "props": "brand 产品（antigravity/gemini/claude/claudecode/chatgpt/codex/cursor/doubao/workbuddy/deepseek/kimi/qwen；必须与当前对话的 Agent 一致，禁止串用其他 Agent 的 logo）；name 自定义侧栏品牌名；placeholder 自定义输入框占位字；title 窗口标题；model 模型标签；history:[侧边栏会话]；msgs:[{who: me/ai, t, at, img 附件截图}]；label 角标（默认\"界面示意\"）；logo 自定义 logo",
  "ref": "真实产品界面（DAYAN 动效库 P13「讲它就用它的样子」）",
  "cat": "09 界面演示",
  "created": "2026-11-20",

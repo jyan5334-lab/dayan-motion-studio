@@ -1264,6 +1264,52 @@ def cmd_lint(ns):
             if left: probs.append(f"{s.get('id')}/{L.get('c')}: 账号占位没换：{left[0][:24]}——按口播语义换成真实账号或合适称呼，不需要就换成空")
             if L.get('c') == 'dayan' and str(pr.get('id', '')) in PLACEHOLDER_CARDS and not any(isinstance(r, list) and str(r[0]).startswith('@XXX') for r in rp):
                 warns.append(f"{s.get('id')}/dayan {pr.get('id')}: 这张原卡里有样板账号 @XXX1…，用 replace 按口播语义换掉（dms.py card {pr.get('id')} 看全部文字）")
+            # 2026-11-26 硬校验：对话场景 Agent Logo 与品牌必须与当前对话对象一致，禁止串用（如跟 Antigravity 对话却显示 Claude）
+            if L.get('c') == 'fx-ai-chat-app':
+                br_id = (pr.get('brand') or 'claude').lower()
+                ctx_txt = ' '.join([str(s.get('say') or ''), str(pr.get('title') or ''), ' '.join(str(m.get('t') or '') for m in (pr.get('msgs') or [] if isinstance(pr.get('msgs'), list) else []))]).lower()
+                agent_rules = [
+                    ('antigravity', ('antigravity', '反重力'), ('antigravity', 'gemini')),
+                    ('gemini', ('gemini',), ('gemini', 'antigravity')),
+                    ('cursor', ('cursor',), ('cursor',)),
+                    ('doubao', ('豆包', 'doubao'), ('doubao',)),
+                    ('deepseek', ('deepseek',), ('deepseek',)),
+                    ('workbuddy', ('workbuddy',), ('workbuddy',)),
+                    ('codex', ('codex',), ('codex', 'chatgpt')),
+                    ('kimi', ('kimi',), ('kimi',)),
+                    ('qwen', ('通义千问', 'qwen'), ('qwen',)),
+                ]
+                for target_name, kws, allowed in agent_rules:
+                    if any(k in ctx_txt for k in kws) and br_id not in allowed and not pr.get('logo'):
+                        probs.append(f"{s.get('id')}/fx-ai-chat-app: 对话内容是 {target_name}，但 brand 写了 '{br_id}'（会显示错误 Agent 的 logo 和占位字）——改成 brand: '{target_name}'")
+                        break
+            # 2026-11-26：progress 过高会出现空黑盒；fx-mind-tree 在浅底上白字不可见
+            if L.get('c') == 'progress' and isinstance(b, list) and len(b) == 4 and b[3] > 0.45:
+                warns.append(f"{s.get('id')}/progress: box 高度 {b[3]:.2f} 偏高，下半截容易留空黑盒（建议 h ≤ 0.36，下方配对比条或标注）")
+            lk = s.get('look'); lk_name = lk.get('name') if isinstance(lk, dict) else (lk or '')
+            if L.get('c') == 'fx-mind-tree' and (lk_name in ('b-paper', 'wall-porcelain') or (isinstance(lk, dict) and lk.get('light'))):
+                warns.append(f"{s.get('id')}/fx-mind-tree: 放在浅底 {lk_name} 上叶子白字看不清，换深底或改用 panel-stack")
+        # 2026-11-26：同屏非背景图层的显式 box 严禁互相重叠（防止文字与动效元素搭在一起）
+        _OV_SKIP = {'burst', 'confetti', 'scrim', 'vignette', 'grain', 'callout', 'sticker'}
+        _s_dur = max(0.0, float(s.get('end', 0)) - float(s.get('start', 0)))
+        _placed = []
+        for idx, L in enumerate(s.get('layers', [])):
+            c_name = L.get('c', '')
+            if c_name.startswith('bg-') or c_name in _OV_SKIP: continue
+            bx = L.get('box')
+            if not (isinstance(bx, list) and len(bx) == 4): continue
+            t0 = float(L.get('at', 0) or 0)
+            t1 = float(L.get('out', _s_dur) if L.get('out') is not None else _s_dur)
+            _placed.append((idx, c_name, bx, t0, t1))
+        for i in range(len(_placed)):
+            i1, c1, b1, a1, e1 = _placed[i]
+            for j in range(i + 1, len(_placed)):
+                i2, c2, b2, a2, e2 = _placed[j]
+                if min(e1, e2) - max(a1, a2) < 0.25: continue
+                ix = max(0.0, min(b1[0] + b1[2], b2[0] + b2[2]) - max(b1[0], b2[0]))
+                iy = max(0.0, min(b1[1] + b1[3], b2[1] + b2[3]) - max(b1[1], b2[1]))
+                if ix * iy > 0.08 * min(b1[2] * b1[3], b2[2] * b2[3]):
+                    warns.append(f"{s.get('id')}: 图层 #{i1}({c1}) 与 #{i2}({c2}) 存在画面重叠（元素之间必须精准分离，不能搭在一起）")
     if D and abs(last - D) > 0.1: probs.append(f'分镜结束于 {last:.2f}s，片长 {D:.2f}s')
     keys = sorted([k for k in ((E.get('presenter') or {}).get('keys') or []) if 't' in k], key=lambda k: k['t'])
     for a, b in zip(keys, keys[1:]):

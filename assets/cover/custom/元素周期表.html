@@ -1,0 +1,79 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<link rel="stylesheet" href="fonts.css"><script src="fontlist.js"></script><script src="data.js"></script><script src="cover-kit.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box} html,body{background:#000;overflow:hidden}
+#root{background:#F5F2EA;color:#111827;font-weight:900}
+.paper{position:absolute;inset:0;background-image:linear-gradient(rgba(17,24,39,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(17,24,39,.055) 1px,transparent 1px)}
+.accent-bar{position:absolute;left:0;top:0;bottom:0;background:#1D4ED8}
+.ttl{position:absolute;z-index:3;line-height:1.06;letter-spacing:.02em;white-space:nowrap}
+.ttl .ln{display:block}
+.ttl .hl{color:#fff;background:#1D4ED8;padding:0 .14em .04em;border-radius:.08em;display:inline-block;margin:0 .04em}
+.subbar{display:inline-flex;align-items:center;justify-content:center;color:#fff;background:#111827;padding:.30em .72em .34em;border-radius:.16em;letter-spacing:.04em;white-space:nowrap;box-shadow:.12em .12em 0 rgba(29,78,216,.35)}
+.elem{display:flex;align-items:center;gap:.50em;background:#fff;border:.09em solid #111827;box-shadow:.13em .15em 0 #111827;padding:.38em .76em .42em;border-radius:.20em;white-space:nowrap}
+.elem .sym{font-family:var(--en);font-weight:900;width:1.85em;height:1.85em;display:flex;align-items:center;justify-content:center;border-radius:.16em;color:#fff;font-size:.96em;flex:none}
+.elem .info{flex:1;min-width:0}
+.elem .info b{display:block;font-size:.96em;color:#111827;line-height:1.16}
+.elem .info small{display:block;font-size:.60em;color:#475569;font-weight:700;margin-top:.12em}
+.elem .tag{flex:none;font-size:.74em;font-weight:900;padding:.42em .76em;border-radius:.16em;color:#fff;letter-spacing:.04em;margin-right:.24em;line-height:1}
+.badge{display:inline-flex;align-items:center;justify-content:center;background:#DC2626;color:#fff;padding:.36em .82em .40em;border-radius:.18em;white-space:nowrap;letter-spacing:.04em;box-shadow:.12em .14em 0 #111827}
+</style></head><body><div id="root"></div><script>
+const D = KIT.boot(), W = KIT.W, H = KIT.H, V = KIT.V, px = KIT.px, root = KIT.root;
+KIT.el('div', 'paper', '', root, { backgroundSize: px(44) + 'px ' + px(44) + 'px' });
+KIT.el('div', 'accent-bar', '', root, { width: px(18) + 'px' });
+(async () => {
+  await KIT.fonts();
+  KIT.init(root, W, H, { margin: px(V ? 38 : 42), gap: px(18) });
+  const box = V ? { x: W * .39, y: H * .38, w: W * .61, h: H * .62 } : { x: W * .50, y: H * .05, w: W * .50, h: H * .95 };
+  if (KIT.PER) { const p = await KIT.person(KIT.PER, box, 'r'); p.style.filter = `drop-shadow(0 ${px(12)}px ${px(24)}px rgba(17,24,39,.25))`; p.style.zIndex = 2; }
+  const t = KIT.el('div', 'ttl', KIT.lines(D.title, D.hl), root);
+  KIT.fitTitle(t, px(V ? 240 : 210), px(62), { top: px(V ? 44 : 34), maxH: H * (V ? .26 : .34) }); KIT.track(t);
+  const elems = [
+    { sym: 'Ne', col: '#1D4ED8', name: 'Neon 主力首选', desc: '省30%成本 · 扛起80%日常开发', tag: '80%主力' },
+    { sym: 'C', col: '#111827', name: 'Carbon 啃硬骨头', desc: '复杂架构设计 · 深度代码审计', tag: '深度攻坚' },
+    { sym: 'H', col: '#059669', name: 'Hydrogen 极速兵', desc: '小改动快问答 · 并行执行任务', tag: '极速并行' },
+    { sym: 'Or', col: '#7C3AED', name: '编排模式 省心档', desc: '自动调度大小模型 · 省钱高效', tag: '自动路由' }
+  ];
+  if (V) {
+    const nodes = [];
+    if (D.sub) nodes.push(KIT.el('div', 'subbar', KIT.esc(D.sub + ' · 实战选型'), root, { fontSize: px(34) + 'px', zIndex: 3 }));
+    elems.forEach(e => nodes.push(KIT.el('div', 'elem', `<span class="sym" style="background:${e.col}">${e.sym}</span><span class="info"><b>${e.name}</b><small>${e.desc}</small></span>`, root, { fontSize: px(33) + 'px', padding: '.50em .76em .54em', zIndex: 3 })));
+    nodes.push(KIT.el('div', 'badge', '四句黄金选型口诀 · 建议截屏收藏', root, { fontSize: px(32) + 'px', padding: '.44em .84em .48em', zIndex: 3 }));
+    KIT.flow(nodes, { top: t.offsetTop + t.offsetHeight + px(26), bottom: H - px(108), gap: px(28), maxScale: 1.32 });
+  } else {
+    // 横版 4:3：从左安全线(x=42)一直铺满到人物左轮廓，消除左侧大片空白，且零重叠
+    const xL = px(42), top0 = t.offsetTop + t.offsetHeight + px(18), bot = H - px(32);
+    const totalH = bot - top0, gap = px(14);
+    const subH = px(62), badgeH = px(66);
+    const cardH = Math.floor((totalH - subH - badgeH - gap * 5) / 4);
+    const leftIv = (y0, y1) => {
+      const fr = KIT.free(y0, y1);
+      const l = fr.find(f => f.side === 'l' || f.side === 'o') || fr[0];
+      return l ? Math.max(px(420), Math.floor(l.b - xL)) : px(680);
+    };
+    let y = top0;
+    const subW = leftIv(y, y + subH);
+    const subEl = KIT.el('div', 'subbar', KIT.esc((D.sub || '') + ' · 实战选型'), root, {
+      position: 'absolute', left: xL + 'px', top: y + 'px', width: subW + 'px', height: subH + 'px',
+      fontSize: px(30) + 'px', padding: '0 ' + px(22) + 'px', zIndex: 3
+    });
+    KIT.track(subEl); y += subH + gap;
+    elems.forEach(e => {
+      const cw = leftIv(y, y + cardH);
+      const card = KIT.el('div', 'elem',
+        `<span class="sym" style="background:${e.col}">${e.sym}</span><span class="info"><b>${e.name}</b><small>${e.desc}</small></span><span class="tag" style="background:${e.col}">${e.tag}</span>`,
+        root, {
+          position: 'absolute', left: xL + 'px', top: y + 'px', width: cw + 'px', height: cardH + 'px',
+          fontSize: px(39) + 'px', padding: '0 ' + px(22) + 'px', zIndex: 3
+        });
+      KIT.track(card); y += cardH + gap;
+    });
+    const bw = leftIv(y, y + badgeH);
+    const badgeEl = KIT.el('div', 'badge', '四句黄金选型口诀 · 建议截屏收藏', root, {
+      position: 'absolute', left: xL + 'px', top: y + 'px', width: bw + 'px', height: badgeH + 'px',
+      fontSize: px(34) + 'px', padding: '0 ' + px(20) + 'px', zIndex: 3
+    });
+    KIT.track(badgeEl);
+  }
+  KIT.ready('#F5F2EA');
+})();
+</script></body></html>

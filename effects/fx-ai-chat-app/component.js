@@ -16,6 +16,12 @@
     doubao:    { name: '豆包',       logo: 'doubao',     ph: '发消息…',       bg: '#FFFFFF', side: '#F5F6F8', ink: '#1A1A1A', muted: '#8C8C8C', line: '#ECEDEF', me: '#E6EEFF', meInk: '#1A1A1A', acc: '#3B6CFF', comp: '#FFFFFF', dark: 0 },
     workbuddy: { name: 'WorkBuddy', logo: 'workbuddy',  ph: '交代一个任务…',  bg: '#0F1513', side: '#141C19', ink: '#E9F2EE', muted: '#83958D', line: '#22302B', me: '#1E2B26', meInk: '#FFFFFF', acc: '#1FC48B', comp: '#151E1B', dark: 1 },
     deepseek:  { name: 'DeepSeek',  logo: 'deepseek',   ph: '给 DeepSeek 发送消息', bg: '#FFFFFF', side: '#F7F8FA', ink: '#1A1A1A', muted: '#8C8C8C', line: '#ECEDEF', me: '#EFF4FF', meInk: '#1A1A1A', acc: '#4D6BFE', comp: '#FFFFFF', dark: 0 },
+    antigravity: { name: 'Antigravity', logo: 'gemini', ph: '给 Antigravity 发送指令…', bg: '#0D1117', side: '#131922', ink: '#F1F5F9', muted: '#8B9BB0', line: '#233044', me: '#1E293B', meInk: '#FFFFFF', acc: '#38BDF8', comp: '#161F2C', dark: 1 },
+    gemini:    { name: 'Gemini',    logo: 'gemini',     ph: '问问 Gemini…',  bg: '#0E121B', side: '#141A26', ink: '#F1F5F9', muted: '#8B9BB0', line: '#253147', me: '#1E2A40', meInk: '#FFFFFF', acc: '#4285F4', comp: '#171F2E', dark: 1 },
+    cursor:    { name: 'Cursor',    logo: 'cursor',     ph: 'Ask Cursor…',  bg: '#121316', side: '#181A1F', ink: '#ECEEF2', muted: '#8B909C', line: '#292D36', me: '#232732', meInk: '#FFFFFF', acc: '#38BDF8', comp: '#1B1E24', dark: 1 },
+    claudecode:{ name: 'Claude Code', logo: 'claudecode', ph: '给 Claude Code 下达任务…', bg: '#141311', side: '#1B1917', ink: '#F5F3EF', muted: '#9A948A', line: '#2E2B26', me: '#272420', meInk: '#FFFFFF', acc: '#D97757', comp: '#1E1C19', dark: 1 },
+    kimi:      { name: 'Kimi',      logo: 'kimi',       ph: '给 Kimi 发消息…', bg: '#FFFFFF', side: '#F6F7F9', ink: '#18191C', muted: '#8A8F99', line: '#EAECEF', me: '#EEF3FF', meInk: '#18191C', acc: '#1F6BFF', comp: '#FFFFFF', dark: 0 },
+    qwen:      { name: '通义千问',   logo: 'qwen',       ph: '给千问发消息…',  bg: '#FFFFFF', side: '#F6F5FA', ink: '#1A1A24', muted: '#888699', line: '#EAE8F2', me: '#F0EDFF', meInk: '#1A1A24', acc: '#615CED', comp: '#FFFFFF', dark: 0 },
   };
   const SEND = '<svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const CLIP = '<svg viewBox="0 0 24 24"><path d="M20 11.5l-8.2 8.2a5 5 0 01-7.1-7.1l8.6-8.6a3.4 3.4 0 014.8 4.8l-8.6 8.6a1.7 1.7 0 01-2.4-2.4l7.9-7.9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
@@ -31,9 +37,9 @@
       const hist = (p.history && p.history.length ? p.history : ['新对话']).slice(0, 6);
       const msgs = (p.msgs || []).map(m => Object.assign({ who: 'me' }, m));
       const w = el('div', 'w', `
-        <div class="tb"><i></i><i></i><i></i><span>${esc(p.title || b.name)}</span>${p.label === '' ? '' : `<em>${esc(p.label || '界面示意')}</em>`}</div>
+        <div class="tb"><i></i><i></i><i></i><span>${esc(p.title || p.name || b.name)}</span>${p.label === '' ? '' : `<em>${esc(p.label || '界面示意')}</em>`}</div>
         <div class="bd">
-          <div class="sd"><div class="br"><img src="${esc(logo)}"><b>${esc(b.name)}</b></div><div class="nw">＋ 新对话</div>
+          <div class="sd"><div class="br"><img src="${esc(logo)}"><b>${esc(p.name || b.name)}</b></div><div class="nw">＋ 新对话</div>
             ${hist.map((h, i) => `<div class="hi${i === 0 ? ' on' : ''}">${esc(h)}</div>`).join('')}</div>
           <div class="mn">
             ${p.model ? `<div class="md">${esc(p.model)} <small>▾</small></div>` : ''}

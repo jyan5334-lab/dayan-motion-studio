@@ -53,8 +53,8 @@
       const svg = ring
         ? `<svg viewBox="0 0 200 200"><circle class="trk" cx="100" cy="100" r="84"/><circle class="val" cx="100" cy="100" r="84" pathLength="100"/></svg>`
         : `<svg viewBox="0 0 200 120"><path class="trk" d="M20 110 A80 80 0 0 1 180 110"/><path class="val" pathLength="100" d="M20 110 A80 80 0 0 1 180 110"/><line class="ndl" x1="100" y1="110" x2="100" y2="44"/><circle class="hub" cx="100" cy="110" r="7"/></svg>`;
-      el('div', 'gv', svg, e);
-      const num = el('div', 'gn', '', e);
+      const gv = el('div', 'gv', svg, e);
+      const num = el('div', 'gn', '', ring ? gv : e);
       const lab = p.label ? el('div', 'gl', esc(p.label), e) : null;
       return { val: e.querySelector('.val'), ndl: e.querySelector('.ndl'), num, lab };
     },

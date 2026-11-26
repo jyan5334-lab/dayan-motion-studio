@@ -205,14 +205,15 @@ html[data-orient="portrait"] .dms-sub { bottom: 18%; max-width: 72%; --sub-size:
 .c-number.ns-card { background: var(--card); color: var(--card-fg); border: 1.5px solid var(--line); border-radius: 28px; padding: 30px 44px; box-shadow: 0 24px 70px rgba(0,0,0,.35); }
 .c-number.ns-glass { background: linear-gradient(160deg, rgba(255,255,255,.14), rgba(255,255,255,.04)); border: 1.5px solid rgba(255,255,255,.22); border-radius: 28px; padding: 30px 44px; backdrop-filter: blur(12px); box-shadow: 0 24px 70px rgba(0,0,0,.35); }
 
-.c-gauge { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--fg); }
-.c-gauge .gv { width: 78%; } .c-gauge svg { width: 100%; overflow: visible; }
+.c-gauge { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--fg); gap: 10px; }
+.c-gauge .gv { width: 78%; position: relative; } .c-gauge svg { width: 100%; display: block; overflow: visible; }
+.c-gauge.gs-ring .gv { width: min(72%, 68cqh); aspect-ratio: 1; display: grid; place-items: center; }
 .c-gauge .trk { fill: none; stroke: var(--line); stroke-width: 16; stroke-linecap: round; } .c-gauge .val { fill: none; stroke: var(--accent); stroke-width: 16; stroke-linecap: round; filter: drop-shadow(0 0 10px var(--accent)); }
 .c-gauge.gs-ring .val { transform: rotate(-90deg); transform-origin: 100px 100px; }
 .c-gauge .ndl { stroke: var(--fg); stroke-width: 5; stroke-linecap: round; } .c-gauge .hub { fill: var(--fg); }
 .c-gauge .gn { font: 900 110px/1 var(--f-en); color: var(--hl); margin-top: -10px; } .c-gauge .gn small { font-size: .45em; margin-left: 4px; }
-.c-gauge.gs-ring .gn { margin-top: -62%; margin-bottom: 30%; }
-.c-gauge .gl { font: 700 30px var(--f-sans); color: var(--muted); margin-top: 8px; }
+.c-gauge.gs-ring .gn { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; font-size: clamp(48px, 18cqmin, 108px); }
+.c-gauge .gl { font: 700 30px var(--f-sans); color: var(--muted); margin-top: 4px; text-align: center; }
 
 .c-bars { display: flex; flex-direction: column; justify-content: center; gap: 30px; height: 100%; color: var(--fg); }
 .c-bars .bt { font: 800 34px var(--f-sans); margin-bottom: 4px; }
