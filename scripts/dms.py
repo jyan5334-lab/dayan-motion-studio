@@ -524,22 +524,30 @@ PRESENTER_MENU = {
     'portrait': [('full', 'c'), ('side', 'r'), ('full', 'c'), ('pip', 'tr'), ('card', 't'), ('full', 'c'), ('pip', 'tl'), ('side', 'r')],
 }
 def layout_plan(scenes, cw, ch, sw, sh):
-    """给分镜草稿排外观和人物版式：约两段一章，章与章换 look；开头暗底钩子、结尾红色放射喊话；人物按画幅菜单轮换，全屏段 > 9s 加一次推近"""
+    """给分镜草稿排外观和人物版式：约两段一章，章与章换 look；开头暗底钩子、结尾红色放射喊话；人物按画幅菜单轮换，全屏段 > 9s 加一次推近。
+    用户 2026-11-27 定：不要全程小窗挂人——中间讲到重点拆解/对比/流程/数据等高密度语义段（3.5–12s）允许短暂退场（hidden），把全画面交给讲解与语义动画。"""
     if not scenes: return [{'t': 0, 'state': 'full'}]
     portrait = ch > cw; narrow = not portrait and (cw / ch < 1.5 or sw / sh < 0.8)
     menu = PRESENTER_MENU['portrait' if portrait else 'narrow' if narrow else 'wide']
     keys = []; n = len(scenes); ci = 0
+    hidden_cap = max(1, round(n * 0.25)) if n >= 5 else 0
+    hidden_used = 0; prev_hidden = False
+    FOCUS_KINDS = {'contrast', 'process', 'number', 'product'}
     for i, S in enumerate(scenes):
         chap = 0 if i == 0 else (n - 1 if i == n - 1 and n > 2 else (i + 1) // 2)
         if i == 0: S['look'] = 'b-film' if not portrait else 'c-wall'
         elif i == n - 1 and n > 2: S['look'] = 'a-red'
         else: S['look'] = LOOK_CYCLE[(chap - 1) % len(LOOK_CYCLE)]
-        if i == n - 1 and n > 2: st, pos = ('circle-big', 'c')
-        else: st, pos = menu[ci % len(menu)]; ci += 1
+        dur = S['t1'] - S['t0']
+        kinds = {h.get('kind') for h in (S.get('hints') or [])}
+        can_hide = (1 <= i <= n - 2) and hidden_used < hidden_cap and not prev_hidden and (3.5 <= dur <= 12.0) and bool(kinds & FOCUS_KINDS) and (i >= 2)
+        if i == n - 1 and n > 2: st, pos = ('circle-big', 'c'); prev_hidden = False
+        elif can_hide: st, pos = ('hidden', 'c'); hidden_used += 1; prev_hidden = True
+        else: st, pos = menu[ci % len(menu)]; ci += 1; prev_hidden = False
         k = {'t': round(S['t0'], 3), 'state': st, 'pos': pos}
-        if i: k['dur'] = 0.6
+        if i: k['dur'] = 0.45 if st == 'hidden' else 0.6
         keys.append(k)
-        if st in ('full', 'story') and S['t1'] - S['t0'] > 9:   # 风格 C：全屏段每 8–15s 推近一次（跳切）
+        if st in ('full', 'story') and dur > 9:   # 风格 C：全屏段每 8–15s 推近一次（跳切）
             keys.append({'t': round((S['t0'] + S['t1']) / 2, 3), 'state': st, 'pos': pos, 'zoom': 1.14, 'dur': 0})
     return keys
 
@@ -1313,7 +1321,28 @@ def cmd_lint(ns):
     if D and abs(last - D) > 0.1: probs.append(f'分镜结束于 {last:.2f}s，片长 {D:.2f}s')
     keys = sorted([k for k in ((E.get('presenter') or {}).get('keys') or []) if 't' in k], key=lambda k: k['t'])
     for a, b in zip(keys, keys[1:]):
+        if a['t'] < 0.05 and a.get('state') == 'hidden': continue   # 允许开场第 1 秒全屏钩子封面（0.5–1.0s）后快速切入人物
         if b['t'] - a['t'] < 0.8: warns.append(f"人物窗 {a['t']:.2f}→{b['t']:.2f} 变化太快（<0.8s），观众会晕")
+    # 2026-11-27 硬规则：抠像人物（cutout，支持 bl / br / tr）作为不重叠的静止禁区，画面动效不得与其重叠
+    for s in scenes:
+        if s.get('personFront'): continue
+        for idx, L in enumerate(s.get('layers', [])):
+            c_name = L.get('c', '')
+            if c_name.startswith('bg-') or c_name in ('fx-depth-word', 'burst', 'confetti', 'scrim', 'vignette', 'grain'): continue
+            bx = L.get('box')
+            if not (isinstance(bx, list) and len(bx) == 4): continue
+            lt0 = float(L.get('at', s['t0']) or s['t0'])
+            pk = presenter_at(E, lt0 + 0.05)
+            if pk.get('state') != 'cutout': continue
+            ppos = pk.get('pos') or 'bl'
+            sc = float(pk.get('scale') or (0.42 if ppos == 'tr' else 0.56))
+            pw = min(0.32, sc * 0.52); ph = sc
+            px = (1.0 - pw - 0.02) if ppos in ('br', 'tr', 'r') else 0.02
+            py = 0.025 if ppos == 'tr' else (1.0 - ph)
+            ix = max(0.0, min(bx[0] + bx[2], px + pw) - max(bx[0], px))
+            iy = max(0.0, min(bx[1] + bx[3], py + ph) - max(bx[1], py))
+            if ix * iy > 0.06 * min(bx[2] * bx[3], pw * ph):
+                warns.append(f"{s.get('id')}/{c_name}: 显式 box 与抠像人物（cutout·{ppos}）重叠——抠像人物是静止禁区，动效必须放在人物以外的安全区（或用 box:\"zone\"）")
     from dms_packs import get_pack
     for pid in E.get('packs') or []:
         p = get_pack(pid)
@@ -1645,6 +1674,14 @@ def cmd_direct(ns):
             ats = sorted(L['at'] for L in lg)
             if ats[-1] - ats[0] >= 1.2:
                 tips.append(f"{ats[0]:.1f}–{ats[-1]:.1f}s {S.get('id')}：{len(lg)} 个 logo 依次出现，前面会空着——下文已经定好时，可以让它们在 {ats[0]:.1f}s 一起出现成虚线空位，各自写 litAt（念到名字的时刻 − 图层 at），念到哪个亮哪个")
+    # 可选写法：真人出镜口播的短暂退场节拍（用户 2026-11-27 定：约消失 5 秒左右，再出现 3–5 秒，不能全程挂人也不能长时间消失）
+    vis_keys = [k for k in keys if k.get('state') != 'hidden']
+    if T['duration'] > 45 and vis_keys and not any(k.get('state') == 'hidden' for k in keys):
+        tips.append("全片人物全程在场（没有短暂退场段）：在讲到核心重点、对比/流程/数据拆解等高密度语义段时，允许将人物短暂设为 hidden（约 5 秒左右，再返场 3–5 秒），把全画面（zone）交给讲解和语义动效")
+    if vis_keys:
+        for a, b in zip(keys, keys[1:] + [{'t': T['duration']}]):
+            if a.get('state') == 'hidden' and a['t'] >= 1.2 and (b['t'] - a['t']) > 9.5:
+                tips.append(f"人物 {a['t']:.1f}–{b['t']:.1f}s 连续隐身 {b['t'] - a['t']:.1f}s：有真人出镜的口播建议人物单次消失约 5 秒左右（3–8s）后再出现 3–5 秒，避免长时间不见人")
     n = sum(len(v) for v in R.values())
     print(f"导演检查 · {T.get('title', '')} · {len(scenes)} 段 · {T['duration']:.1f}s")
     for k, v in R.items():
@@ -1711,17 +1748,17 @@ ZONES = {
     'wide': {      # 16:9
         'full': [0.05, 0.1, 0.5, 0.68], 'side-r': [0.045, 0.1, 0.5, 0.7], 'side-l': [0.455, 0.1, 0.5, 0.7],
         'card-r': [0.045, 0.08, 0.6, 0.74], 'card-l': [0.355, 0.08, 0.6, 0.74], 'story-r': [0.045, 0.08, 0.54, 0.74], 'story-l': [0.415, 0.08, 0.54, 0.74],
-        'corner-r': [0.05, 0.08, 0.68, 0.74], 'corner-l': [0.27, 0.08, 0.68, 0.74], 'cutout-l': [0.25, 0.08, 0.71, 0.74], 'cutout-r': [0.04, 0.08, 0.71, 0.74],
+        'corner-r': [0.05, 0.08, 0.68, 0.74], 'corner-l': [0.27, 0.08, 0.68, 0.74], 'cutout-l': [0.28, 0.08, 0.68, 0.74], 'cutout-r': [0.04, 0.08, 0.68, 0.74], 'cutout-tr': [0.04, 0.08, 0.68, 0.74],
         'window-l': [0.53, 0.1, 0.43, 0.7], 'window-r': [0.04, 0.1, 0.43, 0.7], 'big-c': [0.05, 0.08, 0.9, 0.12], 'none': [0.06, 0.08, 0.88, 0.74]},
     'narrow': {    # 4:3：内容区更窄更高
         'full': [0.05, 0.1, 0.56, 0.7], 'side-r': [0.04, 0.1, 0.56, 0.72], 'side-l': [0.4, 0.1, 0.56, 0.72],
         'card-r': [0.04, 0.08, 0.56, 0.76], 'card-l': [0.4, 0.08, 0.56, 0.76], 'story-r': [0.04, 0.08, 0.5, 0.76], 'story-l': [0.46, 0.08, 0.5, 0.76],
-        'corner-r': [0.05, 0.08, 0.64, 0.76], 'corner-l': [0.31, 0.08, 0.64, 0.76], 'cutout-l': [0.3, 0.08, 0.66, 0.76], 'cutout-r': [0.04, 0.08, 0.66, 0.76],
+        'corner-r': [0.05, 0.08, 0.64, 0.76], 'corner-l': [0.31, 0.08, 0.64, 0.76], 'cutout-l': [0.32, 0.08, 0.64, 0.76], 'cutout-r': [0.04, 0.08, 0.64, 0.76], 'cutout-tr': [0.04, 0.08, 0.64, 0.76],
         'window-l': [0.05, 0.62, 0.9, 0.2], 'window-r': [0.05, 0.62, 0.9, 0.2], 'big-c': [0.05, 0.08, 0.9, 0.12], 'none': [0.06, 0.08, 0.88, 0.76]},
     'portrait': {  # 9:16：人物多在上方，内容在中下部（字幕在 0.78 以下）
         'full': [0.06, 0.46, 0.88, 0.3], 'side-r': [0.05, 0.4, 0.9, 0.37], 'side-l': [0.05, 0.4, 0.9, 0.37],
         'card-r': [0.05, 0.47, 0.9, 0.3], 'card-l': [0.05, 0.47, 0.9, 0.3], 'story-r': [0.05, 0.6, 0.9, 0.18], 'story-l': [0.05, 0.6, 0.9, 0.18],
-        'corner-r': [0.05, 0.1, 0.9, 0.44], 'corner-l': [0.05, 0.1, 0.9, 0.44], 'cutout-l': [0.05, 0.1, 0.9, 0.48], 'cutout-r': [0.05, 0.1, 0.9, 0.48],
+        'corner-r': [0.05, 0.1, 0.9, 0.44], 'corner-l': [0.05, 0.1, 0.9, 0.44], 'cutout-l': [0.05, 0.1, 0.9, 0.46], 'cutout-r': [0.05, 0.1, 0.9, 0.46], 'cutout-tr': [0.05, 0.40, 0.9, 0.38],
         'window-l': [0.05, 0.47, 0.9, 0.3], 'window-r': [0.05, 0.47, 0.9, 0.3], 'big-c': [0.05, 0.06, 0.9, 0.08], 'none': [0.06, 0.12, 0.88, 0.64]},
 }
 def _aspect_kind(w, h): return 'portrait' if h > w else ('narrow' if w / h < 1.5 else 'wide')
@@ -1739,7 +1776,7 @@ def zone_key(k):
     if st == 'full': return 'full-v' if E_PILLAR[0] else 'full'
     if st in ('side', 'card', 'story'): return f"{st}-{'r' if right else 'l'}"
     if st in ('circle', 'pip'): return 'corner-r' if right else 'corner-l'
-    if st == 'cutout': return 'cutout-r' if pos in ('br', 'r') else 'cutout-l'
+    if st == 'cutout': return 'cutout-tr' if pos == 'tr' else ('cutout-r' if pos in ('br', 'r') else 'cutout-l')
     if st == 'window': return 'window-r' if pos == 'r' else 'window-l'
     if st == 'circle-big': return 'big-c'
     return 'none'

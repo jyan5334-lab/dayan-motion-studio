@@ -93,16 +93,19 @@
       const y = Array.isArray(side) ? side[1] * H : port ? H * 0.08 : (H - h) / 2 - H * 0.03;
       Object.assign(g, { x, y, w, h, r: 16, z: k.zoom || 1, focus: 0.7, border: 1, shadow: 1, bar: 1 });
     } else if (s === 'cutout') {
-      /* 抠像站位：需要 matte 帧；整幅画面平移缩放，只显示人物。scale 是人物画面占画布的比例（参考：角落小人 0.36–0.5，半身讲解 0.78） */
-      /* 用户 2026-11-17：角落抠像不放大、不裁切——整幅原片按原比例装进框里（拍到全身就显示全身），高度约画面 56%（竖屏画布 40%），
-         比圆窗大一点；按脸的横向位置把人贴到角落。scale = 人物框高度占画布高度的比例 */
-      const corner2 = ['bl', 'br'].includes(k.pos || 'bl'); const side = k.pos || 'bl';
-      const sc = k.scale || (corner2 ? (port ? 0.4 : 0.56) : 0.82);
+      /* 抠像站位：需要 matte 帧；整幅画面平移缩放，只显示人物。
+         支持位置：bl（左下）、br（右下）、tr（右上）、l / r / c。
+         不放大、不裁切：整幅原片按原比例装进去；可在连续关键帧间平滑缩小（如 scale 0.56 → 0.34）再翻页衔接圆窗 circle。 */
+      const side = k.pos || 'bl';
+      const isTop = side === 'tr' || side === 'tl';
+      const corner2 = ['bl', 'br', 'tr', 'tl'].includes(side);
+      const sc = k.scale || (isTop ? (port ? 0.34 : 0.42) : corner2 ? (port ? 0.4 : 0.56) : 0.82);
       const h = H * sc, w = h * srcW / srcH;
       const fcx = medCx == null ? 0.5 : medCx, mxc = W * (port ? 0.16 : 0.1);
-      let x = side === 'br' || side === 'r' ? (W - mxc) - fcx * w : side === 'c' ? (W - w) / 2 : mxc - fcx * w;
-      if (side === 'br' || side === 'r') x = Math.max(x, W - w * 1.02); else if (side !== 'c') x = Math.min(x, w * 0.02);
-      Object.assign(g, { x, y: H - h, w, h, r: 0, z: 1, focus: 0.15, matte: 1 });
+      let x = (side === 'br' || side === 'tr' || side === 'r') ? (W - mxc) - fcx * w : side === 'c' ? (W - w) / 2 : mxc - fcx * w;
+      if (side === 'br' || side === 'tr' || side === 'r') x = Math.max(x, W - w * 1.02); else if (side !== 'c') x = Math.min(x, w * 0.02);
+      const y = isTop ? H * 0.025 : H - h;
+      Object.assign(g, { x, y, w, h, r: 0, z: 1, focus: 0.15, matte: 1 });
     } else if (s === 'hidden') {
       Object.assign(g, { o: 0 });
       g._hidden = true;
@@ -140,12 +143,24 @@
     return { cx: cr(p0.cx, a.cx, b.cx, p3.cx), cy: cr(p0.cy, a.cy, b.cy, p3.cy), h: cr(p0.h, a.h, b.h, p3.h) };
   }
 
+  function targetGeom(k, from) {
+    const to = preset(k);
+    if (to._hidden && from && !from._hidden) {
+      /* 人物短暂退场：保持原位与原尺寸原地淡出，避免退场瞬间被拉伸回全屏 */
+      const keep = Object.assign({}, from, { o: 0, state: 'hidden', _hidden: true });
+      return keep;
+    }
+    return to;
+  }
+
   function geomAt(t) {
     if (!keys.length) return preset({ state: 'full' });
     let i = -1; for (let j = 0; j < keys.length; j++) if (keys[j].t <= t) i = j;
     if (i < 0) return preset(keys[0]);
     const k = keys[i]; const dur = k.dur == null ? 0.6 : k.dur;
-    const from = starts[i]; const to = preset(k);
+    const rawFrom = starts[i]; const to = targetGeom(k, rawFrom);
+    /* 从 hidden 返回画面：直接按目标版式就位并淡入，不从全屏变形缩放进来 */
+    const from = (rawFrom && rawFrom._hidden && !to._hidden) ? Object.assign({}, to, { o: rawFrom.o, state: 'hidden', _hidden: true }) : rawFrom;
     const curve = E[k.ease || 'smooth'] || E.smooth;
     return mix(from, to, curve(prog(t, k.t, dur)));
   }
@@ -176,9 +191,11 @@
       keys.forEach((k, i) => {
         if (i === 0) { starts.push(preset(k)); cur = preset(k); return; }
         const prev = keys[i - 1]; const d = prev.dur == null ? 0.6 : prev.dur;
-        const p0 = starts[i - 1]; const tgt = preset(prev);
+        const rawP0 = starts[i - 1]; const tgt = targetGeom(prev, rawP0);
+        const p0 = (rawP0 && rawP0._hidden && !tgt._hidden) ? Object.assign({}, tgt, { o: rawP0.o, state: 'hidden', _hidden: true }) : rawP0;
         const curve = E[prev.ease || 'smooth'] || E.smooth;
         cur = mix(p0, tgt, curve(prog(k.t, prev.t, d)));
+        if (tgt._hidden && prog(k.t, prev.t, d) >= 0.999) cur._hidden = true;
         starts.push(cur);
       });
     },
@@ -280,10 +297,17 @@
           cut.style.width = iw + 'px'; cut.style.height = ih + 'px';
           cut.style.transform = `translate(${g.x + left}px,${g.y + barH + top}px)`;
           cut.style.opacity = g.o;
-          /* 角落抠像：原片朝画面内侧的那条边如果切到身体，做一段柔和渐隐，避免竖直硬边 */
-          const cm = g.state === 'cutout' && g.matte > 0.5 ? ((g.x + g.w / 2 > W / 2) ? 'to right' : 'to left') : '';
-          const mk = cm ? `linear-gradient(${cm}, transparent 0, #000 9%)` : '';
-          if (cut.style.webkitMaskImage !== mk) { cut.style.webkitMaskImage = mk; cut.style.maskImage = mk; }
+          /* 角落抠像：原片朝画面内侧的边做柔和渐隐，避免硬切边；放右上角时底边也柔化 */
+          const isCut = g.state === 'cutout' && g.matte > 0.5;
+          const isTopCut = isCut && (g.y + g.h < H * 0.85);
+          const cm = isCut ? ((g.x + g.w / 2 > W / 2) ? 'to right' : 'to left') : '';
+          const mk = isTopCut ? `linear-gradient(${cm}, transparent 0, #000 10%), linear-gradient(to top, transparent 0, #000 14%)`
+            : cm ? `linear-gradient(${cm}, transparent 0, #000 9%)` : '';
+          if (cut.style.webkitMaskImage !== mk) {
+            cut.style.webkitMaskImage = mk; cut.style.maskImage = mk;
+            cut.style.webkitMaskComposite = isTopCut ? 'source-in' : '';
+            cut.style.maskComposite = isTopCut ? 'intersect' : '';
+          }
           if (cut.getAttribute('src') !== csrc) { cut.setAttribute('src', csrc); DMS.wait(cut.decode().catch(() => { })); }
         }
       }

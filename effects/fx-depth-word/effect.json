@@ -1,8 +1,8 @@
 {
  "id": "fx-depth-word",
- "name": "巨字在人身后",
- "use": "开场钩子、情绪词（急 / 卷 / 慌 / 爽）：一个巨字砸进画面，配合 scene.personFront 让人物压在字前面；旁边两行小标题点题",
- "props": "word 巨字（1–2 字）；color 字色；side:[{t,hl}] 旁边两行；sideAt；pos left/right 巨字在左或右；tilt 倾角",
+ "name": "人物背后嵌入文字",
+ "use": "开场或关键重点时，在抠像人物后方嵌入巨字、标题、数字或关键词（配合 scene.personFront: true）：支持直接出现（mode:'pop'）或横向滚动（mode:'scroll'），停留后平滑消失；pos 可选 center / left / right",
+ "props": "word 文字（数字/关键词/标题）；mode pop(直接出现)|scroll(横向滚动)；pos center|left|right；dir left|right；speed 滚动速度；y 纵向位置%；color 字色；hold 停留秒数后自动消失；side:[{t,hl}]；sideAt；tilt 倾角",
  "ref": "C 巨字 + 人物前景（参考片 E1）",
  "cat": "01 开场 · 标识",
  "created": "2026-11-17",
